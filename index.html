@@ -424,7 +424,10 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 </style>
 <style id="regex-chevron-fallback-fix">.regex-chevron { display: none !important; }
 /* Reading and appreciation enhancements */
-.lore-toolbar{position:sticky!important;top:0!important;z-index:10!important;background:rgba(247,250,248,.92)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;box-shadow:0 6px 18px rgba(40,64,49,.08)!important;}
+.main{overflow:visible!important}
+#page-character-detail{overflow:visible!important}
+#page-character-detail .tab-panel,#panel-lorebook{overflow:visible!important}
+.lore-toolbar{position:-webkit-sticky!important;position:sticky!important;top:0!important;z-index:35!important;background:rgba(247,250,248,.95)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;box-shadow:0 4px 16px rgba(38,58,45,.08)!important;}
 .regex-chevron{display:none!important;}
 .library-card{position:relative;}
 .favorite-star{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 8px;border-radius:10px;background:rgba(255,255,255,.94);border:1px solid var(--line);color:#9a9f98;font-size:22px;line-height:1;cursor:pointer;}
@@ -446,6 +449,14 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 .lightbox-top{position:absolute;right:14px;top:14px;display:flex;gap:8px;}
 .lightbox-top .btn{background:#f7faf8;color:#405d4e;}
 .lightbox-caption{color:#f2f5f2;font-size:12px;text-align:center;overflow-wrap:anywhere;}
+
+.greeting-reader{display:grid;gap:14px;min-width:0}
+.greeting-reader-card{padding:16px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#fff,#f8faf8);box-shadow:var(--shadow);min-width:0}
+.greeting-reader-label{font-size:11px;font-weight:800;color:var(--accent-dark);margin-bottom:10px}
+.greeting-reader-body{font-size:14px;line-height:1.85;overflow-wrap:anywhere;word-break:normal;min-width:0}
+.greeting-reader-body p{margin:.45em 0 1em}.greeting-reader-body img,.greeting-reader-body video,.greeting-reader-body table,.greeting-reader-body pre,.greeting-reader-body div,.greeting-reader-body section,.greeting-reader-body article{max-width:100%!important;box-sizing:border-box!important}.greeting-reader-body img,.greeting-reader-body video{height:auto;object-fit:contain}.greeting-reader-body table{display:block;overflow-x:auto}.greeting-reader-body pre{white-space:pre-wrap;overflow-wrap:anywhere}.greeting-reader-body [data-reader-action]{color:#89918b;font-style:italic}
+.greeting-status-panel{margin-top:12px;padding:0!important;overflow:hidden}.greeting-status-panel>summary{cursor:pointer;list-style:none;padding:13px 15px;font-weight:750;color:#536b5a;background:#edf3ee}.greeting-status-panel>summary::-webkit-details-marker{display:none}.greeting-status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px;padding:12px}.greeting-status-item{min-width:0;padding:10px 12px;border:1px solid #dfe8e1;border-radius:11px;background:#f7faf7}.greeting-status-key{font-size:11px;font-weight:800;color:#617866;margin-bottom:5px;overflow-wrap:anywhere}.greeting-status-value{font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.greeting-raw{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f7f9f7;padding:12px;border-radius:10px;border:1px solid var(--line)}
+
 @media(max-width:760px){.lore-toolbar{top:0!important;padding:8px!important;gap:6px!important;}.lore-toolbar>.btn{min-height:36px;padding-top:6px!important;padding-bottom:6px!important}.greeting-toolbar{justify-content:stretch}.greeting-toolbar .btn{flex:1;white-space:normal}.chat-greeting{grid-template-columns:36px minmax(0,1fr);gap:8px;padding:10px}.chat-greeting-avatar{width:35px;height:35px}#lightboxRoot{padding:12px}#lightboxImage{max-width:98vw;max-height:calc(100dvh - 145px)}}
 </style>
 </head>
@@ -535,7 +546,7 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 <section class="page" id="page-character-detail"><div class="page-heading detail-heading"><div><div class="eyebrow">CHARACTER WORKSPACE</div><h1>角色详情工作台</h1><p class="muted">查看完整设定、开场白、世界书、正则脚本与原始 JSON。</p></div><button class="btn btn-quiet" id="backToLibrary">← 返回角色卡资料库</button></div><div class="hidden" id="characterDetail">
 <section class="hero">
 <img alt="角色卡头像" class="avatar" id="detailAvatar"/>
-<div class="hero-info"><div class="detail-title-row"><h1 id="detailName">角色名</h1><button type="button" class="favorite-star" id="detailFavoriteBtn" aria-label="收藏角色" aria-pressed="false">☆</button></div><div class="author muted" id="detailAuthor">作者：未知</div><div class="tags" id="detailTags"></div><div class="hero-actions"><button class="btn btn-primary" id="btnDownloadPng">↓ 保存原卡 PNG</button><button class="btn btn-soft" id="universalPromptBtn" type="button">📋 提取通用人设 Prompt</button><button aria-label="删除角色卡" class="btn btn-danger" id="btnDelete">删除</button></div></div>
+<div class="hero-info"><div class="detail-title-row"><h1 id="detailName">角色名</h1><button type="button" class="favorite-star" id="detailFavoriteBtn" aria-label="收藏角色" aria-pressed="false">☆</button></div><div class="author muted" id="detailAuthor">作者：未知</div><div class="tags" id="detailTags"></div><div class="hero-actions"><button class="btn btn-primary" id="btnDownloadPng">↓ 保存原卡 PNG</button><button aria-label="删除角色卡" class="btn btn-danger" id="btnDelete">删除</button></div></div>
 </section>
 <nav aria-label="角色卡详情导航" class="tabs">
 <button class="tab active" data-tab="intro">简介设定</button><button class="tab" data-tab="greetings">开场白集合</button><button class="tab" data-tab="lorebook">世界书 Lore</button><button class="tab" data-tab="regex">正则脚本</button><button class="tab" data-tab="prompt">高级 Prompt</button><button class="tab" data-tab="raw">原始数据</button>
@@ -545,7 +556,7 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 <div class="panel"><div class="panel-title">性格 Personality</div><div class="content-text" id="detailPersonality"></div></div>
 <div class="panel"><div class="panel-title">场景设定 Scenario</div><div class="content-text" id="detailScenario"></div></div>
 </section>
-<section class="tab-panel hidden" id="panel-greetings"><div class="greeting-toolbar"><button type="button" class="btn btn-soft btn-small" id="greetingModeBtn" aria-pressed="false">💭 拟真气泡预览</button></div><div id="greetingPlainMode"><div class="panel"><div class="panel-title">默认第一句话 First Message</div><div class="content-text" id="detailFirstMes"></div></div><div class="entry-grid" id="altGreetingsBox"></div></div><div class="entry-grid hidden" id="greetingChatMode"></div></section>
+<section class="tab-panel hidden" id="panel-greetings"><div class="greeting-toolbar"><button type="button" class="btn btn-soft btn-small" id="greetingModeBtn" aria-pressed="false">📖 沉浸阅读排版</button></div><div id="greetingPlainMode"><div class="panel"><div class="panel-title">默认第一句话 First Message</div><div class="content-text" id="detailFirstMes"></div></div><div class="entry-grid" id="altGreetingsBox"></div></div><div class="entry-grid hidden" id="greetingChatMode"></div></section>
 <section class="tab-panel hidden" id="panel-lorebook">
 <div class="lore-toolbar">
 <input aria-label="搜索世界书条目" class="search" id="loreSearch" placeholder="搜索条目名、关键词、正文…" type="search"/>
@@ -801,18 +812,37 @@ function renderRegexScripts(d){
  });
 }
 function greetingText(v){return typeof v==='string'?v:(v&&typeof v==='object'?(v.message||v.content||JSON.stringify(v)):String(v??''))}
-function appendParsedGreeting(target,text){
+function appendActionStyledText(target,text){
  const parts=String(text??'').split(/(\*[^*\n]+\*)/g);
- parts.forEach(part=>{if(!part)return;if(part.length>=2&&part.startsWith('*')&&part.endsWith('*')){const span=makeEl('span','chat-action-text',part.slice(1,-1));target.append(span)}else target.append(document.createTextNode(part))});
+ parts.forEach(part=>{if(!part)return;if(part.length>=2&&part.startsWith('*')&&part.endsWith('*')){const em=document.createElement('em');em.dataset.readerAction='1';em.textContent=part.slice(1,-1);target.append(em)}else target.append(document.createTextNode(part))});
+}
+function sanitizeGreetingNode(node){
+ const allowed=new Set('div span p br hr strong b em i u s blockquote ul ol li h1 h2 h3 h4 h5 h6 table thead tbody tfoot tr th td img figure figcaption section article header footer main small sup sub details summary pre code a label input textarea button'.split(' '));
+ const out=document.createDocumentFragment();
+ const walk=(src,parent)=>{for(const child of Array.from(src.childNodes)){if(child.nodeType===Node.TEXT_NODE){appendActionStyledText(parent,child.nodeValue||'');continue}if(child.nodeType!==Node.ELEMENT_NODE)continue;const tag=child.tagName.toLowerCase();if(['script','style','iframe','object','embed','link','meta','base','svg','math','form'].includes(tag))continue;if(!allowed.has(tag)){walk(child,parent);continue}const el=document.createElement(tag);for(const attr of Array.from(child.attributes)){const n=attr.name.toLowerCase(),v=attr.value;if(n.startsWith('on')||n==='srcdoc'||n==='formaction')continue;if(['src','href','poster'].includes(n)&&/^\s*(javascript:|vbscript:|https?:|\/\/)/i.test(v))continue;if(n==='style'&&/url\s*\(|expression\s*\(|@import/i.test(v))continue;if(['class','id','title','alt','width','height','colspan','rowspan','style','src','href','target','rel','type','placeholder','value','checked','disabled','open','data-*'].includes(n)||n.startsWith('data-')||n.startsWith('aria-')){try{el.setAttribute(n,v)}catch{}}}if(tag==='a'){el.setAttribute('rel','noopener noreferrer');el.removeAttribute('target')}if(tag==='img'){el.style.maxWidth='100%';el.style.height='auto'}walk(child,el);parent.append(el)}};
+ walk(node,out);return out;
+}
+function extractGreetingStatus(text){
+ const source=String(text??'');const re=/<([a-zA-Z\u4e00-\u9fa5]+状态)>([\s\S]*?)<\/\1>\s*$/;const match=source.match(re);return match?{body:source.slice(0,match.index).trimEnd(),status:{tag:match[1],content:match[2]}}:{body:source,status:null};
+}
+function renderGreetingStatus(status){
+ if(!status)return null;const details=makeEl('details','panel greeting-status-panel');const summary=makeEl('summary','','📊 角色实时状态与内心独白（点击展开）');details.append(summary);const grid=makeEl('div','greeting-status-grid');
+ const raw=status.content;const doc=new DOMParser().parseFromString('<div>'+raw+'</div>','text/html');const root=doc.body.firstElementChild;let found=0;
+ if(root){Array.from(root.children).forEach(child=>{const key=child.tagName.toLowerCase();const value=(child.textContent||'').trim();if(!value&&!child.children.length)return;const item=makeEl('div','greeting-status-item');item.append(makeEl('div','greeting-status-key',key),makeEl('div','greeting-status-value',value||child.outerHTML));grid.append(item);found++})}
+ if(!found){const item=makeEl('div','greeting-status-item');item.append(makeEl('div','greeting-status-key',status.tag),makeEl('div','greeting-status-value',raw.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()||raw));grid.append(item)}details.append(grid);return details;
+}
+function renderImmersiveBody(target,text){
+ const extracted=extractGreetingStatus(text);const body=makeEl('div','greeting-reader-body');
+ const doc=new DOMParser().parseFromString('<div>'+extracted.body+'</div>','text/html');const root=doc.body.firstElementChild;
+ if(root){body.append(sanitizeGreetingNode(root))}else appendActionStyledText(body,extracted.body);
+ target.append(body);const statusPanel=renderGreetingStatus(extracted.status);if(statusPanel)target.append(statusPanel);
 }
 function renderGreetingViews(c,d){
  const box=$('greetingChatMode');if(!box)return;box.replaceChildren();const items=[{label:'默认开场白',text:String(d.first_mes||'').trim()},...(Array.isArray(d.alternate_greetings)?d.alternate_greetings.map((v,i)=>({label:'备选开场白 '+(i+1),text:greetingText(v)})):[])].filter(x=>x.text);
  if(!items.length)box.append(makeEl('div','panel muted','这张角色卡没有开场白内容。'));
- items.forEach(item=>{const row=makeEl('div','chat-greeting');const avatar=makeEl('img','chat-greeting-avatar');avatar.alt='';avatar.src=objectURLFor(c.blob);const main=makeEl('div','chat-greeting-main');main.append(makeEl('div','chat-greeting-name',(d.name||'角色')+' · '+item.label));const bubble=makeEl('div','chat-greeting-bubble');appendParsedGreeting(bubble,item.text);main.append(bubble);row.append(avatar,main);box.append(row)});
- $('greetingPlainMode').classList.toggle('hidden',greetingChatMode);box.classList.toggle('hidden',!greetingChatMode);const toggle=$('greetingModeBtn');if(toggle){toggle.textContent=greetingChatMode?'📄 纯文本模式':'💭 拟真气泡预览';toggle.setAttribute('aria-pressed',String(greetingChatMode))}
+ items.forEach(item=>{const card=makeEl('article','greeting-reader-card');card.append(makeEl('div','greeting-reader-label',(d.name||'角色')+' · '+item.label));renderImmersiveBody(card,item.text);box.append(card)});
+ $('greetingPlainMode').classList.toggle('hidden',greetingChatMode);box.classList.toggle('hidden',!greetingChatMode);const toggle=$('greetingModeBtn');if(toggle){toggle.textContent=greetingChatMode?'📄 原始纯文本':'📖 沉浸阅读排版';toggle.setAttribute('aria-pressed',String(greetingChatMode))}
 }
-function cleanUniversalText(value,name){return String(value??'').replace(/\{\{\s*char\s*\}\}|<BOT>/gi,name).replace(/\{\{\s*user\s*\}\}|<USER>/gi,'你').replace(/<START>|<END>|<SYSTEM>|<\/SYSTEM>|<\/START>/gi,'').replace(/```[\s\S]*?```/g,'').replace(/\n{3,}/g,'\n\n').trim()}
-async function exportUniversalPrompt(){const c=cardCache.find(x=>x.id===currentId);if(!c)return;const d=getData(c),name=d.name||'未命名角色';const section=(title,value)=>`## ${title}\n\n${cleanUniversalText(value,name)||'（原卡未提供）'}\n\n`;const prompt=`# ${name}｜通用角色人设\n\n请你扮演以下角色，并以自然、连贯的方式与我对话。请保留角色的个性与背景，不要输出系统说明。\n\n${section('角色身份',`角色名称：${name}\n${d.description||''}`)}${section('性格特质',d.personality)}${section('背景故事与场景',d.scenario)}${section('开场第一句话',d.first_mes)}`;try{await copyText(prompt);notify('已复制通用人设，可直接粘贴给 ChatGPT / Claude 对话')}catch{const area=makeEl('textarea','');area.value=prompt;area.style.cssText='position:fixed;inset:10%;width:80%;height:70%;z-index:130';document.body.append(area);area.focus();area.select();notify('无法自动复制，已打开文本供手动复制')}}
 async function toggleFavorite(id){const c=cardCache.find(x=>x.id===id);if(!c)return;c.favorite=!c.favorite;try{await saveCard(c);renderList();if(currentId===id){const b=$('detailFavoriteBtn');if(b){b.textContent=c.favorite?'★':'☆';b.classList.toggle('is-favorite',c.favorite);b.setAttribute('aria-pressed',String(c.favorite));b.setAttribute('aria-label',c.favorite?'取消收藏':'收藏角色')}}const filter=$('favoriteOnlyBtn');if(filter){filter.setAttribute('aria-pressed',String(favoriteOnly));filter.textContent=favoriteOnly?'★ 正在仅看收藏':'★ 仅看收藏'}notify(c.favorite?'已加入收藏':'已取消收藏')}catch(e){c.favorite=!c.favorite;notify('收藏状态保存失败：'+(e?.message||String(e)))}}
 function openLightbox(){const c=cardCache.find(x=>x.id===currentId);if(!c)return;const root=$('lightboxRoot');$('lightboxImage').src=objectURLFor(c.blob);$('lightboxCaption').textContent=(getData(c).name||'角色')+' · 原始 PNG';root.classList.remove('hidden');$('lightboxClose').focus()}
 function closeLightbox(){$('lightboxRoot').classList.add('hidden');$('lightboxImage').removeAttribute('src')}
@@ -856,7 +886,6 @@ $('loreCopySelected').onclick=async()=>{const indices=[...selectedLore].filter(i
 $('mobileImport')?.addEventListener('click',triggerUpload);$('filePicker').addEventListener('change',e=>{const chosen=Array.from(e.target.files||[]);if(!chosen.length)return;importPNGs(chosen).catch(err=>{showNotice('导入过程中发生错误：'+(err?.message||String(err)));console.error(err)})});$('menuBtn')?.addEventListener('click',openDrawer);$('mobileBackdrop').onclick=closeDrawer;$('searchInput').addEventListener('input',()=>{renderList()});$('tagFilter').addEventListener('change',renderList);$('sortSelect').addEventListener('change',renderList);$('categoryBtn').onclick=()=>{const c=cardCache.find(x=>x.id===currentId);if(c)openEditModal(c,true);else notify('请先选择一张角色卡')};$('editBtn').onclick=()=>{const c=cardCache.find(x=>x.id===currentId);if(c)openEditModal(c,false)};$('exportOne').onclick=()=>{const c=cardCache.find(x=>x.id===currentId);if(c)downloadJSON({format:'TavernLiteCharacterCardExport',version:1,card:{id:c.id,data:c.data,category:c.category||'',customTags:c.customTags||[],time:c.time}},safeName(getData(c).name)+'-metadata.json')};$('exportBackup').onclick=exportBackup;$('importBackup').onclick=()=>$('backupPicker').click();$('backupPicker').addEventListener('change',e=>{const f=e.target.files?.[0];if(f)restoreBackup(f)});document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));$('copyRaw').onclick=async()=>{try{await navigator.clipboard.writeText($('rawJson').textContent);notify('已复制 JSON')}catch{notify('复制失败，请手动选择文本')}};$('downloadRaw').onclick=()=>{const c=cardCache.find(x=>x.id===currentId);if(c)downloadJSON(c.data,safeName(getData(c).name)+'-raw.json')};
 $('favoriteOnlyBtn')?.addEventListener('click',()=>{favoriteOnly=!favoriteOnly;$('favoriteOnlyBtn').setAttribute('aria-pressed',String(favoriteOnly));$('favoriteOnlyBtn').textContent=favoriteOnly?'★ 正在仅看收藏':'★ 仅看收藏';renderList()});
 $('detailFavoriteBtn')?.addEventListener('click',()=>{if(currentId)toggleFavorite(currentId)});
-$('universalPromptBtn')?.addEventListener('click',exportUniversalPrompt);
 $('detailAvatar')?.addEventListener('click',openLightbox);$('detailAvatar')?.setAttribute('role','button');$('detailAvatar')?.setAttribute('tabindex','0');$('detailAvatar')?.setAttribute('title','点击查看原画大图');$('detailAvatar')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openLightbox()}});
 $('lightboxClose')?.addEventListener('click',closeLightbox);$('lightboxSave')?.addEventListener('click',()=>{const c=cardCache.find(x=>x.id===currentId);if(c)downloadBlob(c.blob,safeName(getData(c).name)+'-原图.png')});$('lightboxRoot')?.addEventListener('click',e=>{if(e.target===$('lightboxRoot'))closeLightbox()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('lightboxRoot').classList.contains('hidden'))closeLightbox()});
 $('greetingModeBtn')?.addEventListener('click',()=>{greetingChatMode=!greetingChatMode;const c=cardCache.find(x=>x.id===currentId);if(c)renderGreetingViews(c,getData(c))});
