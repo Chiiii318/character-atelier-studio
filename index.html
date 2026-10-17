@@ -507,6 +507,28 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 .greeting-reader-card .greeting-regex-note{width:100%;box-sizing:border-box;flex:none}
 @media(max-width:760px){#page-characters .library-toolbar-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-characters .library-toolbar-action-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-characters .library-toolbar-import-row #newImportAction{min-height:46px!important}#page-characters .library-toolbar-action-row #favoriteOnlyBtn,#page-characters .library-toolbar-action-row #batchModeBtn,#page-characters .library-toolbar-action-row #exportBackup,#page-characters .library-toolbar-action-row #importBackup{font-size:12px!important;min-height:42px!important}#page-characters .library-toolbar-batch-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
+
+<style id="greeting-per-item-redesign">
+.greeting-toolbar{display:none!important}
+#greetingPlainMode{display:grid;gap:12px}
+#greetingPlainMode>.panel{display:none!important}
+#greetingPlainMode>.entry-grid{display:none!important}
+#greetingChatMode{display:grid;gap:12px}
+.greeting-reader-card{padding:14px!important;overflow:hidden}
+.greeting-reader-label{font-size:13px!important;line-height:1.45!important;margin:0!important;flex:1;min-width:0}
+.greeting-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.greeting-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.greeting-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:10px;background:#f7faf8;color:var(--accent-dark);cursor:pointer}
+.greeting-icon-btn svg{width:17px;height:17px;display:block}
+.greeting-icon-btn:active{transform:scale(.96)}
+.greeting-raw-preview{font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);max-height:240px;overflow:hidden;position:relative}
+.greeting-reader-card .greeting-regex-note{font-size:12px;line-height:1.5}
+.greeting-preview-modal{width:min(980px,100%);max-width:980px}
+.greeting-preview-modal .greeting-regex-frame{height:70dvh!important;min-height:320px!important;max-height:75dvh}
+.greeting-preview-modal .greeting-reader-body{font-size:14px;line-height:1.8}
+@media(max-width:760px){.greeting-card-top{align-items:center}.greeting-icon-btn{width:32px;height:32px}.greeting-raw-preview{font-size:14px;line-height:1.8}.greeting-preview-modal .greeting-regex-frame{height:68dvh!important;min-height:300px!important;max-height:72dvh}}
+</style>
+
 </head>
 <body>
 <svg aria-hidden="true" height="0" style="position:absolute" width="0">
@@ -604,7 +626,7 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 <div class="panel"><div class="panel-title">性格 Personality</div><div class="content-text" id="detailPersonality"></div></div>
 <div class="panel"><div class="panel-title">场景设定 Scenario</div><div class="content-text" id="detailScenario"></div></div>
 </section>
-<section class="tab-panel hidden" id="panel-greetings"><div class="greeting-toolbar"><button type="button" class="btn btn-soft btn-small" id="greetingModeBtn" aria-pressed="false"><svg aria-hidden="true" class="inline-icon"><use href="#i-book"></use></svg> 沉浸阅读排版</button><button type="button" class="btn btn-soft btn-small" id="greetingRegexBtn" aria-pressed="false"><svg aria-hidden="true" class="inline-icon"><use href="#i-file"></use></svg> 运行卡内正则美化</button></div><div id="greetingPlainMode"><div class="panel"><div class="panel-title">默认第一句话 First Message</div><div class="content-text" id="detailFirstMes"></div></div><div class="entry-grid" id="altGreetingsBox"></div></div><div class="entry-grid hidden" id="greetingChatMode"></div></section>
+<section class="tab-panel hidden" id="panel-greetings"><div id="greetingPlainMode"><div class="panel"><div class="panel-title">默认第一句话 First Message</div><div class="content-text" id="detailFirstMes"></div></div><div class="entry-grid" id="altGreetingsBox"></div></div><div class="entry-grid hidden" id="greetingChatMode"></div></section>
 <section class="tab-panel hidden" id="panel-lorebook">
 <div class="lore-toolbar">
 <input aria-label="搜索世界书条目" class="search" id="loreSearch" placeholder="搜索条目名、关键词、正文…" type="search"/>
@@ -897,7 +919,7 @@ function applyCardRegexScripts(text,d){
 function looksLikeExecutableHtml(text){return /<!doctype\s+html|<html\b|<head\b|<body\b|<script\b|<style\b|<iframe\b|<audio\b|<video\b|<canvas\b|<div\b[^>]*(?:style|class|id)=|<(?:main|section|article|header|footer|nav|table)\b/i.test(String(text||''))}
 function buildRegexSandboxDocument(text){
  let html=stripHtmlCodeFences(String(text??''));
- const responsiveStyle='<style id="tavern-lite-sandbox-layout">html{margin:0;padding:0;width:100%;max-width:100%;min-height:0;box-sizing:border-box;overflow-x:hidden}body{margin:0;padding:0;width:100%;max-width:100%;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden;overflow-wrap:anywhere}*,*:before,*:after{box-sizing:border-box}img,video,iframe,canvas{max-width:100%;height:auto}body>*{max-width:100%;min-width:0} .pixel-switch{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}html,body{font-size:16px;line-height:1.6}@media(max-width:600px){html,body{font-size:16px}img,video,iframe,canvas{max-width:100%}}</style>';
+ const responsiveStyle='<style id="tavern-lite-sandbox-layout">html{margin:0;padding:0;width:100%;max-width:100%;min-height:0;box-sizing:border-box;overflow-x:hidden}body{margin:0;padding:0;width:100%;max-width:100%;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden;overflow-wrap:anywhere}*,*:before,*:after{box-sizing:border-box}img,video,iframe,canvas{max-width:100%;height:auto}body>*{max-width:100%;min-width:0} .pixel-switch{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}html,body{line-height:normal}@media(max-width:600px){img,video,iframe,canvas{max-width:100%}}</style>';
  if(!/<!doctype\s+html|<html\b/i.test(html))html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head><body>'+html+'</body></html>';
  else if(/<head\b[^>]*>/i.test(html))html=html.replace(/<\/head\s*>/i,responsiveStyle+'</head>');
  else html=html.replace(/<html\b[^>]*>/i,m=>m+'<head><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head>');
@@ -920,12 +942,29 @@ function renderRegexGreeting(target,text,d){
   const body=makeEl('div','greeting-reader-body');const extracted=extractGreetingStatus(transformed);const doc=new DOMParser().parseFromString('<div>'+extracted.body+'</div>','text/html');const root=doc.body.firstElementChild;if(root)body.append(sanitizeGreetingNode(root));else appendActionStyledText(body,extracted.body);target.append(body);const status=renderGreetingStatus(extracted.status);if(status)target.append(status);
  }
 }
-function renderGreetingViews(c,d){
- const box=$('greetingChatMode');if(!box)return;box.replaceChildren();const items=[{label:'默认开场白',text:String(d.first_mes||'').trim()},...(Array.isArray(d.alternate_greetings)?d.alternate_greetings.map((v,i)=>({label:'备选开场白 '+(i+1),text:greetingText(v)})):[])].filter(x=>x.text);
- if(!items.length)box.append(makeEl('div','panel muted','这张角色卡没有开场白内容。'));
- items.forEach(item=>{const card=makeEl('article','greeting-reader-card');card.append(makeEl('div','greeting-reader-label',(d.name||'角色')+' · '+item.label));if(greetingRegexMode)renderRegexGreeting(card,item.text,d);else renderImmersiveBody(card,item.text);box.append(card)});
- $('greetingPlainMode').classList.toggle('hidden',greetingChatMode);box.classList.toggle('hidden',!greetingChatMode);const toggle=$('greetingModeBtn');if(toggle){toggle.innerHTML='<svg aria-hidden="true" class="inline-icon"><use href="#i-book"></use></svg> '+(greetingChatMode?'原始纯文本':'沉浸阅读排版');toggle.setAttribute('aria-pressed',String(greetingChatMode))}const regexToggle=$('greetingRegexBtn');if(regexToggle){regexToggle.setAttribute('aria-pressed',String(greetingRegexMode));regexToggle.classList.toggle('btn-primary',greetingRegexMode);regexToggle.classList.toggle('btn-soft',!greetingRegexMode);regexToggle.innerHTML='<svg aria-hidden="true" class="inline-icon"><use href="#i-file"></use></svg> '+(greetingRegexMode?'关闭卡内正则美化':'运行卡内正则美化')}
+function greetingIconButton(kind,label,svgPath,handler){
+ const b=makeEl('button','greeting-icon-btn');b.type='button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+svgPath+'</svg>';b.addEventListener('click',handler);return b;
 }
+function openGreetingPreview(title,text,d,runRegex){
+ const modal=openModal(title,()=>{const wrap=makeEl('div','greeting-preview-modal');wrap.style.minWidth='0';if(runRegex){renderRegexGreeting(wrap,text,d)}else if(looksLikeExecutableHtml(stripHtmlCodeFences(text))){const frame=makeEl('iframe','greeting-regex-frame');frame.title=title;frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.srcdoc=buildRegexSandboxDocument(stripHtmlCodeFences(text));wrap.append(frame)}else{const body=makeEl('div','greeting-reader-body');body.style.fontSize='14px';body.style.lineHeight='1.8';const extracted=extractGreetingStatus(text);const doc=new DOMParser().parseFromString('<div>'+extracted.body+'</div>','text/html');const root=doc.body.firstElementChild;if(root)body.append(sanitizeGreetingNode(root));else appendActionStyledText(body,extracted.body);wrap.append(body);const status=renderGreetingStatus(extracted.status);if(status)wrap.append(status)}return wrap});
+ modal.classList.add('greeting-preview-modal');
+}
+function renderGreetingViews(c,d){
+ const box=$('greetingChatMode');if(!box)return;box.replaceChildren();
+ const items=[{label:'默认开场白',text:String(d.first_mes||'').trim()},...(Array.isArray(d.alternate_greetings)?d.alternate_greetings.map((v,i)=>({label:'备选开场白 '+(i+1),text:greetingText(v)})):[])].filter(x=>x.text);
+ if(!items.length){box.append(makeEl('div','panel muted','这张角色卡没有开场白内容。'));return}
+ items.forEach(item=>{
+  const card=makeEl('article','greeting-reader-card');
+  const top=makeEl('div','greeting-card-top');top.append(makeEl('div','greeting-reader-label',(d.name||'角色')+' · '+item.label));
+  const actions=makeEl('div','greeting-card-actions');
+  actions.append(greetingIconButton('copy','复制开场白','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',async()=>{try{await copyText(item.text);notify('已复制开场白')}catch{window.prompt('复制开场白内容：',item.text)}}));
+  actions.append(greetingIconButton('regex','运行正则美化','<path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.1L22 17l-1.9.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/>',()=>openGreetingPreview(item.label+' · 正则美化',item.text,d,true)));
+  if(looksLikeExecutableHtml(stripHtmlCodeFences(item.text)))actions.append(greetingIconButton('immersive','沉浸式阅读','<path d="M3 5h18v14H3z"/><path d="M7 9h10M7 12h10M7 15h6"/>',()=>openGreetingPreview(item.label+' · 沉浸式阅读',item.text,d,false)));
+  top.append(actions);card.append(top);const preview=makeEl('div','greeting-raw-preview');preview.textContent=stripHtmlCodeFences(item.text);card.append(preview);box.append(card);
+ });
+ $('greetingPlainMode').classList.add('hidden');box.classList.remove('hidden');
+}
+
 async function toggleFavorite(id){const c=cardCache.find(x=>x.id===id);if(!c)return;c.favorite=!c.favorite;try{await saveCard(c);renderList();if(currentId===id){const b=$('detailFavoriteBtn');if(b){b.textContent=c.favorite?'★':'☆';b.classList.toggle('is-favorite',c.favorite);b.setAttribute('aria-pressed',String(c.favorite));b.setAttribute('aria-label',c.favorite?'取消收藏':'收藏角色')}}const filter=$('favoriteOnlyBtn');if(filter){filter.setAttribute('aria-pressed',String(favoriteOnly));filter.textContent=favoriteOnly?'★ 正在仅看收藏':'★ 仅看收藏'}notify(c.favorite?'已加入收藏':'已取消收藏')}catch(e){c.favorite=!c.favorite;notify('收藏状态保存失败：'+(e?.message||String(e)))}}
 function openLightbox(){const c=cardCache.find(x=>x.id===currentId);if(!c)return;const root=$('lightboxRoot');$('lightboxImage').src=objectURLFor(c.blob);$('lightboxCaption').textContent=(getData(c).name||'角色')+' · 原始 PNG';root.classList.remove('hidden');$('lightboxClose').focus()}
 function closeLightbox(){$('lightboxRoot').classList.add('hidden');$('lightboxImage').removeAttribute('src')}
@@ -986,7 +1025,7 @@ $('favoriteOnlyBtn')?.addEventListener('click',()=>{favoriteOnly=!favoriteOnly;$
 $('detailFavoriteBtn')?.addEventListener('click',()=>{if(currentId)toggleFavorite(currentId)});
 $('detailAvatar')?.addEventListener('click',openLightbox);$('detailAvatar')?.setAttribute('role','button');$('detailAvatar')?.setAttribute('tabindex','0');$('detailAvatar')?.setAttribute('title','点击查看原画大图');$('detailAvatar')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openLightbox()}});
 $('lightboxClose')?.addEventListener('click',closeLightbox);$('lightboxSave')?.addEventListener('click',()=>{const c=cardCache.find(x=>x.id===currentId);if(c)downloadBlob(c.blob,safeName(getData(c).name)+'-原图.png')});$('lightboxRoot')?.addEventListener('click',e=>{if(e.target===$('lightboxRoot'))closeLightbox()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('lightboxRoot').classList.contains('hidden'))closeLightbox()});
-$('greetingModeBtn')?.addEventListener('click',()=>{greetingChatMode=!greetingChatMode;const c=cardCache.find(x=>x.id===currentId);if(c)renderGreetingViews(c,getData(c))});$('greetingRegexBtn')?.addEventListener('click',()=>{greetingRegexMode=!greetingRegexMode;greetingChatMode=true;const c=cardCache.find(x=>x.id===currentId);if(c)renderGreetingViews(c,getData(c))});window.addEventListener('message',e=>{if(!e.data||e.data.type!=='tavern-lite-frame-height'||!Number.isFinite(Number(e.data.height)))return;document.querySelectorAll('.greeting-regex-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(1,Math.min(12000,Number(e.data.height)))+'px'})});
+window.addEventListener('message',e=>{if(!e.data||e.data.type!=='tavern-lite-frame-height'||!Number.isFinite(Number(e.data.height)))return;document.querySelectorAll('.greeting-regex-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(1,Math.min(12000,Number(e.data.height)))+'px'})});
 openDatabase().then(loadCards).catch(e=>{showNotice('本地数据库无法打开：'+e.message+'。如果你是在 iPhone「文件」App 的预览中打开，请改用 Safari；本地预览环境可能不支持 IndexedDB。')});
 
 })();
