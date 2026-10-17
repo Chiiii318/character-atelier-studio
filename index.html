@@ -422,6 +422,7 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 .library-card{appearance:none;-webkit-appearance:none;cursor:pointer;}
 .library-card:focus-visible{outline:3px solid #91a99a;outline-offset:3px;}
 </style>
+<style id="regex-chevron-fallback-fix">.regex-chevron { display: none !important; }</style>
 </head>
 <body>
 <svg aria-hidden="true" height="0" style="position:absolute" width="0">
@@ -760,8 +761,7 @@ function renderRegexScripts(d){
   const summary=makeEl('summary','regex-summary');
   const title=makeEl('span','regex-title',`正则脚本 ${index+1}：${script.scriptName||'格式美化'}`);
   const excerpt=makeEl('span','regex-summary-text',`匹配：${script.findRegex||'（空）'} · 替换：${script.replaceString||'（空）'}`);
-  const chevron=makeEl('span','regex-chevron','⌄'); chevron.setAttribute('aria-hidden','true');
-  summary.append(title,excerpt,chevron);
+  summary.append(title,excerpt);
   const content=makeEl('div','regex-full-content');
   const actions=makeEl('div','regex-actions');
   const copy=makeEl('button','btn btn-soft btn-small regex-copy','复制脚本内容');copy.type='button';
