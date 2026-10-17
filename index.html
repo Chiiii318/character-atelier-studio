@@ -677,7 +677,8 @@ else if(type==='use-prompt')content='<label>选择模板</label><select><option>
 else content='<label>名称</label><input placeholder="输入名称"><label>描述</label><textarea placeholder="补充说明……"></textarea>';
 $('#modalContent').innerHTML=content;$('#modalBackdrop').classList.add('show');}
 function closeModal(){$('#modalBackdrop').classList.remove('show')}
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav){go(nav.dataset.page);return}const act=e.target.closest('[data-action]');if(act){openModal(act.dataset.action);return}const det=e.target.closest('[data-detail]');if(det){openModal(det.dataset.detail==='world'?'new-entry':'new-character');return}const ent=e.target.closest('.entryhead');if(ent&&!e.target.matches('input')){ent.parentElement.classList.toggle('open');return}const task=e.target.closest('[data-task]');if(task){chosenTask=task.dataset.task;$('#aiPrompt').placeholder='当前类型：'+chosenTask+'。描述你希望生成的内容……';$$('[data-task]').forEach(x=>x.style.borderColor=x===task?'#8ba99a':'var(--line)');toast('已选择：'+chosenTask);return}const tog=e.target.closest('.toggle');if(tog){tog.classList.toggle('on');return}});
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-page]');if(nav){go(nav.dataset.page);if(typeof closeDrawer==='function')closeDrawer();return}
+const act=e.target.closest('[data-action]');if(act){openModal(act.dataset.action);return}const det=e.target.closest('[data-detail]');if(det){openModal(det.dataset.detail==='world'?'new-entry':'new-character');return}const ent=e.target.closest('.entryhead');if(ent&&!e.target.matches('input')){ent.parentElement.classList.toggle('open');return}const task=e.target.closest('[data-task]');if(task){chosenTask=task.dataset.task;$('#aiPrompt').placeholder='当前类型：'+chosenTask+'。描述你希望生成的内容……';$$('[data-task]').forEach(x=>x.style.borderColor=x===task?'#8ba99a':'var(--line)');toast('已选择：'+chosenTask);return}const tog=e.target.closest('.toggle');if(tog){tog.classList.toggle('on');return}});
 $('#closeModal').onclick=closeModal;$('#cancelModal').onclick=closeModal;$('#modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal()});
 $('#saveModal').onclick=()=>{const name=$('#modalContent input:not([type=file])')?.value?.trim();closeModal();toast(name?'已保存为草稿：'+name:'已保存为草稿（演示）')};
 $('#selectAll').onclick=()=>{const boxes=$$('.entrycheck');const all=boxes.every(b=>b.checked);boxes.forEach(b=>b.checked=!all);$('#selectAll').textContent=all?'全选条目':'取消全选';toast(all?'已取消全选':'已选中全部条目')};
@@ -698,7 +699,13 @@ let selectedLore=new Set(), currentLoreEntries=[];
 let batchMode=false; let favoriteOnly=false; let greetingChatMode=false; let greetingRegexMode=false; const selectedCardIds=new Set();
 const $=id=>document.getElementById(id);
 const escText=v=>String(v??'');
-function notify(msg){const t=$('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.add('hidden'),2600)}
+  function notify(msg){
+    const t=$('toast');
+    t.textContent=msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'), 2600);
+  }
 function showNotice(msg){$('notice').textContent=msg;$('notice').classList.remove('hidden')}
 function hideNotice(){$('notice').classList.add('hidden')}
 function openDatabase(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,DB_VERSION);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'})};req.onsuccess=()=>{db=req.result;db.onversionchange=()=>db.close();resolve()};req.onerror=()=>reject(req.error);req.onblocked=()=>reject(new Error('数据库升级被其他页面阻止，请关闭其他角色卡 Hub 页面后重试。'))})}
@@ -1025,7 +1032,7 @@ $('favoriteOnlyBtn')?.addEventListener('click',()=>{favoriteOnly=!favoriteOnly;$
 $('detailFavoriteBtn')?.addEventListener('click',()=>{if(currentId)toggleFavorite(currentId)});
 $('detailAvatar')?.addEventListener('click',openLightbox);$('detailAvatar')?.setAttribute('role','button');$('detailAvatar')?.setAttribute('tabindex','0');$('detailAvatar')?.setAttribute('title','点击查看原画大图');$('detailAvatar')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openLightbox()}});
 $('lightboxClose')?.addEventListener('click',closeLightbox);$('lightboxSave')?.addEventListener('click',()=>{const c=cardCache.find(x=>x.id===currentId);if(c)downloadBlob(c.blob,safeName(getData(c).name)+'-原图.png')});$('lightboxRoot')?.addEventListener('click',e=>{if(e.target===$('lightboxRoot'))closeLightbox()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('lightboxRoot').classList.contains('hidden'))closeLightbox()});
-window.addEventListener('message',e=>{if(!e.data||e.data.type!=='tavern-lite-frame-height'||!Number.isFinite(Number(e.data.height)))return;document.querySelectorAll('.greeting-regex-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(1,Math.min(12000,Number(e.data.height)))+'px'})});
+window.addEventListener('message',e=>{if(!e.data||e.data.type!=='tavern-lite-frame-height'||!Number.isFinite(Number(e.data.height)))return;document.querySelectorAll('.greeting-regex-frame, .greeting-raw-frame').forEach(frame=>{if(frame.contentWindow===e.source)frame.style.height=Math.max(1,Math.min(12000,Number(e.data.height)))+'px'})});
 openDatabase().then(loadCards).catch(e=>{showNotice('本地数据库无法打开：'+e.message+'。如果你是在 iPhone「文件」App 的预览中打开，请改用 Safari；本地预览环境可能不支持 IndexedDB。')});
 
 })();
