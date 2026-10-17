@@ -1,22 +1,19 @@
 # Character Atelier Studio
 
-A personal workspace prototype for organizing character cards, worldbooks, relationships, and creative prompts.
+本项目是一个纯 HTML/CSS/JavaScript 的本地优先角色卡管理原型。
 
-## Current status
+## 当前功能
+- 创建、编辑、删除、搜索角色卡
+- 自动保存在当前浏览器的 localStorage
+- 导入 JSON 角色卡和 SillyTavern 常见 PNG `chara` 元数据
+- 导出单张角色卡 JSON（SillyTavern V2 结构）
+- 导出单张带 `chara` 元数据的 PNG
+- 导出全部角色的本地备份 JSON
 
-- Responsive single-page HTML prototype
-- Light glassmorphism interface
-- Demo interactions for navigation and interface controls
-- Import/export, persistent storage, and AI/API calls are not implemented yet; related controls are prototypes only
+## 使用
+直接打开 `index.html`，或将文件上传到 GitHub 仓库根目录，让 Cloudflare Pages 自动部署。
 
-## Run locally
-
-Open `index.html` in a modern web browser.
-
-## Deploy with Cloudflare Pages
-
-Create a Pages project connected to this GitHub repository. For this static HTML prototype, use no build command and set the output directory to the repository root (`/` or `.` depending on the dashboard's accepted value).
-
-## Security
-
-A private GitHub repository does not automatically make a deployed website private. Configure Cloudflare Access separately if the site should only be accessible to you. Never commit API keys, tokens, or other secrets.
+## 注意
+- 数据保存在当前浏览器，不会自动同步到其他设备；请定期导出备份。
+- PNG 元数据兼容覆盖常见 `tEXt` `chara` 形式；部分特殊压缩/非标准 PNG 元数据仍可能无法导入。
+- 不包含任何 API Key，也没有连接 AI 服务。
