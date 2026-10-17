@@ -511,8 +511,6 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 <style id="greeting-per-item-redesign">
 .greeting-toolbar{display:none!important}
 #greetingPlainMode{display:grid;gap:12px}
-#greetingPlainMode>.panel{display:none!important}
-#greetingPlainMode>.entry-grid{display:none!important}
 #greetingChatMode{display:grid;gap:12px}
 .greeting-reader-card{padding:14px!important;overflow:hidden}
 .greeting-reader-label{font-size:13px!important;line-height:1.45!important;margin:0!important;flex:1;min-width:0}
@@ -919,7 +917,7 @@ function applyCardRegexScripts(text,d){
 function looksLikeExecutableHtml(text){return /<!doctype\s+html|<html\b|<head\b|<body\b|<script\b|<style\b|<iframe\b|<audio\b|<video\b|<canvas\b|<div\b[^>]*(?:style|class|id)=|<(?:main|section|article|header|footer|nav|table)\b/i.test(String(text||''))}
 function buildRegexSandboxDocument(text){
  let html=stripHtmlCodeFences(String(text??''));
- const responsiveStyle='<style id="tavern-lite-sandbox-layout">html{margin:0;padding:0;width:100%;max-width:100%;min-height:0;box-sizing:border-box;overflow-x:hidden}body{margin:0;padding:0;width:100%;max-width:100%;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden;overflow-wrap:anywhere}*,*:before,*:after{box-sizing:border-box}img,video,iframe,canvas{max-width:100%;height:auto}body>*{max-width:100%;min-width:0} .pixel-switch{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}html,body{line-height:normal}@media(max-width:600px){img,video,iframe,canvas{max-width:100%}}</style>';
+ const responsiveStyle='<style id="tavern-lite-sandbox-layout">html{margin:0;padding:0;width:100%;max-width:100%;min-height:0;box-sizing:border-box;overflow-x:hidden}body{margin:0;padding:0;width:100%;max-width:100%;min-width:0;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden;overflow-wrap:anywhere}*,*:before,*:after{box-sizing:border-box;max-width:100%}img,video,iframe,canvas,table{max-width:100%;height:auto}body>*{max-width:100%!important;min-width:0!important} .pixel-switch{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}html,body{line-height:normal}@media(max-width:600px){img,video,iframe,canvas{max-width:100%}}</style>';
  if(!/<!doctype\s+html|<html\b/i.test(html))html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head><body>'+html+'</body></html>';
  else if(/<head\b[^>]*>/i.test(html))html=html.replace(/<\/head\s*>/i,responsiveStyle+'</head>');
  else html=html.replace(/<html\b[^>]*>/i,m=>m+'<head><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head>');
@@ -935,18 +933,20 @@ function stripHtmlCodeFences(value){
 }
 function renderRegexGreeting(target,text,d){
  const transformed=stripHtmlCodeFences(applyCardRegexScripts(text,d));
- const note=makeEl('div','greeting-regex-note','正则美化内容运行在隔离沙盒中；卡片内脚本无法访问工作台本身。');target.append(note);
+ target.style.cssText='display:block;width:100%;min-width:0;max-width:100%;overflow-x:hidden;box-sizing:border-box';
  if(looksLikeExecutableHtml(transformed)){
-  const frame=makeEl('iframe','greeting-regex-frame');frame.setAttribute('title','角色卡正则美化预览');frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.srcdoc=buildRegexSandboxDocument(transformed);target.append(frame);
+  const frame=makeEl('iframe','greeting-regex-frame');frame.setAttribute('title','正则美化后的开场白');frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.style.cssText='display:block;width:100%;max-width:100%;height:70dvh;min-height:320px;border:0;border-radius:12px;background:#fff;box-sizing:border-box';frame.srcdoc=buildRegexSandboxDocument(transformed);target.append(frame);
  }else{
-  const body=makeEl('div','greeting-reader-body');const extracted=extractGreetingStatus(transformed);const doc=new DOMParser().parseFromString('<div>'+extracted.body+'</div>','text/html');const root=doc.body.firstElementChild;if(root)body.append(sanitizeGreetingNode(root));else appendActionStyledText(body,extracted.body);target.append(body);const status=renderGreetingStatus(extracted.status);if(status)target.append(status);
+  const body=makeEl('div','greeting-reader-body');body.style.cssText='display:block;width:100%;max-width:100%;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;font-size:16px;line-height:1.8;box-sizing:border-box';
+  const extracted=extractGreetingStatus(transformed);body.textContent=extracted.body;target.append(body);
+  const status=renderGreetingStatus(extracted.status);if(status)target.append(status);
  }
 }
 function greetingIconButton(kind,label,svgPath,handler){
  const b=makeEl('button','greeting-icon-btn');b.type='button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+svgPath+'</svg>';b.addEventListener('click',handler);return b;
 }
 function openGreetingPreview(title,text,d,runRegex){
- const modal=openModal(title,()=>{const wrap=makeEl('div','greeting-preview-modal');wrap.style.minWidth='0';if(runRegex){renderRegexGreeting(wrap,text,d)}else if(looksLikeExecutableHtml(stripHtmlCodeFences(text))){const frame=makeEl('iframe','greeting-regex-frame');frame.title=title;frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.srcdoc=buildRegexSandboxDocument(stripHtmlCodeFences(text));wrap.append(frame)}else{const body=makeEl('div','greeting-reader-body');body.style.fontSize='14px';body.style.lineHeight='1.8';const extracted=extractGreetingStatus(text);const doc=new DOMParser().parseFromString('<div>'+extracted.body+'</div>','text/html');const root=doc.body.firstElementChild;if(root)body.append(sanitizeGreetingNode(root));else appendActionStyledText(body,extracted.body);wrap.append(body);const status=renderGreetingStatus(extracted.status);if(status)wrap.append(status)}return wrap});
+ const modal=openModal(title,()=>{const wrap=makeEl('div','greeting-preview-modal');wrap.style.cssText='display:block;width:100%;max-width:100%;min-width:0;overflow-x:hidden;box-sizing:border-box';if(runRegex){renderRegexGreeting(wrap,text,d)}else if(looksLikeExecutableHtml(stripHtmlCodeFences(text))){const frame=makeEl('iframe','greeting-regex-frame');frame.title=title;frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.style.cssText='display:block;width:100%;max-width:100%;height:70dvh;min-height:320px;border:0;border-radius:12px;background:#fff;box-sizing:border-box';frame.srcdoc=buildRegexSandboxDocument(stripHtmlCodeFences(text));wrap.append(frame)}else{const body=makeEl('div','greeting-reader-body');body.style.cssText='display:block;width:100%;max-width:100%;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.8;box-sizing:border-box';const extracted=extractGreetingStatus(text);body.textContent=extracted.body;wrap.append(body);const status=renderGreetingStatus(extracted.status);if(status)wrap.append(status)}return wrap});
  modal.classList.add('greeting-preview-modal');
 }
 function renderGreetingViews(c,d){
