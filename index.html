@@ -521,12 +521,12 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 .greeting-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:10px;background:#f7faf8;color:var(--accent-dark);cursor:pointer}
 .greeting-icon-btn svg{width:17px;height:17px;display:block}
 .greeting-icon-btn:active{transform:scale(.96)}
-.greeting-raw-preview{font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);max-height:240px;overflow:hidden;position:relative}
+.greeting-raw-preview{font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);max-height:none;height:auto;overflow:visible;position:relative}.greeting-raw-frame{display:block;width:100%;height:62dvh;min-height:360px;max-height:760px;border:0;border-radius:12px;background:#fff;overflow:auto}.greeting-raw-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:none;overflow:visible}
 .greeting-reader-card .greeting-regex-note{font-size:12px;line-height:1.5}
 .greeting-preview-modal{width:min(980px,100%);max-width:980px}
 .greeting-preview-modal .greeting-regex-frame{height:70dvh!important;min-height:320px!important;max-height:75dvh}
-.greeting-preview-modal .greeting-reader-body{font-size:14px;line-height:1.8}
-@media(max-width:760px){.greeting-card-top{align-items:center}.greeting-icon-btn{width:32px;height:32px}.greeting-raw-preview{font-size:14px;line-height:1.8}.greeting-preview-modal .greeting-regex-frame{height:68dvh!important;min-height:300px!important;max-height:72dvh}}
+.greeting-preview-modal .greeting-reader-body{font-size:14px;line-height:1.8;max-height:none;overflow:visible}.greeting-preview-modal{max-height:calc(90dvh - 50px);overflow:auto}
+@media(max-width:760px){.greeting-card-top{align-items:center}.greeting-icon-btn{width:32px;height:32px}.greeting-raw-preview{font-size:14px;line-height:1.8;max-height:none;overflow:visible}.greeting-raw-frame{height:62dvh;min-height:320px}.greeting-preview-modal .greeting-regex-frame{height:68dvh!important;min-height:300px!important;max-height:72dvh}}
 </style>
 
 </head>
@@ -960,7 +960,7 @@ function renderGreetingViews(c,d){
   actions.append(greetingIconButton('copy','复制开场白','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',async()=>{try{await copyText(item.text);notify('已复制开场白')}catch{window.prompt('复制开场白内容：',item.text)}}));
   actions.append(greetingIconButton('regex','运行正则美化','<path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.1L22 17l-1.9.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/>',()=>openGreetingPreview(item.label+' · 正则美化',item.text,d,true)));
   if(looksLikeExecutableHtml(stripHtmlCodeFences(item.text)))actions.append(greetingIconButton('immersive','沉浸式阅读','<path d="M3 5h18v14H3z"/><path d="M7 9h10M7 12h10M7 15h6"/>',()=>openGreetingPreview(item.label+' · 沉浸式阅读',item.text,d,false)));
-  top.append(actions);card.append(top);const preview=makeEl('div','greeting-raw-preview');preview.textContent=stripHtmlCodeFences(item.text);card.append(preview);box.append(card);
+  top.append(actions);card.append(top);const cleanText=stripHtmlCodeFences(item.text);if(looksLikeExecutableHtml(cleanText)){const frame=makeEl('iframe','greeting-raw-frame');frame.title=item.label+' · 普通阅读';frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups');frame.referrerPolicy='no-referrer';frame.srcdoc=buildRegexSandboxDocument(cleanText);card.append(frame)}else{const preview=makeEl('div','greeting-raw-preview greeting-raw-text');preview.textContent=cleanText;card.append(preview)}box.append(card);
  });
  $('greetingPlainMode').classList.add('hidden');box.classList.remove('hidden');
 }
