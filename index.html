@@ -503,7 +503,7 @@ html{scroll-behavior:smooth;scroll-padding-top:18px}body{background:var(--bg)!im
 .greeting-reader-card{display:flex!important;flex-direction:column!important;align-items:stretch!important;width:100%!important;min-width:0!important;box-sizing:border-box!important}
 .greeting-reader-body{display:block!important;flex:none!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;line-height:1.85!important;overflow-wrap:anywhere!important}
 .greeting-reader-body p{display:block!important;width:100%!important;margin:0 0 1em 0!important;line-height:1.85!important}
-.greeting-regex-frame{display:block!important;flex:none!important;width:100%!important;max-width:100%!important;height:1px;min-height:0!important;margin:12px 0 0!important;padding:0!important;border:0!important;border-radius:16px!important;overflow:hidden!important;box-sizing:border-box!important;align-self:stretch!important}
+.greeting-regex-frame{display:block!important;flex:none!important;width:100%!important;max-width:100%!important;height:480px;min-height:0!important;margin:12px 0 0!important;padding:0!important;border:0!important;border-radius:16px!important;overflow:hidden!important;box-sizing:border-box!important;align-self:stretch!important}
 .greeting-reader-card .greeting-regex-note{width:100%;box-sizing:border-box;flex:none}
 @media(max-width:760px){#page-characters .library-toolbar-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-characters .library-toolbar-action-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-characters .library-toolbar-import-row #newImportAction{min-height:46px!important}#page-characters .library-toolbar-action-row #favoriteOnlyBtn,#page-characters .library-toolbar-action-row #batchModeBtn,#page-characters .library-toolbar-action-row #exportBackup,#page-characters .library-toolbar-action-row #importBackup{font-size:12px!important;min-height:42px!important}#page-characters .library-toolbar-batch-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
@@ -894,10 +894,10 @@ function applyCardRegexScripts(text,d){
  for(const script of scripts){if(!script||script.disabled===true||!script.findRegex)continue;try{const parsed=parseCardRegex(script.findRegex);let flags=parsed.flags||'g';if(!flags.includes('g'))flags+='g';const re=new RegExp(parsed.source,flags);let replacement=String(script.replaceString??'');replacement=replacement.replace(/\{\{char\}\}/g,String(d.name||'角色')).replace(/\{\{user\}\}/g,'你');output=output.replace(re,replacement)}catch(err){console.warn('跳过无法解析的卡片正则脚本：',script.scriptName||script.findRegex,err)}}
  return output;
 }
-function looksLikeExecutableHtml(text){return /<!doctype\s+html|<html\b|<script\b|<style\b|<iframe\b|<audio\b|<video\b|<canvas\b/i.test(String(text||''))}
+function looksLikeExecutableHtml(text){return /<!doctype\s+html|<html\b|<head\b|<body\b|<script\b|<style\b|<iframe\b|<audio\b|<video\b|<canvas\b|<div\b[^>]*(?:style|class|id)=|<(?:main|section|article|header|footer|nav|table)\b/i.test(String(text||''))}
 function buildRegexSandboxDocument(text){
  let html=stripHtmlCodeFences(String(text??''));
- const responsiveStyle='<style id="tavern-lite-sandbox-layout">html,body{margin:0;padding:0;width:100%;max-width:100%;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden}*,*:before,*:after{box-sizing:border-box;max-width:100%}img,video,iframe,canvas{max-width:100%;height:auto}body{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:0!important;overflow-wrap:anywhere}body>div,body>main,body>section,body>article,body>header,body>footer,body>table,body>pre{display:block!important;position:relative;float:none!important;clear:both!important;width:100%!important;max-width:100%!important;min-width:0!important;margin-left:0!important;margin-right:0!important}body>.pixel-switch,body .pixel-switch{display:block!important;float:none!important;clear:both!important;width:min(100%,720px)!important;max-width:100%!important;margin:16px auto!important}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>';
+ const responsiveStyle='<style id="tavern-lite-sandbox-layout">html{margin:0;padding:0;width:100%;max-width:100%;min-height:0;box-sizing:border-box;overflow-x:hidden}body{margin:0;padding:0;width:100%;max-width:100%;min-height:0;height:auto;box-sizing:border-box;overflow-x:hidden;overflow-wrap:anywhere}*,*:before,*:after{box-sizing:border-box}img,video,iframe,canvas{max-width:100%;height:auto}body>*{max-width:100%;min-width:0} .pixel-switch{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}html,body{font-size:16px;line-height:1.6}@media(max-width:600px){html,body{font-size:16px}img,video,iframe,canvas{max-width:100%}}</style>';
  if(!/<!doctype\s+html|<html\b/i.test(html))html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head><body>'+html+'</body></html>';
  else if(/<head\b[^>]*>/i.test(html))html=html.replace(/<\/head\s*>/i,responsiveStyle+'</head>');
  else html=html.replace(/<html\b[^>]*>/i,m=>m+'<head><meta name="viewport" content="width=device-width,initial-scale=1">'+responsiveStyle+'</head>');
@@ -908,6 +908,7 @@ function buildRegexSandboxDocument(text){
 function stripHtmlCodeFences(value){
  let text=String(value??'').trim();
  text=text.replace(/^\s*```(?:html|htm|xhtml)?\s*\r?\n/i,'').replace(/\r?\n\s*```\s*$/,'');
+ text=text.replace(/(^|\n)\s*```(?:html|htm|xhtml)?\s*(?=\n)/gi,'$1').replace(/(^|\n)\s*```\s*(?=\n|$)/g,'$1');
  return text;
 }
 function renderRegexGreeting(target,text,d){
