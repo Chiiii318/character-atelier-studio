@@ -1,0 +1,532 @@
+/* ================================================================
+   netease.css — 网易云音乐播放器（生活切片子页面）
+   ================================================================ */
+
+#page-netease {
+  padding: 0 !important;
+}
+
+.ne-device {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: calc(100dvh - 54px);
+  background: var(--soft);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 返回导航条 */
+.ne-back-bar {
+  height: 44px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 60;
+}
+.ne-back-bar span {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* 底部 TabBar */
+.ne-tabbar {
+  height: 52px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ne-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #999;
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+.ne-tab.active { color: #EC4141; font-weight: 600; }
+
+/* Tab 页面容器 */
+.ne-views {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.ne-view {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  display: none;
+  padding-bottom: 70px;
+  background: var(--soft);
+  -webkit-overflow-scrolling: touch;
+}
+.ne-view.active { display: block; }
+
+/* 悬浮 Mini 播放条 */
+.ne-mini-bar {
+  position: absolute;
+  bottom: 56px;
+  left: 12px;
+  right: 12px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(25px);
+  border-radius: 26px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  z-index: 45;
+  cursor: pointer;
+}
+.ne-mini-disc {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  animation: neSpinDisc 20s linear infinite;
+  flex-shrink: 0;
+}
+.ne-mini-disc img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.ne-mini-info {
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ne-mini-info .artist { color: #888; font-size: 12px; margin-left: 4px; }
+.ne-mini-btn {
+  background: none;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* 全屏播放器 */
+.ne-full-player {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
+  overflow: hidden;
+}
+.ne-full-player.open { transform: translateY(0); }
+
+/* 动态模糊背景 */
+.ne-blur-bg {
+  position: absolute;
+  inset: -30%;
+  width: 160%;
+  height: 160%;
+  object-fit: cover;
+  filter: blur(85px) brightness(0.42) saturate(1.45);
+  z-index: 0;
+  pointer-events: none;
+}
+.ne-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 36%, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 75%, rgba(0,0,0,0.7) 100%);
+  z-index: 1;
+}
+.ne-player-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  padding-bottom: 12px;
+}
+
+/* 播放器顶栏 */
+.ne-player-nav {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ne-player-nav-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ne-player-nav-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+}
+
+/* 黑胶舞台 */
+.ne-vinyl-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  min-height: 300px;
+}
+
+/* 唱针 */
+.ne-tonearm {
+  position: absolute;
+  top: -14px;
+  left: calc(50% - 14px);
+  width: 130px;
+  height: 190px;
+  z-index: 25;
+  pointer-events: none;
+  transform-origin: 15px 15px;
+  transform: rotate(0deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+.ne-full-player.paused .ne-tonearm { transform: rotate(-33deg); }
+
+.ne-tonearm-pivot {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 28;
+}
+.ne-tonearm-pivot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+}
+
+/* 黑胶碟 */
+.ne-vinyl-disc {
+  width: 270px;
+  height: 270px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #121212 0%, #090909 60%, #181818 84%, #262626 97%, #020202 100%);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: neSpinDisc 24s linear infinite;
+}
+.ne-full-player.paused .ne-vinyl-disc,
+.ne-device.paused .ne-mini-disc {
+  animation-play-state: paused;
+}
+@keyframes neSpinDisc { 100% { transform: rotate(360deg); } }
+
+.ne-disc-art {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #000;
+}
+.ne-disc-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 歌词视图 */
+.ne-lyrics-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  text-align: center;
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.ne-lyrics-view.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.ne-vinyl-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.ne-vinyl-view.hidden {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+
+.ne-lyric-row {
+  font-size: 16px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 14px;
+  transition: all 0.3s;
+}
+.ne-lyric-row.current {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(255,255,255,0.3);
+}
+
+/* 底部控制区 */
+.ne-lower {
+  padding: 0 24px 8px;
+}
+.ne-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.ne-song-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ne-artist-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 3px;
+}
+.ne-badge-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.ne-badge-btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.ne-heart-count {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #FF3A3A;
+  position: absolute;
+  top: -2px;
+  left: 100%;
+  margin-left: -8px;
+  white-space: nowrap;
+}
+
+/* 进度条 */
+.ne-progress-wrap { margin-bottom: 20px; }
+.ne-progress-track {
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.ne-progress-rail {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  background: rgba(255,255,255,0.22);
+  border-radius: 2px;
+}
+.ne-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3.5%;
+  background: rgba(255,255,255,0.85);
+  border-radius: 2px;
+}
+.ne-progress-knob {
+  position: absolute;
+  left: 3.5%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(0,0,0,0.6);
+}
+.ne-time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  margin-top: 3px;
+}
+
+/* 5 键控制条 */
+.ne-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 6px;
+}
+.ne-ctrl-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.ne-ctrl-btn:active { transform: scale(0.88); opacity: 0.65; }
+.ne-play-big {
+  width: 48px;
+  height: 48px;
+}
+
+/* 首页推荐内容 */
+.ne-home-header {
+  padding: 10px 18px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ne-home-tabs {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: #888;
+}
+.ne-home-tabs span.active {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  position: relative;
+}
+.ne-home-tabs span.active::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 15%;
+  width: 70%;
+  height: 3px;
+  background: #EC4141;
+  border-radius: 2px;
+}
+.ne-playlist-scroll {
+  display: flex;
+  gap: 12px;
+  padding: 10px 18px;
+  overflow-x: auto;
+}
+.ne-playlist-scroll::-webkit-scrollbar { display: none; }
+.ne-playlist-item {
+  width: 110px;
+  flex-shrink: 0;
+}
+.ne-playlist-item img {
+  width: 110px;
+  height: 110px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.ne-playlist-item p {
+  font-size: 12px;
+  color: #333;
+  margin-top: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+.ne-section-title {
+  padding: 12px 18px 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Toast */
+.ne-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(12px);
+  padding: 10px 20px;
+  border-radius: 22px;
+  font-size: 13px;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 200;
+}
+.ne-toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
