@@ -1,533 +1,170 @@
-
+/* ================================================================
+   netease.css — UI/UX Pro Max 官方一比一真机像素级规范
+   - 完美适配手机全屏 100dvh，绝不压扁
+   - 二级歌单平滑滑入 + 动态封面取色环境光
+   - 彻底消灭任何源码裸露字符
+   ================================================================ */
 
 #page-netease {
   padding: 0 !important;
-}#page-netease .app-device{
-  position: relative;
-  width: 100%;
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: calc(100dvh - 54px);
-  background: #F3F6F9;
+  margin: 0 !important;
+  width: 100vw;
+  height: 100dvh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}#page-netease .ne-back-bar{
-  height: 44px;
-  background: #fff;
-  border-bottom: 1px solid #E4E7EC;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  gap: 10px;
-  flex-shrink: 0;
-  z-index: 60;
-}#page-netease .ne-back-bar span{
-  font-size: 15px;
-  font-weight: 700;
-  color: #171824;
-}#page-netease .bottom-tabbar{
-  height: 52px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex-shrink: 0;
-}#page-netease .tab-item{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #999;
-  font-size: 10.5px;
-  font-weight: 500;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 4px;
-}#page-netease .tab-item.active{ color: #EC4141; font-weight: 600; }#page-netease .main-views{
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}#page-netease .tab-page{
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  display: none;
-  padding-bottom: 70px;
-  background: #F3F6F9;
-  -webkit-overflow-scrolling: touch;
-}#page-netease .tab-page.active{ display: block; }#page-netease .mini-player-bar{
-  position: absolute;
-  bottom: 56px;
-  left: 12px;
-  right: 12px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(25px);
-  border-radius: 26px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-  border: 0.5px solid rgba(0, 0, 0, 0.06);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 10px;
-  z-index: 45;
-  cursor: pointer;
-}#page-netease .mini-disc{
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-  animation: neSpinDisc 20s linear infinite;
-  flex-shrink: 0;
-}#page-netease .mini-disc img{
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-}#page-netease .mini-title-wrap{
-  flex: 1;
-  overflow: hidden;
-  font-size: 13px;
-  color: #333;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}#page-netease .mini-title-wrap .artist{ color: #888; font-size: 12px; margin-left: 4px; }#page-netease .mini-btn{
-  background: none;
-  border: none;
-  color: #333;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}#page-netease .full-player-modal{
-  position: absolute;
-  inset: 0;
-  z-index: 100;
   background: #111;
   display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
-  overflow: hidden;
-}#page-netease .full-player-modal.open{ transform: translateY(0); }#page-netease .player-dynamic-bg{
-  position: absolute;
-  inset: -30%;
-  width: 160%;
-  height: 160%;
-  object-fit: cover;
-  filter: blur(85px) brightness(0.42) saturate(1.45);
-  z-index: 0;
-  pointer-events: none;
-}#page-netease .player-vignette{
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 36%, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 75%, rgba(0,0,0,0.7) 100%);
-  z-index: 1;
-}#page-netease .player-content{
-  position: relative;
-  z-index: 2;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: #fff;
-  padding-bottom: 12px;
-}#page-netease .player-nav{
-  height: 48px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}#page-netease .player-nav-btn{
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.9);
-  cursor: pointer;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-}#page-netease .player-nav-title{
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.85);
-}#page-netease .player-body{
-  flex: 1;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
-  min-height: 300px;
-}#page-netease .stylus-rig{
-  position: absolute;
-  top: -14px;
-  left: calc(50% - 14px);
-  width: 130px;
-  height: 190px;
-  z-index: 25;
-  pointer-events: none;
-  transform-origin: 15px 15px;
-  transform: rotate(0deg);
-  transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
-}#page-netease .full-player-modal.paused .stylus-rig{ transform: rotate(-33deg); }#page-netease .stylus-pivot{
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 28;
-}#page-netease .stylus-pivot::after{
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.4);
-}#page-netease .vinyl-disc{
-  width: 270px;
-  height: 270px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #121212 0%, #090909 60%, #181818 84%, #262626 97%, #020202 100%);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: neSpinDisc 24s linear infinite;
-}#page-netease .full-player-modal.paused .vinyl-disc,
-#page-netease .app-device.paused .mini-disc{
-  animation-play-state: paused;
 }
-@keyframes neSpinDisc { 100% { transform: rotate(360deg); } }#page-netease .disc-art{
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid #000;
-}#page-netease .disc-art img{
+
+/* 手机视口容器 (手机上铺满 100%，电脑上保持真实手机比例) */
+#page-netease .ne-phone-viewport {
+  position: relative;
   width: 100%;
+  max-width: 440px;
   height: 100%;
-  object-fit: cover;
-}#page-netease .lyrics-view{
-  position: absolute;
-  inset: 0;
+  max-height: 100dvh;
+  background: #F5F6FA;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 24px;
-  text-align: center;
-  opacity: 0;
-  transform: scale(1.05);
-  pointer-events: none;
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}#page-netease .lyrics-view.active{
-  opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
-}#page-netease .vinyl-view{
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}#page-netease .vinyl-view.hidden{
-  opacity: 0;
-  transform: scale(0.9);
-  pointer-events: none;
-}#page-netease .lyric-row{
-  font-size: 16px;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 14px;
-  transition: all 0.3s;
-}#page-netease .lyric-row.current{
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-  text-shadow: 0 0 14px rgba(255,255,255,0.3);
-}#page-netease .player-lower{
-  padding: 0 24px 8px;
-}#page-netease .meta-line{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}#page-netease .song-name-h1{
-  font-size: 17px;
-  font-weight: 600;
-  color: #fff;
-  max-width: 60%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}#page-netease .singer-name{
-  font-size: 13px;
-  color: rgba(255,255,255,0.55);
-  margin-top: 3px;
-}#page-netease .badge-bar{
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}#page-netease .badge-btn{
-  position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}#page-netease .red-count{
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #FF3A3A;
-  position: absolute;
-  top: -2px;
-  left: 100%;
-  margin-left: -8px;
-  white-space: nowrap;
-}#page-netease .progress-box{ margin-bottom: 20px; }#page-netease .progress-track{
-  width: 100%;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}#page-netease .progress-rail{
-  position: relative;
-  width: 100%;
-  height: 2px;
-  background: rgba(255,255,255,0.22);
-  border-radius: 2px;
-}#page-netease .progress-fill{
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3.5%;
-  background: rgba(255,255,255,0.85);
-  border-radius: 2px;
-}#page-netease .progress-knob{
-  position: absolute;
-  left: 3.5%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 4px rgba(0,0,0,0.6);
-}#page-netease .time-strip{
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: rgba(255,255,255,0.35);
-  margin-top: 3px;
-}#page-netease .controls-strip{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 0 6px;
-}#page-netease .ctrl-item{
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.9);
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s;
-}#page-netease .ctrl-item:active{ transform: scale(0.88); opacity: 0.65; }#page-netease .play-big-btn{
-  width: 48px;
+}
+
+/* 顶部通用 Header */
+#page-netease .ne-header-bar {
   height: 48px;
-}#page-netease .home-header{
-  padding: 10px 18px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-}#page-netease .home-tabs{
+  padding: 0 14px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#page-netease .ne-icon-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: #222;
   display: flex;
-  gap: 16px;
-  font-size: 14px;
+  align-items: center;
+  justify-content: center;
+}
+#page-netease .ne-icon-btn.light { color: #fff; }
+#page-netease .ne-home-nav-tabs {
+  display: flex;
+  gap: 18px;
+  font-size: 15px;
   color: #888;
-}#page-netease .home-tabs span.active{
-  font-size: 17px;
-  font-weight: 700;
+  font-weight: 500;
+}
+#page-netease .ne-home-nav-tabs span.active {
   color: #111;
+  font-size: 16.5px;
+  font-weight: 700;
   position: relative;
-}#page-netease .home-tabs span.active::after{
+}
+#page-netease .ne-home-nav-tabs span.active::after {
   content: "";
   position: absolute;
   bottom: -4px;
-  left: 15%;
-  width: 70%;
-  height: 3px;
+  left: 20%;
+  width: 60%;
+  height: 2.5px;
   background: #EC4141;
   border-radius: 2px;
-}#page-netease .playlist-scroll{
-  display: flex;
-  gap: 12px;
-  padding: 10px 18px;
-  overflow-x: auto;
-}#page-netease .playlist-scroll::-webkit-scrollbar{ display: none; }#page-netease .playlist-item{
-  width: 110px;
-  flex-shrink: 0;
-}#page-netease .playlist-item img{
-  width: 110px;
-  height: 110px;
-  border-radius: 10px;
-  object-fit: cover;
-}#page-netease .playlist-item p{
-  font-size: 12px;
-  color: #333;
-  margin-top: 5px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-}#page-netease .section-title-wrap{
-  padding: 12px 18px 6px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
-}#page-netease .cloud-toast{
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(12px);
-  padding: 10px 20px;
-  border-radius: 22px;
-  font-size: 13px;
-  color: #fff;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s, transform 0.25s;
-  z-index: 200;
-}#page-netease .cloud-toast.show{
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
-/* Module boundary: never force an inactive host page to display. */
-#page-netease:not(.active) { display:none !important; }
-#page-netease.active { position:fixed; inset:0; z-index:90; display:flex; justify-content:center; align-items:center; margin:0; padding:0; background:#101116; overflow:hidden; }
-#page-netease { --ne-disc:min(76vw, 300px, 43dvh); font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; color:#171824; }
-#page-netease *, #page-netease *::before, #page-netease *::after { box-sizing:border-box; }
-#page-netease :is(h2,h3,h4,p) { margin:0; }
-#page-netease button { font:inherit; box-shadow:none; cursor:pointer; }
-#page-netease svg { flex-shrink:0; display:block; max-width:none; }
-#page-netease img { display:block; max-width:100%; object-fit:cover; }
-#page-netease .app-device { width:100%; height:100vh; height:100dvh; min-height:0; isolation:isolate; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
-#page-netease .ios-status { flex:0 0 44px; display:flex; justify-content:space-between; align-items:center; padding:8px 24px 0 68px; font-weight:600; z-index:110; pointer-events:none; }
-#page-netease .theme-dark .ios-status { color:white; }
-#page-netease .battery-chip { background:#8884; border-radius:6px; padding:0 5px; font-size:11px; }
-#page-netease .ne-exit-back { position:absolute; left:16px; top:calc(8px + env(safe-area-inset-top,0px)); width:36px; height:32px; z-index:115; border:0; border-radius:18px; background:#8883; color:inherit; display:grid; place-items:center; }
-#page-netease .theme-dark .ne-exit-back { color:#fff; }
-#page-netease .ne-exit-back svg { transform:rotate(180deg); }
-#page-netease .main-views { min-height:0; }
-#page-netease .bottom-tabbar { flex:0 0 62px; }
-#page-netease .tab-avatar-wrap img { width:24px; height:24px; border-radius:50%; }
-#page-netease .mini-player-bar { bottom:calc(70px + env(safe-area-inset-bottom,0px)); }
-#page-netease .mini-title-wrap { min-width:0; }
-#page-netease .mini-title-wrap .author { color:#888; }
-#page-netease .full-player-modal { padding-top:calc(44px + env(safe-area-inset-top,0px)); padding-bottom:env(safe-area-inset-bottom,0px); visibility:hidden; pointer-events:none; }
-#page-netease .full-player-modal.open { visibility:visible; pointer-events:auto; }
-#page-netease .player-dynamic-bg { max-width:none; }
-#page-netease .player-content { min-height:0; padding-bottom:18px; }
-#page-netease .player-nav { flex:0 0 50px; }
-#page-netease .player-body { min-height:0; flex:1 1 0; overflow:hidden; }
-#page-netease .vinyl-view.hidden { display:flex !important; visibility:hidden; }
-#page-netease .vinyl-disc { width:var(--ne-disc); height:var(--ne-disc); flex-shrink:0; position:relative; background:repeating-radial-gradient(circle,#111 0 2px,#191919 3px,#101010 4px); }
-#page-netease .vinyl-halo { position:absolute; width:calc(var(--ne-disc) + 22px); height:calc(var(--ne-disc) + 22px); border-radius:50%; border:1px solid #ffffff12; background:#ffffff05; box-shadow:0 15px 30px #0004; }
-#page-netease .disc-art { width:68%; height:68%; }
-#page-netease .stylus-rig { top:8px; width:120px; height:172px; }
-#page-netease .stylus-svg { width:100%; height:100%; overflow:visible; }
-#page-netease .lyrics-view { overflow:auto; mask-image:linear-gradient(transparent,#000 12%,#000 88%,transparent); }
-#page-netease .lyric-lines-flow { display:flex; flex-direction:column; gap:20px; width:100%; }
-#page-netease .lyric-row { margin:0; line-height:1.65; }
-#page-netease .player-lower { flex:0 0 auto; padding:12px 24px 0; }
-#page-netease .meta-line { gap:12px; margin-bottom:clamp(16px,3dvh,28px); }
-#page-netease .song-box { flex:1; min-width:0; }
-#page-netease .song-name-h1 { min-width:0; max-width:none; flex:1; }
-#page-netease .vip-tag { flex-shrink:0; font-size:10px; color:#fff9; background:#fff1; border-radius:3px; padding:0 4px; margin-left:6px; }
-#page-netease .singer-info { margin-top:5px; }
-/* Numbers occupy their own grid cells, rather than overflowing the icon. */
-#page-netease .badge-bar { flex:0 0 auto; gap:8px; }
-#page-netease .badge-btn { display:grid; grid-template-columns:30px auto; grid-template-rows:14px 30px; gap:0 2px; min-width:64px; padding:0; color:#fff; }
-#page-netease .badge-btn svg { grid-column:1; grid-row:2; width:28px; height:28px; }
-#page-netease .heart-svg { fill:#FF3A3A; }
-#page-netease .red-count,#page-netease .white-count { position:static; grid-column:2; grid-row:1; margin:0; font-size:10px; line-height:14px; white-space:nowrap; }
-#page-netease .white-count { color:#fff9; }
-#page-netease .progress-box { margin-bottom:clamp(12px,2dvh,24px); }
-#page-netease .progress-track { height:30px; touch-action:none; }
-#page-netease .progress-fill { width:0; }
-#page-netease .progress-knob { left:0; }
-#page-netease .controls-strip { margin-bottom:clamp(12px,3dvh,30px); }
-#page-netease .ctrl-item { min-width:44px; min-height:44px; border:0; border-radius:50%; }
-#page-netease .play-big-btn { width:56px; height:56px; }
-#page-netease .search-box-wrap { padding:16px; }
-#page-netease .search-input-pill { display:flex; gap:8px; align-items:center; border-radius:30px; background:white; padding:12px; }
-#page-netease input { min-width:0; }
-#page-netease .profile-hero { position:relative; height:280px; display:grid; align-items:end; background:#222; padding:24px; }
-#page-netease .profile-bg-img { position:absolute; inset:0; width:100%; height:100%; filter:grayscale(1) brightness(.5); }
-#page-netease .profile-hero-content { position:relative; text-align:center; color:white; }
-#page-netease .avatar-big { width:76px; height:76px; border-radius:50%; border:2px solid white; margin:0 auto 12px; }
-#page-netease .profile-stats { display:flex; justify-content:center; gap:18px; font-size:12px; margin-top:12px; }
-#page-netease .profile-content-body { padding:20px; }
-#page-netease .ne-track-row { display:flex; align-items:center; gap:12px; width:100%; border:0; background:transparent; text-align:left; padding:12px 0; color:inherit; }
-#page-netease .ne-track-row img { width:52px; height:52px; border-radius:8px; }
-#page-netease .ne-track-row small { display:block; color:#888; }
-#page-netease .playlist-item { background:transparent; border:0; text-align:left; }
-#page-netease .cloud-toast { max-width:85%; text-align:center; }
-#page-netease .ne-share { position:absolute; inset:auto 0 0; z-index:130; background:#f8fafc; color:#171824; border:0; border-radius:22px 22px 0 0; padding:24px; box-shadow:0 -100px 0 100vmax #0006; }
-#page-netease .ne-share[hidden] { display:none; }
-#page-netease .ne-share button { width:100%; padding:14px; margin-top:8px; border:0; border-radius:12px; background:#e9edf2; color:#171824; }
-#page-netease :focus-visible { outline:3px solid #8583ec; outline-offset:3px; }
-@media(min-width:600px) { #page-netease .app-device { height:min(94dvh,932px); border-radius:32px; box-shadow:0 20px 60px #0008; } }
-@media(max-height:600px) { #page-netease { --ne-disc:min(57vw,32dvh); } #page-netease .meta-line,#page-netease .controls-strip,#page-netease .progress-box { margin-bottom:6px; } #page-netease .stylus-rig { height:110px; width:77px; } }
-@media(prefers-reduced-motion:reduce) { #page-netease * { animation:none !important; transition:none !important; } }
-
-/* ================================================================
-   netease.css — UI/UX Pro Max 官方真机像素级升级
-   ================================================================ */
-
-/* 1. 首页“当前播放”横向滑动组件规范 */
-#page-netease .playlist-scroll {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 10px 16px;
-  scrollbar-width: none;
+/* Tab 栈 */
+#page-netease .ne-tab-stack {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#page-netease .ne-tab-panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-bottom: 90px;
   -webkit-overflow-scrolling: touch;
 }
-#page-netease .playlist-scroll::-webkit-scrollbar {
-  display: none;
+#page-netease .ne-tab-panel.active {
+  display: flex;
 }
+
+/* 首页 RP 状态 Banner */
+#page-netease .ne-rp-status-banner {
+  margin: 6px 14px 12px;
+  background: linear-gradient(135deg, #FFF3F3 0%, #FFEBEB 100%);
+  border: 1px solid rgba(236, 65, 65, 0.15);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#page-netease .ne-rp-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #EC4141;
+  font-weight: 600;
+}
+#page-netease .ne-rp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #EC4141;
+  box-shadow: 0 0 6px #EC4141;
+  animation: neDotPulse 1.6s infinite ease-in-out;
+}
+@keyframes neDotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+#page-netease .ne-rp-action-btn {
+  background: #EC4141;
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+/* 首页卡片横滑 */
+#page-netease .ne-section-title {
+  padding: 0 14px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}
+#page-netease .ne-section-sub {
+  font-size: 12px;
+  color: #999;
+  font-weight: normal;
+}
+#page-netease .playlist-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 14px 10px;
+  scrollbar-width: none;
+}
+#page-netease .playlist-scroll::-webkit-scrollbar { display: none; }
 #page-netease .playlist-card-item {
   width: 105px;
   min-width: 105px;
   flex-shrink: 0;
   cursor: pointer;
-  text-align: left;
 }
 #page-netease .card-cover-wrap {
   position: relative;
@@ -535,8 +172,7 @@
   height: 105px;
   border-radius: 10px;
   overflow: hidden;
-  background: #2a2a2e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: #333;
 }
 #page-netease .card-cover-img {
   width: 100%;
@@ -551,8 +187,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,100 +195,426 @@
 #page-netease .card-title {
   font-size: 12px;
   font-weight: 500;
-  color: #1a1a1a;
-  margin: 6px 0 0 0;
+  color: #222;
+  margin-top: 6px;
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* 2. “我的”长列表与流畅滚动规范 */
-#page-netease .mine-song-list-wrap {
-  padding: 4px 16px 85px;
+/* 推荐歌单网格 */
+#page-netease .ne-rec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 4px 14px;
+}
+
+/* ================= 搜索页 ================= */
+#page-netease .ne-search-input-wrap {
+  width: 100%;
+  background: #fff;
+  border-radius: 20px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+#page-netease #neSearchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  background: transparent;
+}
+#page-netease .ne-clear-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+}
+#page-netease .ne-search-placeholder {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 13px;
+}
+#page-netease .ne-search-list {
+  padding: 10px 14px;
+}
+
+/* ================= “我的”用户主页 ================= */
+#page-netease .ne-profile-hero {
+  position: relative;
+  padding: 70px 14px 14px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
 }
-#page-netease .song-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 6px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+#page-netease .ne-profile-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.7);
+  z-index: 1;
 }
-#page-netease .sl-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+#page-netease .ne-profile-mask {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, #F5F6FA 100%);
+  z-index: 2;
 }
-#page-netease .sl-title {
-  font-size: 14.5px;
+#page-netease .ne-profile-card {
+  position: relative;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 42px 14px 16px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+#page-netease .ne-avatar-wrap {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  background: #eee;
+}
+#page-netease .ne-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#page-netease .ne-profile-name {
+  font-size: 17px;
   font-weight: 700;
-  color: #1f1f1f;
+  color: #1a1a1a;
+  margin: 0;
 }
-#page-netease .sl-count {
+#page-netease .ne-profile-badges {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+#page-netease .ne-badge-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+#page-netease .ne-badge-tag.female { background: #FFDDE5; color: #FF3366; }
+#page-netease .ne-badge-tag.vip-gold { background: #2A2A2E; color: #E7C996; }
+#page-netease .ne-badge-tag.level { background: #EEEEEE; color: #666; }
+#page-netease .ne-profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
   font-size: 12px;
-  color: #999;
+  color: #888;
+  margin-top: 10px;
 }
-#page-netease .song-row {
+#page-netease .ne-profile-stats strong { color: #222; }
+#page-netease .ne-profile-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+#page-netease .ne-pill-btn {
+  background: #F0F2F5;
+  border: none;
+  font-size: 11.5px;
+  color: #333;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+#page-netease .ne-sub-tabbar {
+  display: flex;
+  gap: 20px;
+  padding: 12px 18px 4px;
+  font-size: 14px;
+  color: #888;
+  font-weight: 600;
+}
+#page-netease .ne-sub-tabbar span.active {
+  color: #111;
+  position: relative;
+}
+#page-netease .ne-sub-tabbar span.active::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 10%;
+  width: 80%;
+  height: 2.5px;
+  background: #EC4141;
+  border-radius: 2px;
+}
+
+/* 歌单入口卡片 */
+#page-netease .ne-playlist-cards {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#page-netease .ne-pl-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 8px;
-  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
   cursor: pointer;
-  transition: background 0.18s ease;
 }
-#page-netease .song-row:active {
-  background: rgba(0, 0, 0, 0.04);
+#page-netease .ne-pl-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #222;
 }
-#page-netease .song-row.active {
-  background: rgba(236, 65, 65, 0.07);
+#page-netease .ne-pl-info {
+  flex: 1;
 }
-#page-netease .song-num {
-  width: 22px;
-  font-size: 13px;
+#page-netease .ne-pl-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #222;
+}
+#page-netease .ne-pl-sub {
+  font-size: 11.5px;
+  color: #888;
+  margin-top: 3px;
+}
+#page-netease .ne-btn-heart-mode {
+  background: rgba(236, 65, 65, 0.08);
+  color: #EC4141;
+  border: 1px solid rgba(236, 65, 65, 0.2);
+  border-radius: 16px;
+  font-size: 11px;
   font-weight: 600;
-  color: #999;
-  text-align: center;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* ================= 歌单详情页 (二级滑入) ================= */
+#page-netease .ne-playlist-detail-page {
+  position: absolute;
+  inset: 0;
+  background: #5A4A3E; /* 动态自适应颜色 */
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1), background 0.5s ease;
+}
+#page-netease .ne-playlist-detail-page.open {
+  transform: translateX(0);
+}
+#page-netease .ne-detail-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  color: #fff;
   flex-shrink: 0;
+}
+#page-netease .ne-detail-header-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+#page-netease .ne-detail-scroll-view {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 歌单大图信息区 */
+#page-netease .ne-playlist-hero-box {
+  padding: 8px 18px 20px;
+  color: #fff;
+}
+#page-netease .ne-hero-top-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+#page-netease .ne-hero-cover-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+#page-netease #detailCoverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#page-netease .ne-cover-playcount {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+#page-netease .ne-hero-meta {
+  flex: 1;
+}
+#page-netease .ne-hero-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+}
+#page-netease .ne-hero-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+#page-netease #detailAuthorAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+#page-netease .ne-hero-btn-row {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 18px;
+}
+#page-netease .ne-hero-chip-btn {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 歌曲列表包裹层 */
+#page-netease .ne-songs-sheet {
+  flex: 1;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding-bottom: 80px;
+  min-height: 500px;
+}
+#page-netease .ne-sheet-sticky-head {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  cursor: pointer;
+}
+#page-netease .ne-play-all-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #111;
+}
+#page-netease .ne-play-icon-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #EC4141;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+#page-netease .ne-song-total-tag {
+  font-size: 12px;
+  color: #888;
+  font-weight: normal;
+}
+
+/* 单曲行 */
+#page-netease .song-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+#page-netease .song-row:active { background: rgba(0,0,0,0.03); }
+#page-netease .song-row.active { background: rgba(236,65,65,0.07); }
+#page-netease .song-num {
+  width: 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #999;
+  text-align: center;
+  flex-shrink: 0;
+}
 #page-netease .song-thumb {
   width: 44px;
   height: 44px;
-  border-radius: 7px;
+  border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #e8e8e8;
-  display: block;
+  background: #eee;
 }
 #page-netease .song-meta {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
 }
 #page-netease .song-name {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: #222;
+  color: #1a1a1a;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#page-netease .song-row.active .song-name {
-  color: #EC4141;
-}
+#page-netease .song-row.active .song-name { color: #EC4141; }
 #page-netease .song-sub {
   font-size: 11.5px;
   color: #888;
+  margin-top: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -662,41 +623,428 @@
   background: none;
   border: none;
   padding: 6px;
+  color: #999;
+}
+
+/* ================= 悬浮 Mini 播放条 ================= */
+#page-netease .mini-player-bar {
+  position: absolute;
+  bottom: 56px;
+  left: 12px;
+  right: 12px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 26px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 0.5px solid rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  z-index: 45;
+  cursor: pointer;
+}
+#page-netease .mini-disc {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  animation: neSpinDisc 20s linear infinite;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+#page-netease .mini-disc img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+#page-netease .mini-title-wrap {
+  flex: 1;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #222;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#page-netease .mini-title-wrap .author {
+  font-size: 12px;
+  color: #888;
+  font-weight: normal;
+  margin-left: 4px;
+}
+#page-netease .mini-btn {
+  background: none;
+  border: none;
+  color: #222;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ================= 底部 TabBar ================= */
+#page-netease .bottom-tabbar {
+  height: 52px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 40;
+}
+#page-netease .tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #888;
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#page-netease .tab-item.active {
+  color: #EC4141;
+  font-weight: 600;
+}
+
+/* ================= 全屏黑胶播放器 Modal ================= */
+#page-netease .full-player-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
+  overflow: hidden;
+}
+#page-netease .full-player-modal.open { transform: translateY(0); }
+
+/* 动态封面自适应环境光背景 */
+#page-netease .ne-player-ambient-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #5A4A3E; /* 动态被 JS 改写为封面色 */
+  transition: background-color 0.8s ease;
+  z-index: 0;
+}
+#page-netease .ne-player-ambient-blur {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 35%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 80%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+}
+
+#page-netease .player-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+  padding-bottom: 20px;
+}
+#page-netease .player-nav {
+  height: 50px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#page-netease .ne-nav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#page-netease .player-nav-title {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+#page-netease .ne-nav-role-tip {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 2px;
+}
+#page-netease .player-nav-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+}
+
+/* 黑胶与唱针舞台 */
+#page-netease .player-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+#page-netease .stylus-rig {
+  position: absolute;
+  top: -10px;
+  left: calc(50% - 15px);
+  width: 130px;
+  height: 190px;
+  z-index: 25;
+  pointer-events: none;
+  transform-origin: 15px 15px;
+  transform: rotate(0deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+#page-netease .full-player-modal.paused .stylus-rig {
+  transform: rotate(-33deg);
+}
+#page-netease .stylus-pivot {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+#page-netease .vinyl-disc {
+  width: 276px;
+  height: 276px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #101010 0%, #060606 60%, #151515 82%, #222222 96%, #000 100%);
+  box-shadow: 0 16px 45px rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: neSpinDisc 24s linear infinite;
+}
+#page-netease .full-player-modal.paused .vinyl-disc,
+#page-netease .full-player-modal.paused .mini-disc {
+  animation-play-state: paused;
+}
+@keyframes neSpinDisc { 100% { transform: rotate(360deg); } }
+
+#page-netease .disc-art {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #000;
+}
+#page-netease .disc-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 歌词 */
+#page-netease .lyrics-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+#page-netease .lyrics-view.active { opacity: 1; pointer-events: auto; }
+#page-netease .vinyl-view.hidden { opacity: 0; pointer-events: none; }
+#page-netease .lyric-row {
+  font-size: 15px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 12px;
+  transition: all 0.3s;
+}
+#page-netease .lyric-row.current {
+  font-size: 17.5px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255,255,255,0.4);
+}
+
+/* 播放器底部信息控制 */
+#page-netease .player-lower {
+  padding: 0 20px;
+}
+#page-netease .meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+#page-netease .ne-song-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#page-netease .song-name-h1 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#page-netease .vip-tag-gold {
+  background: #2D261C;
+  color: #E2BF84;
+  border: 1px solid #9A7E4F;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+#page-netease .singer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+#page-netease .singer-name {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.6);
+}
+#page-netease .ne-btn-follow-singer {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  font-size: 10px;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+#page-netease .badge-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+#page-netease .badge-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+}
+#page-netease .badge-btn .heart-svg {
+  width: 24px;
+  height: 24px;
+  fill: #FF3A3A;
+}
+#page-netease .red-count {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  margin-left: -10px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0,0,0,0.3);
+  padding: 1px 4px;
+  border-radius: 6px;
+}
+
+/* 进度条 */
+#page-netease .progress-box { margin-bottom: 16px; }
+#page-netease .progress-track {
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+#page-netease .progress-rail {
+  position: relative;
+  width: 100%;
+  height: 2.5px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 2px;
+}
+#page-netease .progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #fff;
+  border-radius: 2px;
+}
+#page-netease .progress-knob {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.6);
+}
+#page-netease .time-strip {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 4px;
+}
+#page-netease .quality-tip { color: rgba(255,255,255,0.6); font-size: 10.5px; }
+
+/* 播放大按钮 */
+#page-netease .controls-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+}
+#page-netease .ctrl-item {
+  background: none;
+  border: none;
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 6px;
+}
+#page-netease .play-big-btn {
+  width: 52px;
+  height: 52px;
 }
 
-/* 3. 导入组件规范 */
-#page-netease .mine-import-box {
-  padding: 14px 16px 6px;
-  text-align: center;
-}
-#page-netease .mine-import-tip {
-  font-size: 11px;
-  color: #8c8c8c;
-  margin-top: 7px;
-}
-
-/* 4. 浮动 Toast 弹窗（原生毛玻璃胶囊） */
+/* Toast */
 #page-netease .cloud-toast {
   position: absolute;
   top: 54px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: rgba(30, 30, 32, 0.88);
+  background: rgba(30, 30, 32, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  color: #ffffff;
-  padding: 7px 16px;
+  color: #fff;
+  padding: 8px 18px;
   border-radius: 20px;
   font-size: 12.5px;
   font-weight: 500;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.3);
   opacity: 0;
   pointer-events: none;
-  transition: all 0.26s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: all 0.25s ease;
   z-index: 120;
   white-space: nowrap;
 }
@@ -705,3 +1053,34 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* 弹窗 Modal 体系 */
+#page-netease .ne-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#page-netease .ne-modal-overlay.open { display: flex; }
+#page-netease .ne-modal-card {
+  width: 100%;
+  max-width: 340px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+#page-netease .ne-modal-card h3 { margin: 0 0 6px; font-size: 16px; color: #111; }
+#page-netease .ne-modal-tip { font-size: 11.5px; color: #888; margin: 0 0 14px; line-height: 1.4; }
+#page-netease .ne-input-group { margin-bottom: 12px; }
+#page-netease .ne-input-group label { display: block; font-size: 11.5px; font-weight: 600; color: #555; margin-bottom: 4px; }
+#page-netease .ne-input-group input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; outline: none; box-sizing: border-box; }
+#page-netease .ne-input-group input:focus { border-color: #EC4141; }
+#page-netease .ne-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+#page-netease .ne-btn-cancel { background: #eee; border: none; padding: 7px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; color: #555; }
+#page-netease .ne-btn-confirm { background: #EC4141; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; color: #fff; font-weight: 600; }
