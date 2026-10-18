@@ -651,3 +651,26 @@ export function initNetease() {
   const savedPid = localStorage.getItem('CA_USER_NETEASE_PID') || DEFAULT_PLAYLIST_ID;
   loadPlaylistById(savedPid);
 }
+
+// 全局直接执行，绝不经过任何复杂的监听器
+window.doImportPlaylist = function() {
+  const ipt = document.getElementById('iptImportPlaylistUrl');
+  const modal = document.getElementById('modalImportPlaylist');
+  const raw = ipt ? ipt.value.trim() : '';
+  
+  if (!raw) {
+    alert('请输入歌单链接或ID！');
+    return;
+  }
+  
+  const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
+  const pid = match ? match[1] : raw.replace(/[^0-9]/g, '');
+  
+  if (!pid) {
+    alert('未能从输入中识别出歌单数字 ID');
+    return;
+  }
+  
+  if (modal) modal.classList.remove('open');
+  loadPlaylistById(pid);
+};
