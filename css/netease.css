@@ -1118,3 +1118,23 @@
   display: none !important;
 }
 
+/* 相册上传胶囊按钮 */
+#page-netease .ne-btn-upload-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#page-netease .ne-btn-upload-file:active {
+  background: #e2e4e8;
+}
+
+
