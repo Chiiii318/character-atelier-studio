@@ -944,3 +944,51 @@ button.primary {
   border-top: 1px solid var(--line);
 }
 
+/* ---- 生活切片与图标网格样式 ---- */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.icon-tile {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  box-shadow: var(--shadow);
+}
+.icon-tile:active {
+  transform: scale(0.96);
+  border-color: var(--ink);
+}
+.icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+.icon-name {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink);
+}
+.icon-tag {
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 400px) {
+  .icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
