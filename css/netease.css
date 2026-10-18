@@ -11,14 +11,19 @@
   width: 100vw !important;
   height: 100dvh !important;
   max-height: 100dvh !important;
-  z-index: 9999 !important; /* 彻底覆盖宿主顶栏和底栏 */
+  z-index: 9999 !important;
   padding: 0 !important;
   margin: 0 !important;
   background: #000 !important;
+  overflow: hidden !important;
+  display: none; /* 默认未激活时隐藏 */
+}
+
+/* 只有激活时才显示并全屏居中 */
+#page-netease.active {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  overflow: hidden !important;
 }
 
 #page-netease .ne-app-exit-btn {
