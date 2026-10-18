@@ -617,33 +617,34 @@ export function initNetease() {
     }
   });
 
-  // 自定义导入歌单专属弹窗逻辑
+    // 自定义导入歌单专属弹窗逻辑 (强化版)
   const modalImport = document.getElementById('modalImportPlaylist');
   const iptImportPl = document.getElementById('iptImportPlaylistUrl');
 
-  document.getElementById('btnImportAnyPlaylist')?.addEventListener('click', () => {
-    if (iptImportPl) iptImportPl.value = '';
-    modalImport?.classList.add('open');
-  });
-
-  document.getElementById('btnCancelImportPl')?.addEventListener('click', () => {
-    modalImport?.classList.remove('open');
-  });
-
-  document.getElementById('btnConfirmImportPl')?.addEventListener('click', () => {
-    const raw = iptImportPl ? iptImportPl.value.trim() : '';
-    if (!raw) {
-      showToast('请输入歌单链接或ID');
-      return;
+  // 使用全局委托捕获点击，杜绝按钮因为重新渲染而失效
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btnImportAnyPlaylist')) {
+      if (iptImportPl) iptImportPl.value = '';
+      modalImport?.classList.add('open');
     }
-    const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
-    const pid = match ? match[1] : raw.replace(/[^0-9]/g, '');
-    if (!pid) {
-      showToast('未能识别歌单数字ID');
-      return;
+    if (e.target.closest('#btnCancelImportPl')) {
+      modalImport?.classList.remove('open');
     }
-    modalImport?.classList.remove('open');
-    loadPlaylistById(pid);
+    if (e.target.closest('#btnConfirmImportPl')) {
+      const raw = iptImportPl ? iptImportPl.value.trim() : '';
+      if (!raw) {
+        showToast('请输入歌单链接或ID');
+        return;
+      }
+      const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
+      const pid = match ? match[1] : raw.replace(/[^0-9]/g, '');
+      if (!pid) {
+        showToast('未能识别歌单数字ID');
+        return;
+      }
+      modalImport?.classList.remove('open');
+      loadPlaylistById(pid);
+    }
   });
 
   // 默认启动
