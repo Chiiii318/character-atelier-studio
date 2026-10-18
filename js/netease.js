@@ -1,9 +1,5 @@
 /* ================================================================
-   netease.js — 网易云原生播放与曲库引擎 (Pro Max 优化版)
-   - 支持 500+ 全量曲库抓取与分块平滑加载
-   - VIP/音频加载失败自动轻量 Toast 并顺延下一首可用曲目
-   - 原生规范 DOM 渲染，杜绝任何字符裸露
-   - 全套高精度极细线 SVG，杜绝 Emoji
+   netease.js — 网易云原生播放与曲库引擎 (千首全量曲库 + 原生 DOM 绝对免疫字符裸露)
    ================================================================ */
 
 export function initNetease() {
@@ -11,7 +7,7 @@ export function initNetease() {
   if (!device) return;
 
   const WORKER_BASE = 'https://restless-math-53df.483308261.workers.dev';
-  const DEFAULT_PLAYLIST_ID = '2409170451'; // 用户指定默认歌单 ID
+  const DEFAULT_PLAYLIST_ID = '2409170451'; // 真实歌单 ID（含 1000+ 首歌曲）
 
   const fullPlayer = document.getElementById('fullPlayer');
   const miniBar = document.getElementById('miniPlayerBar');
@@ -41,9 +37,9 @@ export function initNetease() {
   let isLyricsMode = false;
   let toastTimer = null;
   let currentLyrics = [];
-  let consecutiveErrorCount = 0; // 防死循环跳歌计数器
+  let consecutiveErrorCount = 0; // 防死循环计数
   let renderedChunkCount = 0;
-  const CHUNK_SIZE = 40;
+  const CHUNK_SIZE = 50;
 
   function showToast(text, duration = 2000) {
     if (!toast) return;
@@ -60,69 +56,57 @@ export function initNetease() {
     return `${m}:${s}`;
   }
 
+  /* 动态保证 DOM 节点纯净，杜绝任何 HTML 源码字符串裸露 */
+  function ensureCoverElement(containerId, imgId, className) {
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+    let img = document.getElementById(imgId);
+    if (!img) {
+      container.innerHTML = '';
+      img = document.createElement('img');
+      img.id = imgId;
+      if (className) img.className = className;
+      container.appendChild(img);
+    }
+    return img;
+  }
+
   /* ==========================================================
-     1. 曲库抓取引擎（分批全量拉取，支持 100~500+ 首）
+     1. 全量千首曲库抓取引擎
      ========================================================== */
   async function loadPlaylistById(playlistId) {
-    showToast('正在同步云端歌单...');
+    showToast('正在同步歌单全量单曲...');
     try {
       let songs = [];
 
-      // 阶段 A: 请求歌单详情
+      // 优先从全量接口拉取（直接支持 1000 首）
       try {
-        const res = await fetch(`${WORKER_BASE}/api/v6/playlist/detail?id=${playlistId}&n=1000`);
-        const data = await res.json();
-        const pl = data?.playlist;
+        const fallbackRes = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
+        const fallbackList = await fallbackRes.json();
+        if (Array.isArray(fallbackList) && fallbackList.length > 20) {
+          songs = fallbackList.map(item => ({
+            id: item.id,
+            title: item.name || '未知曲目',
+            artist: item.artist || '未知歌手',
+            album: item.album || '',
+            cover: (item.pic || '').replace(/^http:/, 'https:') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
+          }));
+        }
+      } catch (_) {}
 
-        if (pl) {
-          // 如果返回的 tracks 已经是完整列表
-          if (Array.isArray(pl.tracks) && pl.tracks.length > 0) {
+      // 如果备用全量接口失败，再退回 Worker 详情
+      if (!songs.length) {
+        try {
+          const res = await fetch(`${WORKER_BASE}/api/v6/playlist/detail?id=${playlistId}`);
+          const data = await res.json();
+          const pl = data?.playlist;
+          if (Array.isArray(pl?.tracks)) {
             songs = pl.tracks.map(t => ({
               id: t.id,
               title: t.name || '未知曲目',
               artist: (t.ar || []).map(a => a.name).join(' / ') || '未知歌手',
               album: t.al?.name || '',
               cover: (t.al?.picUrl ? t.al.picUrl.replace(/^http:/, 'https:') : '') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
-            }));
-          }
-
-          // 如果 trackIds 更多且需要分批拉取歌曲详情
-          if (Array.isArray(pl.trackIds) && pl.trackIds.length > songs.length) {
-            const missingIds = pl.trackIds.slice(songs.length, 300).map(t => t.id);
-            if (missingIds.length > 0) {
-              try {
-                const detailRes = await fetch(`${WORKER_BASE}/api/v3/song/detail?ids=${encodeURIComponent(JSON.stringify(missingIds.map(id => ({ id }))))}`);
-                const detailData = await detailRes.json();
-                if (Array.isArray(detailData?.songs)) {
-                  const extraSongs = detailData.songs.map(t => ({
-                    id: t.id,
-                    title: t.name || '未知曲目',
-                    artist: (t.ar || []).map(a => a.name).join(' / ') || '未知歌手',
-                    album: t.al?.name || '',
-                    cover: (t.al?.picUrl ? t.al.picUrl.replace(/^http:/, 'https:') : '') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
-                  }));
-                  songs = songs.concat(extraSongs);
-                }
-              } catch (_) {}
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Worker primary fetch fail, trying fallback meting API', err);
-      }
-
-      // 阶段 B: Meting 兜底通道
-      if (!songs.length) {
-        try {
-          const fallbackRes = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
-          const fallbackList = await fallbackRes.json();
-          if (Array.isArray(fallbackList) && fallbackList.length > 0) {
-            songs = fallbackList.map(item => ({
-              id: item.id,
-              title: item.name || '未知曲目',
-              artist: item.artist || '未知歌手',
-              album: item.album || '',
-              cover: (item.pic || '').replace(/^http:/, 'https:') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
             }));
           }
         } catch (_) {}
@@ -137,31 +121,32 @@ export function initNetease() {
       localStorage.setItem('CA_USER_NETEASE_PID', playlistId);
       consecutiveErrorCount = 0;
 
-      // 渲染组件
+      // 渲染首页推荐横滑
       renderHomeScroll();
+
+      // 渲染“我的”页面千首长列表
       initMineSongList();
 
-      // 预备第 0 首
+      // 载入第一首
       currentIndex = 0;
       playTrack(playlist[0], false);
-      showToast(`已成功载入 ${playlist.length} 首高品质音乐！`);
+      showToast(`已成功载入 ${playlist.length} 首歌曲！`);
     } catch (err) {
       console.error(err);
-      showToast('歌单同步失败，请检查网络');
+      showToast('歌单读取失败');
     }
   }
 
   /* ==========================================================
-     2. 首页横滑卡片 (105px 官方原生规范，标准 DOM)
+     2. 首页横滑卡片 (105px 官方原生规范，纯原生 DOM 挂载)
      ========================================================== */
   function renderHomeScroll() {
     const homeList = document.getElementById('neHomePlaylist');
     if (!homeList) return;
     homeList.className = 'playlist-scroll';
-    homeList.replaceChildren(); // 清空旧节点，防内存泄漏
+    homeList.replaceChildren();
 
-    const topSongs = playlist.slice(0, 18);
-    topSongs.forEach((s, idx) => {
+    playlist.slice(0, 20).forEach((s, idx) => {
       const item = document.createElement('div');
       item.className = 'playlist-card-item';
       item.onclick = () => window.playNeteaseTrack(idx);
@@ -175,7 +160,6 @@ export function initNetease() {
       img.loading = 'lazy';
       img.className = 'card-cover-img';
 
-      // 极细线播放轻量浮标
       const playIcon = document.createElement('div');
       playIcon.className = 'card-play-tag';
       playIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="#ffffff"><polygon points="7,4 20,12 7,20"/></svg>`;
@@ -225,12 +209,12 @@ export function initNetease() {
 
     appendSongRows(CHUNK_SIZE);
 
-    // 绑定平滑分块滚动加载
+    // 触底延时分块加载
     const scrollParent = document.getElementById('tabMine');
     if (scrollParent) {
       scrollParent.onscroll = () => {
         if (renderedChunkCount >= playlist.length) return;
-        if (scrollParent.scrollTop + scrollParent.clientHeight >= scrollParent.scrollHeight - 160) {
+        if (scrollParent.scrollTop + scrollParent.clientHeight >= scrollParent.scrollHeight - 180) {
           appendSongRows(CHUNK_SIZE);
         }
       };
@@ -333,20 +317,27 @@ export function initNetease() {
   async function playTrack(song, autoPlay = true) {
     if (!song) return;
 
-    // 页面元素更新
     document.getElementById('songNameH1').textContent = song.title;
     document.getElementById('singerName').textContent = song.artist;
     document.getElementById('miniTitle').textContent = song.title;
     document.getElementById('miniArtist').textContent = `- ${song.artist}`;
 
     const coverUrl = song.cover || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg';
-    document.getElementById('playerCoverImg').src = coverUrl;
-    document.getElementById('miniCover').src = coverUrl;
-    document.getElementById('playerBgImg').src = coverUrl;
+
+    // 动态挂载封面，彻底屏蔽任何源码裸露
+    const playerCover = ensureCoverElement('vinylDiscArt', 'playerCoverImg');
+    if (playerCover) playerCover.src = coverUrl;
+
+    const miniCover = ensureCoverElement('miniDiscWrap', 'miniCover');
+    if (miniCover) miniCover.src = coverUrl;
+
+    const bgImg = document.getElementById('playerBgImg');
+    if (bgImg) bgImg.src = coverUrl;
+
     const heroBg = document.getElementById('mineHeroBg');
     if (heroBg) heroBg.src = coverUrl;
 
-    // 载入歌曲流
+    // 音频源指向网易云官方 mp3 流
     audio.src = `https://music.163.com/song/media/outer/url?id=${song.id}.mp3`;
     loadLyrics(song.id);
 
@@ -355,10 +346,9 @@ export function initNetease() {
       const p = audio.play();
       if (p !== undefined) {
         p.then(() => {
-          consecutiveErrorCount = 0; // 成功播放重置计数
+          consecutiveErrorCount = 0;
           updatePlayState(true);
         }).catch((err) => {
-          // 移动端安全策略或无版权阻断
           console.warn('Playback intercepted/failed:', err);
           updatePlayState(false);
         });
@@ -368,15 +358,13 @@ export function initNetease() {
     }
   }
 
-  // 容错处理：遇 VIP / 试听错误自动顺延下一首
+  // VIP / 试听报错拦截并自动顺延下一首
   audio.onerror = () => {
     consecutiveErrorCount++;
-    console.warn(`[Netease Engine] Audio playback error on index: ${currentIndex}, count: ${consecutiveErrorCount}`);
-
     updatePlayState(false);
 
-    if (consecutiveErrorCount >= 6) {
-      showToast('连续多首受版权限制，已暂停播放');
+    if (consecutiveErrorCount >= 8) {
+      showToast('连续多首受 VIP 版权限制，已暂停');
       consecutiveErrorCount = 0;
       return;
     }
@@ -386,11 +374,11 @@ export function initNetease() {
 
     setTimeout(() => {
       nextTrack(true);
-    }, 400);
+    }, 450);
   };
 
   /* ==========================================================
-     5. 歌词解析与双模切换
+     5. 歌词解析
      ========================================================== */
   async function loadLyrics(songId) {
     currentLyrics = [];
@@ -455,7 +443,7 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     6. 播放状态与交互事件
+     6. 播放控制器与事件绑定
      ========================================================== */
   function updatePlayState(playing) {
     isPlaying = playing;
@@ -561,9 +549,7 @@ export function initNetease() {
     });
   });
 
-  /* ==========================================================
-     7. 导入自定义歌单 (支持链接与纯数字 ID)
-     ========================================================== */
+  /* 导入按钮绑定 */
   const mineContainer = document.getElementById('minePlaylists');
   if (mineContainer && !document.getElementById('btnMyPlaylistImport')) {
     const importBox = document.createElement('div');
@@ -606,7 +592,7 @@ export function initNetease() {
     };
   }
 
-  // 默认启动指定歌单 ID 2409170451
+  // 默认自启歌单 2409170451
   const savedPid = localStorage.getItem('CA_USER_NETEASE_PID') || DEFAULT_PLAYLIST_ID;
   loadPlaylistById(savedPid);
 }
