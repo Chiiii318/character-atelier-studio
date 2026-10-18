@@ -4,7 +4,8 @@
 
 export function initNetease() {
   const device = document.getElementById('appDevice');
-  if (!device) return;
+  if (!device || device.dataset.neInitialized) return;
+  device.dataset.neInitialized = 'true';
 
   const fullPlayer = document.getElementById('fullPlayer');
   const miniBar = document.getElementById('miniPlayerBar');
@@ -22,7 +23,9 @@ export function initNetease() {
   if (!audio) {
     audio = new Audio();
     audio.id = 'neAudioCore';
-    audio.preload = 'auto';
+    audio.preload = 'metadata';
+    audio.hidden = true;
+    device.append(audio);
   }
 
   /* ==========================================================
@@ -108,6 +111,10 @@ export function initNetease() {
     document.getElementById('playerBgImg').src = track.cover;
     document.getElementById('mineHeroBg').src = track.cover;
 
+    document.getElementById("currentTime").textContent = "00:00";
+    document.getElementById("totalTime").textContent = "00:00";
+    document.getElementById("progressFill").style.width = "0%";
+    document.getElementById("progressKnob").style.left = "0%";
     // 3. 音频源切换
     audio.src = track.url;
 
@@ -198,14 +205,14 @@ export function initNetease() {
     trackBar.onclick = (e) => {
       const rect = trackBar.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
-      const pct = clickX / rect.width;
-      audio.currentTime = pct * audio.duration;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      if (Number.isFinite(audio.duration) && audio.duration > 0) audio.currentTime = pct * audio.duration;
     };
   }
 
   /* 切歌：上/下一首 */
   function nextTrack() {
-    currentTrackIdx = (currentTrackIdx + 1) % TRACKS.length;
+    currentTrackIdx = mode === 0 ? (currentTrackIdx + 1 + Math.floor(Math.random() * (TRACKS.length - 1))) % TRACKS.length : (currentTrackIdx + 1) % TRACKS.length;
     renderTrack(TRACKS[currentTrackIdx], true);
     showToast(`切换至: ${TRACKS[currentTrackIdx].title}`);
   }
@@ -217,7 +224,7 @@ export function initNetease() {
 
   document.getElementById('nextBtn')?.addEventListener('click', nextTrack);
   document.getElementById('prevBtn')?.addEventListener('click', prevTrack);
-  audio.onended = nextTrack;
+  audio.onended = () => { if (mode === 1) { audio.currentTime = 0; audio.play().catch(() => updatePlayState(false)); } else nextTrack(); };
 
   /* 展开/收起主播放器 */
   miniBar?.addEventListener('click', () => {
@@ -237,14 +244,65 @@ export function initNetease() {
   });
 
   /* 底部三大 TabBar 切换 */
-  document.querySelectorAll('.tab-item').forEach(tab => {
+  device.querySelectorAll('.tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+      device.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      device.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.dataset.tab)?.classList.add('active');
     });
   });
+
+
+  // Native audio events remain the source of truth.
+  audio.addEventListener('play', () => updatePlayState(true));
+  audio.addEventListener('pause', () => updatePlayState(false));
+  audio.addEventListener('error', () => { updatePlayState(false); showToast('音源暂不可用，请更换可播放的音频地址'); });
+  let mode = 2; // list repeat by default
+  const curves = '<path d="M3 19C10 19 12 5 21 5M17 2l4 3-4 3M3 5c4 0 6 3 8 6m4 4c2 3 4 4 6 4m-4-3 4 3-4 3"/>';
+  const loop = '<path d="m17 2 4 4-4 4M3 11V10a4 4 0 0 1 4-4h14M7 22l-4-4 4-4m14-3v3a4 4 0 0 1-4 4H3"/>';
+  const modeButton = device.querySelector('#modeToggleBtn');
+  function renderMode() {
+    modeButton.setAttribute('aria-label', ['随机播放','单曲循环','列表循环'][mode]);
+    modeButton.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + (mode === 0 ? curves : loop + (mode === 1 ? '<text x="10" y="15" fill="currentColor" stroke="none" font-size="9">1</text>' : '')) + '</svg>';
+  }
+  modeButton.addEventListener('click', () => { mode = (mode + 1) % 3; renderMode(); showToast(modeButton.getAttribute('aria-label')); });
+  renderMode();
+  const share = document.createElement('div');
+  share.className = 'ne-share'; share.hidden = true;
+  share.setAttribute('role','dialog'); share.setAttribute('aria-label','分享歌曲');
+  share.innerHTML = '<h3>分享歌曲</h3><button type="button" data-share="native">系统分享</button><button type="button" data-share="copy">复制歌曲链接</button><button type="button" data-share="close">取消</button>';
+  device.append(share);
+  device.querySelector('#openShareBtn').addEventListener('click', () => { share.hidden = false; share.querySelector('button').focus(); });
+  share.addEventListener('click', async e => {
+    const action = e.target.dataset.share; if (!action) return;
+    if (action === 'close') { share.hidden = true; return; }
+    const track = TRACKS[currentTrackIdx]; const url = 'https://music.163.com/#/song?id=' + track.id;
+    try {
+      if (action === 'native' && navigator.share) await navigator.share({ title:track.title + ' - ' + track.artist, url });
+      else if (navigator.clipboard) { await navigator.clipboard.writeText(url); showToast('歌曲链接已复制'); }
+      else { window.prompt('复制歌曲链接', url); }
+      share.hidden = true;
+    } catch (err) { if (err.name !== 'AbortError') showToast('分享未完成，请重试'); }
+  });
+  function trackRow(track, idx) {
+    const row = document.createElement('button'); row.type = 'button'; row.className = 'ne-track-row';
+    const img = document.createElement('img'); img.src = track.cover; img.alt = track.album;
+    const text = document.createElement('span'); text.textContent = track.title;
+    const small = document.createElement('small'); small.textContent = track.artist; text.append(small); row.append(img,text);
+    row.addEventListener('click', () => { currentTrackIdx = idx; renderTrack(track,true); fullPlayer.classList.add('open'); device.classList.add('theme-dark'); });
+    return row;
+  }
+  const home = device.querySelector('#neHomePlaylist');
+  const mine = device.querySelector('#minePlaylists');
+  const results = document.createElement('div'); results.style.padding = '0 16px'; device.querySelector('#tabSearch').append(results);
+  TRACKS.forEach((track,idx) => { const row = trackRow(track,idx); row.classList.add('playlist-item'); home.append(row); mine.append(trackRow(track,idx)); results.append(trackRow(track,idx)); });
+  device.querySelector('#neSearchInput').addEventListener('input', e => {
+    results.replaceChildren(); TRACKS.forEach((track,idx) => { if ((track.title + track.artist).includes(e.target.value.trim())) results.append(trackRow(track,idx)); });
+    if (!results.children.length) results.textContent = '没有匹配的歌曲';
+  });
+  const like = device.querySelector('#likeBtn'); like.setAttribute('aria-label','喜欢歌曲'); like.setAttribute('aria-pressed','true');
+  like.addEventListener('click', () => { const liked = like.getAttribute('aria-pressed') !== 'true'; like.setAttribute('aria-pressed',String(liked)); like.querySelector('svg').style.fill = liked ? '#FF3A3A' : '#ffffff66'; });
 
   /* 初始渲染第一首《泪海》 */
   renderTrack(TRACKS[0], false);
