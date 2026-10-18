@@ -1,0 +1,465 @@
+/* ================================================================
+   script-atelier.css — 剧本改编工坊 v5.1（五步流水线 UI）
+   ================================================================ */
+
+/* ---- Shell ---- */
+#page-prompts .sa-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---- 项目绑定栏 ---- */
+#page-prompts .sa-project-bar {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+
+#page-prompts .sa-proj-field {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#page-prompts .sa-proj-field label {
+  font-size: 11.5px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+#page-prompts .sa-proj-field input.search {
+  max-width: none;
+  width: 100%;
+  height: 40px;
+  border-radius: 10px !important;
+}
+
+#page-prompts .sa-proj-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---- 五步胶囊轨道 ---- */
+#page-prompts .sa-stepper-bar {
+  width: 100%;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 8px 10px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#page-prompts .sa-stepper-bar::-webkit-scrollbar {
+  display: none;
+}
+
+#page-prompts .sa-stepper-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: max-content;
+}
+
+#page-prompts .sa-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted) !important;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+#page-prompts .sa-step-pill:hover {
+  background: var(--soft);
+  color: var(--ink) !important;
+}
+
+#page-prompts .sa-step-pill.active {
+  background: #18181b !important;
+  color: #fff !important;
+  border-color: #18181b !important;
+  box-shadow: 0 3px 10px rgba(24, 24, 27, 0.15);
+}
+
+#page-prompts .sa-step-pill.done:not(.active) {
+  background: #edf7ed;
+  color: #2e7d32 !important;
+  border-color: #c8e6c9 !important;
+}
+
+#page-prompts .sa-step-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.06);
+  color: inherit;
+}
+
+#page-prompts .sa-step-pill.active .sa-step-code {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+#page-prompts .sa-step-sep {
+  color: #d4d4d8;
+  font-size: 12px;
+  user-select: none;
+}
+
+/* ---- 主工作舱 ---- */
+#page-prompts .sa-workbench {
+  padding: 20px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+#page-prompts .sa-step-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+#page-prompts .sa-step-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* ---- 接力横幅 ---- */
+#page-prompts .sa-relay-banner {
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: #f8f9fa;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+#page-prompts .sa-relay-banner.ready {
+  background: #edf7ed;
+  border-color: #c8e6c9;
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+/* ---- 槽位控制台 ---- */
+#page-prompts .sa-slot-console {
+  background: #fafbfa;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#page-prompts .sa-slot-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#page-prompts .sa-slot-label {
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#page-prompts .sa-slot-label small {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+#page-prompts .sa-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#page-prompts .sa-opt-pill {
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #52525b !important;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 30px !important;
+  transition: all 0.15s ease;
+}
+
+#page-prompts .sa-opt-pill:hover {
+  background: var(--soft);
+  color: var(--ink) !important;
+}
+
+#page-prompts .sa-opt-pill.active {
+  background: #18181b !important;
+  color: #fff !important;
+  border-color: #18181b !important;
+  box-shadow: 0 2px 6px rgba(24, 24, 27, 0.14);
+}
+
+#page-prompts .sa-opt-pill.auto-pill {
+  border-style: dashed;
+}
+
+#page-prompts .sa-slot-textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12.5px;
+  line-height: 1.65;
+  resize: vertical;
+  outline: none;
+}
+
+#page-prompts .sa-slot-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+/* ---- 步骤动作块 ---- */
+#page-prompts .sa-block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+#page-prompts .sa-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#page-prompts .sa-block-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+#page-prompts .sa-num-badge {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #18181b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* ---- Prompt 折叠预览 ---- */
+#page-prompts .sa-prompt-fold {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fafbfa;
+  overflow: hidden;
+}
+
+#page-prompts .sa-prompt-fold summary {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+#page-prompts .sa-prompt-fold summary::-webkit-details-marker {
+  display: none;
+}
+
+#page-prompts .sa-prompt-pre {
+  margin: 0;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+  background: #f4f4f5;
+  color: #18181b;
+  font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 280px;
+  overflow-y: auto;
+  user-select: text;
+}
+
+/* ---- 定稿编辑区 ---- */
+#page-prompts .sa-draft-textarea {
+  width: 100%;
+  min-height: 230px;
+  padding: 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink);
+  font: 13px/1.75 ui-monospace, SFMono-Regular, Menlo, "PingFang SC", sans-serif;
+  resize: vertical;
+  outline: none;
+}
+
+#page-prompts .sa-draft-textarea:focus {
+  border-color: #18181b !important;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06) !important;
+}
+
+/* ---- HALT 熔断告警 ---- */
+#page-prompts .sa-halt-alert {
+  padding: 11px 14px;
+  border-radius: 11px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+/* ---- @@ENTRY 解析卡片列表 ---- */
+#page-prompts .sa-parsed-entries {
+  display: grid;
+  gap: 8px;
+}
+
+#page-prompts .sa-entry-card {
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fafbfa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#page-prompts .sa-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+#page-prompts .sa-entry-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+#page-prompts .sa-entry-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+#page-prompts .sa-mini-tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+#page-prompts .sa-mini-tag.dark {
+  background: #18181b;
+  color: #fff;
+  border-color: #18181b;
+}
+
+#page-prompts .sa-mini-tag.warn {
+  background: #fff4e5;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+#page-prompts .sa-mini-tag.ok {
+  background: #edf7ed;
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+
+/* ---- 底部操作栏 ---- */
+#page-prompts .sa-footer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* ==================================
+   移动端剧本工坊适配
+   ================================== */
+@media (max-width: 760px) {
+  #page-prompts .sa-workbench {
+    padding: 14px !important;
+  }
+
+  #page-prompts .sa-footer-actions {
+    grid-template-columns: 1fr;
+  }
+
+  #page-prompts .sa-block-head .btn {
+    width: 100%;
+  }
+}

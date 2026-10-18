@@ -1,0 +1,226 @@
+/* ================================================================
+   base.css — CSS 变量、重置、全局元素、动画、无障碍工具
+   ================================================================ */
+
+/* ---- 全局设计令牌（合并所有 :root 的最终生效值） ---- */
+:root {
+  color-scheme: light;
+
+  /* 背景 & 表面 */
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #f4f4f5;
+
+  /* 文字 */
+  --ink: #18181b;
+  --muted: #71717a;
+
+  /* 边线 & 柔底 */
+  --line: #e4e4e7;
+  --soft: #f4f4f5;
+
+  /* 强调色（黑曜石） */
+  --accent: #18181b;
+  --accent-hover: #27272a;
+  --accent-dark: #09090b;
+  --accent-soft: #edf3ef;
+
+  /* 语义别名 */
+  --pink: #18181b;
+  --pink2: #27272a;
+  --rose: #668271;
+  --sage: #668271;
+  --lav: #edf3ef;
+  --cream: #fff;
+
+  /* 状态 */
+  --danger: #ef4444;
+
+  /* 投影 & 圆角 */
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  --radius: 16px;
+}
+
+/* ---- 重置 ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 18px;
+  -webkit-text-size-adjust: 100%;
+  background: #fff;
+}
+
+body {
+  margin: 0;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font: 14px/1.6 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  color: inherit;
+  transition:
+    background-color .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    box-shadow .16s ease,
+    transform .18s ease;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+a {
+  color: var(--accent);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* ---- 焦点环 ---- */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #18181b !important;
+  outline-offset: 2px !important;
+}
+
+/* ---- 表单输入基础 ---- */
+input,
+select,
+textarea {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line) !important;
+  border-radius: 12px;
+}
+
+/* ---- 实用工具类 ---- */
+.hidden {
+  display: none !important;
+}
+
+/* ---- 视觉隐藏的原生文件选择器 ---- */
+.native-file-picker {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: .001 !important;
+}
+
+.file-trigger {
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+}
+
+.file-trigger:focus-visible {
+  outline: 3px solid #b7cbbd;
+  outline-offset: 3px;
+}
+
+/* ---- 矢量图标统一规范 ---- */
+svg.ui-icon,
+.ui-icon {
+  width: 15px !important;
+  height: 15px !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  fill: none !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+.ui-vector-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: -2px;
+  flex: 0 0 auto;
+}
+
+.inline-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: -2px;
+  flex: 0 0 auto;
+}
+
+/* ---- 关键帧动画 ---- */
+@keyframes page-in {
+  from { opacity: .65; transform: translateY(3px); }
+  to   { opacity: 1;   transform: translateY(0); }
+}
+
+@keyframes fold-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.85) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+@keyframes sparkleBurst {
+  0%   { opacity: 0; transform: scale(0); }
+  50%  { opacity: 1; transform: scale(2.2); }
+  100% { opacity: 0; transform: scale(3); }
+}
+
+@keyframes klvSheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ---- 减弱动效偏好 ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
