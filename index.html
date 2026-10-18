@@ -498,7 +498,7 @@
                   <div class="ne-profile-actions">
                     <button class="ne-pill-btn" id="btnOpenCookieModal">VIP 授权/登录</button>
                     <button class="ne-pill-btn" id="btnEditProfile2">编辑资料</button>
-                    <button class="ne-pill-btn" id="btnImportAnyPlaylist">＋ 导入歌单</button>
+<button class="ne-pill-btn" id="btnImportAnyPlaylist" onclick="document.getElementById('modalImportPlaylist').classList.add('open')">＋ 导入歌单</button>
                   </div>
                 </div>
               </div>
@@ -778,8 +778,8 @@
               <input type="text" id="iptImportPlaylistUrl" placeholder="如：https://163cn.tv/... 或 2409170451">
             </div>
             <div class="ne-modal-actions">
-              <button class="ne-btn-cancel" id="btnCancelImportPl">取消</button>
-              <button class="ne-btn-confirm" id="btnConfirmImportPl">确认导入</button>
+<button class="ne-btn-cancel" id="btnCancelImportPl" onclick="document.getElementById('modalImportPlaylist').classList.remove('open')">取消</button>
+<button class="ne-btn-confirm" id="btnConfirmImportPl" onclick="window.doImportPlaylist()">确认导入</button>
             </div>
           </div>
         </div>
