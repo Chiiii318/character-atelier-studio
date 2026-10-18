@@ -6,24 +6,27 @@
    ================================================================ */
 
 #page-netease {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  z-index: 9999 !important; /* 彻底覆盖宿主顶栏和底栏 */
   padding: 0 !important;
   margin: 0 !important;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
-  background: #111;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: #000 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  overflow: hidden !important;
 }
 
-/* 手机视口容器 (手机上铺满 100%，电脑上保持真实手机比例) */
 #page-netease .ne-phone-viewport {
   position: relative;
   width: 100%;
   max-width: 440px;
   height: 100%;
-  max-height: 100dvh;
+  height: 100dvh;
   background: #F5F6FA;
   overflow: hidden;
   display: flex;
