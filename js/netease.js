@@ -1,12 +1,11 @@
 /* ================================================================
-   netease.js — 基于私人 Cloudflare Worker 的网易云真实播放引擎
+   netease.js — 网易云真实播放引擎 (修复空格源码裸露 / 渲染100首歌曲列表)
    ================================================================ */
 
 export function initNetease() {
   const device = document.getElementById('appDevice');
   if (!device) return;
 
-  // 你的专属 Cloudflare Worker 代理根地址
   const WORKER_BASE = 'https://restless-math-53df.483308261.workers.dev';
 
   const fullPlayer = document.getElementById('fullPlayer');
@@ -20,7 +19,6 @@ export function initNetease() {
   const miniPlaySvg = document.getElementById('miniPlaySvg');
   const toast = document.getElementById('cloudToast');
 
-  // 全局唯一音频引擎
   let audio = document.getElementById('neAudioCore');
   if (!audio) {
     audio = new Audio();
@@ -28,12 +26,12 @@ export function initNetease() {
     audio.preload = 'auto';
   }
 
-  let playlist = []; // 播放列表
+  let playlist = [];
   let currentIndex = 0;
   let isPlaying = false;
   let isLyricsMode = false;
   let toastTimer = null;
-  let currentLyrics = []; // [{ time: 12.3, text: '...' }]
+  let currentLyrics = [];
 
   function showToast(text) {
     if (!toast) return;
@@ -51,21 +49,21 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     1. 从歌单详情注入播放列表（双通道容错 + 真实图片渲染修复）
+     1. 读取歌单并渲染两处列表：
+        - 首页：横向滑动推荐卡片
+        - 我的：100 首纵向点选大歌单
      ========================================================== */
   async function loadPlaylistById(playlistId) {
     showToast('正在读取歌单...');
     try {
       let tracks = [];
 
-      // 通道 1：优先从你的 Cloudflare Worker 代理拉取
       try {
         const res = await fetch(`${WORKER_BASE}/api/v6/playlist/detail?id=${playlistId}&n=100`);
         const data = await res.json();
         tracks = data?.playlist?.tracks || [];
       } catch (_) {}
 
-      // 通道 2：如果 Worker 没拿到，走公开接口降级兜底
       if (!tracks.length) {
         try {
           const fallbackRes = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
@@ -75,7 +73,7 @@ export function initNetease() {
               id: item.id,
               title: item.name || '未知曲目',
               artist: item.artist || '未知歌手',
-              cover: item.pic || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
+              cover: (item.pic || '').replace(/^http:/, 'https:') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
             }));
           }
         } catch (_) {}
@@ -90,54 +88,95 @@ export function initNetease() {
       }
 
       if (!playlist.length) {
-        showToast('歌单为空或未公开(请在App设为公开)');
+        showToast('歌单为空或未公开');
         return;
       }
 
-      // 更新首页“当前播放”横滑列表（修复图片标签代码裸露的 Bug）
+      // 1. 严格使用 DOM 节点渲染首页横向滑块，彻底杜绝任何多余空格引起的源码裸露
       const homeList = document.getElementById('neHomePlaylist');
       if (homeList) {
         homeList.className = 'playlist-scroll';
-        homeList.innerHTML = playlist.slice(0, 20).map((s, idx) => {
-          const pic = s.cover || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg';
-          return `<div class="playlist-item" style="cursor:pointer" onclick="window.playNeteaseTrack(${idx})">< img src="${pic}" alt="cover"><p>${s.title}</p ></div>`;
-        }).join('');
+        homeList.innerHTML = '';
+        homeList.style.cssText = 'display:flex;flex-direction:row;gap:12px;overflow-x:auto;padding:10px 16px;scrollbar-width:none;';
+
+        playlist.slice(0, 15).forEach((s, idx) => {
+          const item = document.createElement('div');
+          item.style.cssText = 'width:105px;min-width:105px;flex-shrink:0;cursor:pointer;text-align:left;';
+          item.onclick = () => window.playNeteaseTrack(idx);
+
+          const img = document.createElement('img');
+          img.src = `${s.cover}?param=200y200`;
+          img.alt = 'cover';
+          img.style.cssText = 'width:105px;height:105px;border-radius:10px;object-fit:cover;display:block;background:#222;';
+
+          const p = document.createElement('p');
+          p.textContent = s.title;
+          p.style.cssText = 'font-size:12px;color:#222;margin:6px 0 0 0;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;';
+
+          item.appendChild(img);
+          item.appendChild(p);
+          homeList.appendChild(item);
+        });
       }
 
-      // 保存歌单 ID 到本地
-      localStorage.setItem('CA_USER_NETEASE_PID', playlistId);
+      // 2. 渲染“我的”页面下方完整的 100 首歌曲大列表
+      renderMineSongList();
 
-      // 默认加载第一首
+      localStorage.setItem('CA_USER_NETEASE_PID', playlistId);
       currentIndex = 0;
       playTrack(playlist[0], false);
       showToast(`已成功载入 ${playlist.length} 首歌曲！`);
     } catch (err) {
       console.error(err);
-      showToast('歌单读取失败，请检查是否公开');
+      showToast('歌单读取失败');
     }
+  }
+
+  /* 渲染“我的”页面下方单曲列表 */
+  function renderMineSongList() {
+    const mineContainer = document.getElementById('minePlaylists');
+    if (!mineContainer) return;
+
+    let listWrap = document.getElementById('neMineSongListWrap');
+    if (!listWrap) {
+      listWrap = document.createElement('div');
+      listWrap.id = 'neMineSongListWrap';
+      listWrap.style.cssText = 'padding:10px 16px 80px;display:flex;flex-direction:column;gap:6px;';
+      mineContainer.appendChild(listWrap);
+    }
+
+    listWrap.innerHTML = playlist.map((s, idx) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 8px;border-radius:8px;cursor:pointer;background:${idx === currentIndex ? 'rgba(236,65,65,0.08)' : 'transparent'};" onclick="window.playNeteaseTrack(${idx})">
+        <span style="width:24px;font-size:13px;font-weight:700;color:${idx === currentIndex ? '#EC4141' : '#999'};text-align:center;">${idx + 1}</span>
+        < img src="${s.cover}?param=100y100" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#eee;">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:14px;font-weight:600;color:${idx === currentIndex ? '#EC4141' : '#222'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title}</div>
+          <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.artist}</div>
+        </div>
+      </div>
+    `).join('');
   }
 
   window.playNeteaseTrack = (idx) => {
     if (playlist[idx]) {
       currentIndex = idx;
       playTrack(playlist[idx], true);
+      renderMineSongList();
       fullPlayer.classList.add('open');
     }
   };
 
   /* ==========================================================
-     2. 播放单曲与歌词同步
+     2. 播放单曲
      ========================================================== */
   async function playTrack(song, autoPlay = true) {
     if (!song) return;
 
-    // 更新界面信息
     document.getElementById('songNameH1').textContent = song.title;
     document.getElementById('singerName').textContent = song.artist;
     document.getElementById('miniTitle').textContent = song.title;
     document.getElementById('miniArtist').textContent = `- ${song.artist}`;
 
-    // 注入真实封面原画
     const coverUrl = song.cover || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg';
     document.getElementById('playerCoverImg').src = coverUrl;
     document.getElementById('miniCover').src = coverUrl;
@@ -145,10 +184,7 @@ export function initNetease() {
     const heroBg = document.getElementById('mineHeroBg');
     if (heroBg) heroBg.src = coverUrl;
 
-    // 音频源指向网易云官方直链
     audio.src = `https://music.163.com/song/media/outer/url?id=${song.id}.mp3`;
-
-    // 经由 Worker 抓取真实歌词
     loadLyrics(song.id);
 
     if (autoPlay) {
@@ -168,12 +204,10 @@ export function initNetease() {
         lrcStr = data?.lrc?.lyric || '';
       } catch (_) {}
 
-      // 歌词降级兜底
       if (!lrcStr) {
         const fallback = await fetch(`https://api.injahow.cn/meting/?type=lrc&id=${songId}`);
         lrcStr = await fallback.text();
       }
-
       parseLrc(lrcStr);
     } catch (_) {
       currentLyrics = [{ time: 0, text: '纯音乐，无歌词' }];
@@ -209,19 +243,19 @@ export function initNetease() {
     const end = Math.min(currentLyrics.length, activeIdx + 4);
     const slice = currentLyrics.slice(start, end);
 
-    lyricFlow.innerHTML = slice.map((item, idx) => {
-      const isCur = (start + idx) === activeIdx;
-      return `<p class="lyric-row ${isCur ? 'current' : ''}">${item.text}</p >`;
-    }).join('');
+    lyricFlow.innerHTML = '';
+    slice.forEach((item, idx) => {
+      const p = document.createElement('p');
+      p.className = `lyric-row ${(start + idx) === activeIdx ? 'current' : ''}`;
+      p.textContent = item.text;
+      lyricFlow.appendChild(p);
+    });
   }
 
-  /* ==========================================================
-     3. 播放器控制与进度
-     ========================================================== */
   function updatePlayState(playing) {
     isPlaying = playing;
-    const pauseHtml = `<rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/>`;
-    const playHtml = `<polygon points="7,4 20,12 7,20"/>`;
+    const pauseHtml = `<rect x="6" y="4" width="4" height="16" rx="1.5"></rect><rect x="14" y="4" width="4" height="16" rx="1.5"></rect>`;
+    const playHtml = `<polygon points="7,4 20,12 7,20"></polygon>`;
 
     if (playing) {
       fullPlayer.classList.remove('paused');
@@ -276,12 +310,14 @@ export function initNetease() {
     if (!playlist.length) return;
     currentIndex = (currentIndex + 1) % playlist.length;
     playTrack(playlist[currentIndex], true);
+    renderMineSongList();
     showToast(`下一首: ${playlist[currentIndex].title}`);
   }
   function prevTrack() {
     if (!playlist.length) return;
     currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
     playTrack(playlist[currentIndex], true);
+    renderMineSongList();
     showToast(`上一首: ${playlist[currentIndex].title}`);
   }
 
@@ -313,72 +349,36 @@ export function initNetease() {
     });
   });
 
-  /* ==========================================================
-     4. 全网搜索 (经由 Worker 转发)
-     ========================================================== */
-  const searchInput = document.getElementById('neSearchInput');
-  if (searchInput) {
-    searchInput.onkeydown = async (e) => {
-      if (e.key === 'Enter') {
-        const q = searchInput.value.trim();
-        if (!q) return;
-        showToast(`全网检索: ${q}`);
-        try {
-          const res = await fetch(`${WORKER_BASE}/api/search/get/web?s=${encodeURIComponent(q)}&type=1&limit=20`);
-          const data = await res.json();
-          const songs = data?.result?.songs || [];
-          if (songs.length) {
-            playlist = songs.map(s => ({
-              id: s.id,
-              title: s.name,
-              artist: (s.artists || []).map(a => a.name).join(' / ') || '未知歌手',
-              cover: s.album?.picUrl ? s.album.picUrl.replace(/^http:/, 'https:') : 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
-            }));
-            currentIndex = 0;
-            playTrack(playlist[0], true);
-            fullPlayer.classList.add('open');
-          } else {
-            showToast('未找到该歌曲');
-          }
-        } catch (_) {
-          showToast('搜索失败');
-        }
-      }
-    };
-  }
-
-  /* ==========================================================
-     5. “我的”页面：注入【导入我的歌单】（支持链接/短链全智能提取）
-     ========================================================== */
+  /* 导入按钮 */
   const mineContainer = document.getElementById('minePlaylists');
   if (mineContainer && !document.getElementById('btnMyPlaylistImport')) {
-    mineContainer.innerHTML = `
-      <div style="padding:10px 0;text-align:center">
-        <button id="btnMyPlaylistImport" class="btn btn-primary" style="margin:0 auto;display:inline-flex;align-items:center;gap:6px">
-          <span>＋ 导入我的网易云公开歌单</span>
-        </button>
-        <p style="font-size:11px;color:var(--muted);margin-top:8px">在网易云 App 打开歌单点“分享-复制链接”粘贴即可</p >
-      </div>
+    const importBox = document.createElement('div');
+    importBox.style.cssText = 'padding:14px 0 10px;text-align:center';
+    importBox.innerHTML = `
+      <button id="btnMyPlaylistImport" class="btn btn-primary" style="margin:0 auto;display:inline-flex;align-items:center;gap:6px">
+        <span>＋ 导入我的网易云公开歌单</span>
+      </button>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px">在网易云 App 打开歌单点“分享-复制链接”粘贴即可</p >
     `;
+    mineContainer.insertBefore(importBox, mineContainer.firstChild);
 
     document.getElementById('btnMyPlaylistImport').onclick = () => {
-      const input = prompt('请输入你的网易云公开歌单链接或歌单ID：\n(在网易云App中点分享-复制链接)', '');
+      const input = prompt('请输入你的网易云公开歌单链接或歌单ID：', '');
       if (!input || !input.trim()) return;
 
       const raw = input.trim();
-      // 智能从复制的一大段话中抽取出数字 ID
       const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
       const pid = match ? match[1] : raw.replace(/[^0-9]/g, '');
 
       if (!pid) {
-        alert('未能从输入中识别出歌单数字 ID，请确认复制了正确的分享链接。');
+        alert('未能从输入中识别出歌单数字 ID');
         return;
       }
       loadPlaylistById(pid);
     };
   }
 
-  // 优先读取本地记忆的歌单，否则读取热歌榜默认歌单 (ID: 3778678)
+  // 恢复本地歌单或热歌榜默认
   const savedPid = localStorage.getItem('CA_USER_NETEASE_PID') || '3778678';
   loadPlaylistById(savedPid);
 }
