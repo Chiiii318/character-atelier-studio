@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/character-detail.css"/>
   <link rel="stylesheet" href="css/worldbook.css"/>
   <link rel="stylesheet" href="css/script-atelier.css"/>
+<link rel="stylesheet" href="css/netease.css"/>
 </head>
 <body>
 
@@ -355,10 +356,10 @@
           <span class="icon-tag">地理 / 动线</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('角色小手机功能待开发')">
-          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-phone"></use></svg></div>
-          <span class="icon-name">角色小手机</span>
-          <span class="icon-tag">虚拟生活终端</span>
+        <div class="icon-tile" data-page="netease">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-note"></use></svg></div>
+          <span class="icon-name">网易云音乐</span>
+          <span class="icon-tag">一起听 / 黑胶</span>
         </div>
 
         <div class="icon-tile" onclick="alert('游戏电竞功能待开发')">
@@ -396,6 +397,192 @@
           <span class="icon-name">未发备忘</span>
           <span class="icon-tag">私密草稿</span>
         </div>
+      </div>
+    </section>
+
+    <!-- ======== 网易云音乐播放器 ======== -->
+    <section class="page" id="page-netease">
+      <div class="ne-device" id="neDevice">
+        
+        <!-- 返回生活切片导航 -->
+        <div class="ne-back-bar">
+          <button class="btn btn-small" data-page="vignettes" style="border:none;background:none;padding:0">
+            <svg class="ui-icon"><use href="#i-chevron"></use></svg>
+          </button>
+          <span>网易云音乐</span>
+        </div>
+
+        <div class="ne-toast" id="neToast"></div>
+
+        <!-- Tab 页面容器 -->
+        <div class="ne-views">
+          <!-- 首页推荐 -->
+          <div class="ne-view active" id="neViewHome">
+            <div class="ne-home-header">
+              <div class="ne-home-tabs">
+                <span>发现</span>
+                <span class="active">推荐</span>
+                <span>播客</span>
+              </div>
+              <svg class="ui-icon" style="width:18px;height:18px;color:#333"><use href="#i-search"></use></svg>
+            </div>
+            <div class="ne-section-title">推荐歌单</div>
+            <div class="ne-playlist-scroll">
+              <div class="ne-playlist-item">
+                <img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="Cover">
+                <p>于是我放下执念 接受缘分到此为止</p>
+              </div>
+              <div class="ne-playlist-item">
+                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80" alt="Cover">
+                <p>深夜独处时才敢打开的歌单</p>
+              </div>
+              <div class="ne-playlist-item">
+                <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&auto=format&fit=crop&q=80" alt="Cover">
+                <p>你和我的缘 像极了何时终止的雨</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 搜索 -->
+          <div class="ne-view" id="neViewSearch">
+            <div style="padding:14px 16px">
+              <div style="height:38px;background:#eceef2;border-radius:19px;display:flex;align-items:center;padding:0 14px;gap:8px;color:#999;font-size:14px">
+                <svg class="ui-icon"><use href="#i-search"></use></svg>
+                <span>搜索歌曲、歌手、歌词</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 我的 -->
+          <div class="ne-view" id="neViewMine">
+            <div style="padding:20px 16px;text-align:center;color:var(--muted);font-size:13px">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--soft);margin:0 auto 10px;display:grid;place-items:center">
+                <svg class="ui-icon" style="width:24px;height:24px"><use href="#i-users"></use></svg>
+              </div>
+              <strong style="display:block;font-size:16px;color:var(--ink);margin-bottom:4px">我的音乐</strong>
+              <span>1099 首收藏 / 3992 次播放</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini 播放条 -->
+        <div class="ne-mini-bar" id="neMiniBar">
+          <div class="ne-mini-disc">
+            <img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="cover">
+          </div>
+          <div class="ne-mini-info">
+            泪海<span class="artist">- 许茹芸</span>
+          </div>
+          <button class="ne-mini-btn" id="neMiniPlayBtn" aria-label="播放">
+            <svg id="neMiniPlayIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg>
+          </button>
+          <button class="ne-mini-btn" aria-label="列表">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/></svg>
+          </button>
+        </div>
+
+        <!-- 底部 TabBar -->
+        <nav class="ne-tabbar">
+          <button class="ne-tab active" data-view="neViewHome">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>首页</span>
+          </button>
+          <button class="ne-tab" data-view="neViewSearch">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>
+            <span>搜索</span>
+          </button>
+          <button class="ne-tab" data-view="neViewMine">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>我的</span>
+          </button>
+        </nav>
+
+        <!-- 全屏播放器 -->
+        <div class="ne-full-player" id="neFullPlayer">
+          <img class="ne-blur-bg" src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="bg">
+          <div class="ne-vignette"></div>
+
+          <div class="ne-player-content">
+            <div class="ne-player-nav">
+              <button class="ne-player-nav-btn" id="neClosePlayer" aria-label="收起">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <span class="ne-player-nav-title">我喜欢的音乐</span>
+              <button class="ne-player-nav-btn" aria-label="分享">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
+            </div>
+
+            <div class="ne-vinyl-stage" id="neStage">
+              <div class="ne-vinyl-view" id="neVinylView">
+                <div class="ne-tonearm">
+                  <div class="ne-tonearm-pivot"></div>
+                  <svg width="130" height="190" viewBox="0 0 140 200" fill="none" style="filter:drop-shadow(4px 10px 12px rgba(0,0,0,0.45))">
+                    <path d="M 15,15 Q 26,72 54,115 L 66,135" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+                    <g transform="translate(66, 135) rotate(52)">
+                      <rect x="-8" y="0" width="16" height="26" rx="4" fill="#E8E8E8" stroke="#D1D1D1" stroke-width="1.5"/>
+                      <line x1="-5" y1="8" x2="5" y2="8" stroke="#A8A8A8" stroke-width="1.2"/>
+                      <line x1="-5" y1="14" x2="5" y2="14" stroke="#A8A8A8" stroke-width="1.2"/>
+                      <line x1="-5" y1="20" x2="5" y2="20" stroke="#A8A8A8" stroke-width="1.2"/>
+                    </g>
+                  </svg>
+                </div>
+                <div class="ne-vinyl-disc">
+                  <div class="ne-disc-art"><img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="Cover"></div>
+                </div>
+              </div>
+
+              <div class="ne-lyrics-view" id="neLyricsView">
+                <div class="ne-lyric-row">思念是一整片海洋</div>
+                <div class="ne-lyric-row current">我整夜泡在你的泪海中</div>
+                <div class="ne-lyric-row">爱已不能动</div>
+                <div class="ne-lyric-row" style="opacity:0.3">还有什么值得我心痛</div>
+              </div>
+            </div>
+
+            <div class="ne-lower">
+              <div class="ne-meta-line">
+                <div>
+                  <div class="ne-song-title">泪海</div>
+                  <div class="ne-artist-name">许茹芸</div>
+                </div>
+                <div class="ne-badge-bar">
+                  <button class="ne-badge-btn" id="neLikeBtn">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#FF3A3A"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span class="ne-heart-count">78w+</span>
+                  </button>
+                  <button class="ne-badge-btn">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="ne-progress-wrap">
+                <div class="ne-progress-track"><div class="ne-progress-rail"><div class="ne-progress-fill"></div><div class="ne-progress-knob"></div></div></div>
+                <div class="ne-time-row"><span>00:06</span><span style="color:rgba(255,255,255,0.55);font-size:11px">极高音质</span><span>04:52</span></div>
+              </div>
+
+              <div class="ne-controls">
+                <button class="ne-ctrl-btn" id="neModeBtn" aria-label="播放模式">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M 3 19 C 8 19, 13 5, 21 5"/><polyline points="17 2 21 5 17 8"/><path d="M 3 5 C 8 5, 10 9, 12 12"/><path d="M 15 15 C 17 18, 19 19, 21 19"/><polyline points="17 16 21 19 17 22"/></svg>
+                </button>
+                <button class="ne-ctrl-btn" id="nePrevBtn" aria-label="上一首">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zm2.34 7.55 9.4 6.27A1 1 0 0 0 19 18V6a1 1 0 0 0-1.26-.82l-9.4 6.27a1 1 0 0 0 0 1.66z"/></svg>
+                </button>
+                <button class="ne-ctrl-btn ne-play-big" id="nePlayBtn" aria-label="播放">
+                  <svg id="nePlayIcon" width="42" height="42" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg>
+                </button>
+                <button class="ne-ctrl-btn" id="neNextBtn" aria-label="下一首">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zM5.26 5.18A1 1 0 0 0 4 6v12a1 1 0 0 0 1.26.82l9.4-6.27a1 1 0 0 0 0-1.66l-9.4-6.27z"/></svg>
+                </button>
+                <button class="ne-ctrl-btn" aria-label="列表">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/><polyline points="17 14 20 17 17 20"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
