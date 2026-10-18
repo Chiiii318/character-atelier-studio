@@ -525,6 +525,9 @@ export function initNetease() {
   document.getElementById('closePlayerBtn')?.addEventListener('click', () => fullPlayer.classList.remove('open'));
   document.getElementById('btnCloseDetail')?.addEventListener('click', () => playlistDetailPage.classList.remove('open'));
   document.getElementById('sheetPlayAllBtn')?.addEventListener('click', () => window.playNeteaseTrack(0));
+  document.getElementById('btnExitNeteaseApp')?.addEventListener('click', () => {
+    document.querySelector('.ne-exit-back')?.click();
+  });
 
   document.getElementById('playerBodyStage')?.addEventListener('click', () => {
     isLyricsMode = !isLyricsMode;
