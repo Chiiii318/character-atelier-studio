@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<!-- 注入 SVG 图标精灵（异步加载，图标出现前有极短空白） -->
+<!-- 注入 SVG 图标精灵（异步加载） -->
 <div id="svg-sprites" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></div>
 <script>fetch('icons.svg').then(r=>r.text()).then(t=>{document.getElementById('svg-sprites').innerHTML=t})</script>
 
@@ -29,6 +29,7 @@
       <button class="navitem" data-page="relations"><svg><use href="#i-network"></use></svg>人物关系</button>
       <button class="navitem" data-page="ai"><svg><use href="#i-sparkles"></use></svg>AI 创作室</button>
       <button class="navitem" data-page="prompts"><svg><use href="#i-clapper"></use></svg>剧本改编工坊</button>
+      <button class="navitem" data-page="vignettes"><svg><use href="#i-phone"></use></svg>生活切片</button>
     </div>
     <div class="navgroup">
       <div class="navlabel">资源管理</div>
@@ -65,8 +66,8 @@
         <button class="quickcard" data-page="characters"><div class="quicktop"><span class="icowash"><svg><use href="#i-users"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>角色卡</strong><small style="color:var(--muted);display:block;margin-top:3px">管理人设、编辑与版本</small></div></button>
         <button class="quickcard" data-page="worlds"><div class="quicktop"><span class="icowash"><svg><use href="#i-book"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>世界书</strong><small style="color:var(--muted);display:block;margin-top:3px">整理条目与智能解析提取</small></div></button>
         <button class="quickcard" data-page="prompts"><div class="quicktop"><span class="icowash"><svg><use href="#i-clapper"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>剧本改编工坊</strong><small style="color:var(--muted);display:block;margin-top:3px">v5.1 演艺圈/戏中戏流水线</small></div></button>
+        <button class="quickcard" data-page="vignettes"><div class="quicktop"><span class="icowash"><svg><use href="#i-phone"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>生活切片</strong><small style="color:var(--muted);display:block;margin-top:3px">真实地图、王者战绩与通告</small></div></button>
         <button class="quickcard" data-page="ai"><div class="quicktop"><span class="icowash lav"><svg><use href="#i-sparkles"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>AI 创作室</strong><small style="color:var(--muted);display:block;margin-top:3px">辅助生成与完善设定</small></div></button>
-        <button class="quickcard" data-page="relations"><div class="quicktop"><span class="icowash"><svg><use href="#i-network"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>人物关系</strong><small style="color:var(--muted);display:block;margin-top:3px">梳理角色之间的联系</small></div></button>
       </div>
       <div class="section-head"><h2>最近编辑</h2><button class="linkbtn" data-page="characters" style="border:0;background:transparent;color:var(--ink);font-weight:700;font-size:12px;cursor:pointer">查看全部 →</button></div>
       <div class="resourcegrid" id="recentGrid"></div>
@@ -336,6 +337,68 @@
       </div>
     </section>
 
+    <!-- ======== 生活切片与小剧场主页 ======== -->
+    <section class="page" id="page-vignettes">
+      <div class="page-heading">
+        <div>
+          <div class="eyebrow">VISUAL IDENTITY & ICONS</div>
+          <h1>生活切片与小剧场工坊</h1>
+          <div class="muted">角色的真实生活触点：地图、小手机、游戏战绩、外卖小票与通告日程。</div>
+        </div>
+      </div>
+
+      <!-- 8 个大图标卡片（和截图完全一致） -->
+      <div class="icon-grid">
+        <div class="icon-tile" onclick="alert('地图动线功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-map"></use></svg></div>
+          <span class="icon-name">真实地图</span>
+          <span class="icon-tag">地理 / 动线</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('角色小手机功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-phone"></use></svg></div>
+          <span class="icon-name">角色小手机</span>
+          <span class="icon-tag">虚拟生活终端</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('游戏电竞功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-game"></use></svg></div>
+          <span class="icon-name">游戏电竞</span>
+          <span class="icon-tag">王者 / 开黑</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('日常烟火功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-receipt"></use></svg></div>
+          <span class="icon-name">日常烟火</span>
+          <span class="icon-tag">外卖 / 小票</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('通告日程功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-calendar"></use></svg></div>
+          <span class="icon-name">通告日程</span>
+          <span class="icon-tag">大夜 / 失联</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('热搜舆论功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-trending"></use></svg></div>
+          <span class="icon-name">热搜舆论</span>
+          <span class="icon-tag">文娱 / 词条</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('出行足迹功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-plane"></use></svg></div>
+          <span class="icon-name">出行足迹</span>
+          <span class="icon-tag">登机牌 / 跨城</span>
+        </div>
+
+        <div class="icon-tile" onclick="alert('未发备忘功能待开发')">
+          <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-note"></use></svg></div>
+          <span class="icon-name">未发备忘</span>
+          <span class="icon-tag">私密草稿</span>
+        </div>
+      </div>
+    </section>
+
     <!-- ======== 设置 ======== -->
     <section class="page" id="page-settings">
       <div class="section-head" style="margin-top:0">
@@ -365,7 +428,7 @@
 <nav class="mobile-nav">
   <button class="active" data-page="home"><svg><use href="#i-home"></use></svg>首页</button>
   <button data-page="characters"><svg><use href="#i-users"></use></svg>角色卡</button>
-  <button aria-label="新建" class="plus" data-action="new-character"><svg><use href="#i-plus"></use></svg></button>
+  <button data-page="vignettes"><svg><use href="#i-phone"></use></svg>切片</button>
   <button data-page="worlds"><svg><use href="#i-book"></use></svg>世界书</button>
   <button data-page="relations"><svg><use href="#i-network"></use></svg>关系</button>
 </nav>
