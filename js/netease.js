@@ -74,6 +74,22 @@ export function initNetease() {
   }
   applyProfile();
 
+   // 本地图片选择读取辅助函数 (Base64)
+  function handleLocalImage(inputEl, targetInputId) {
+    inputEl?.addEventListener('change', e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById(targetInputId).value = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  handleLocalImage(document.getElementById('fileAvatarPicker'), 'iptProfileAvatar');
+  handleLocalImage(document.getElementById('fileBgPicker'), 'iptProfileBg');
+
   // 名片弹窗
   const modalProfile = document.getElementById('modalProfileEdit');
   const openProfile = () => {
@@ -601,13 +617,32 @@ export function initNetease() {
     }
   });
 
-  // 自定义导入歌单
+  // 自定义导入歌单专属弹窗逻辑
+  const modalImport = document.getElementById('modalImportPlaylist');
+  const iptImportPl = document.getElementById('iptImportPlaylistUrl');
+
   document.getElementById('btnImportAnyPlaylist')?.addEventListener('click', () => {
-    const input = prompt('请输入网易云歌单 ID 或分享链接：', '');
-    if (!input || !input.trim()) return;
-    const match = input.match(/[?&]id=(\d+)/) || input.match(/playlist\/(\d+)/) || input.match(/(\d{7,12})/);
-    const pid = match ? match[1] : input.replace(/[^0-9]/g, '');
-    if (!pid) return alert('未能识别歌单 ID');
+    if (iptImportPl) iptImportPl.value = '';
+    modalImport?.classList.add('open');
+  });
+
+  document.getElementById('btnCancelImportPl')?.addEventListener('click', () => {
+    modalImport?.classList.remove('open');
+  });
+
+  document.getElementById('btnConfirmImportPl')?.addEventListener('click', () => {
+    const raw = iptImportPl ? iptImportPl.value.trim() : '';
+    if (!raw) {
+      showToast('请输入歌单链接或ID');
+      return;
+    }
+    const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
+    const pid = match ? match[1] : raw.replace(/[^0-9]/g, '');
+    if (!pid) {
+      showToast('未能识别歌单数字ID');
+      return;
+    }
+    modalImport?.classList.remove('open');
     loadPlaylistById(pid);
   });
 
