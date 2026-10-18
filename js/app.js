@@ -21,6 +21,7 @@ import {
   loadWorldBooks, initWorldBook
 } from './worldbook.js';
 import { initScriptAtelier } from './script-atelier.js';
+import { initNetease } from './netease.js';
 
 /* ================================================================
    页面路由
@@ -281,6 +282,9 @@ async function boot() {
   } else {
     initScriptAtelier();
   }
+
+  // 初始化网易云播放器
+  initNetease();
 }
 
 boot();
