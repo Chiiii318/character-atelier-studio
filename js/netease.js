@@ -1,13 +1,12 @@
 /* ================================================================
-   netease.js — 网易云原生播放与曲库引擎 (千首全量曲库 + 原生 DOM 绝对免疫字符裸露)
+   netease.js — 网易云原生播放引擎 (真实可用流解析 + 全量千首 + 纯净DOM)
    ================================================================ */
 
 export function initNetease() {
   const device = document.getElementById('appDevice');
   if (!device) return;
 
-  const WORKER_BASE = 'https://restless-math-53df.483308261.workers.dev';
-  const DEFAULT_PLAYLIST_ID = '2409170451'; // 真实歌单 ID（含 1000+ 首歌曲）
+  const DEFAULT_PLAYLIST_ID = '2409170451';
 
   const fullPlayer = document.getElementById('fullPlayer');
   const miniBar = document.getElementById('miniPlayerBar');
@@ -20,7 +19,6 @@ export function initNetease() {
   const miniPlaySvg = document.getElementById('miniPlaySvg');
   const toast = document.getElementById('cloudToast');
 
-  // 全局唯一原生音频对象
   let audio = document.getElementById('neAudioCore');
   if (!audio) {
     audio = new Audio();
@@ -37,7 +35,7 @@ export function initNetease() {
   let isLyricsMode = false;
   let toastTimer = null;
   let currentLyrics = [];
-  let consecutiveErrorCount = 0; // 防死循环计数
+  let consecutiveErrorCount = 0;
   let renderedChunkCount = 0;
   const CHUNK_SIZE = 50;
 
@@ -56,89 +54,47 @@ export function initNetease() {
     return `${m}:${s}`;
   }
 
-  /* 动态保证 DOM 节点纯净，杜绝任何 HTML 源码字符串裸露 */
-  function ensureCoverElement(containerId, imgId, className) {
-    const container = document.getElementById(containerId);
-    if (!container) return null;
-    let img = document.getElementById(imgId);
-    if (!img) {
-      container.innerHTML = '';
-      img = document.createElement('img');
-      img.id = imgId;
-      if (className) img.className = className;
-      container.appendChild(img);
-    }
-    return img;
-  }
-
   /* ==========================================================
-     1. 全量千首曲库抓取引擎
+     1. 全量曲库抓取（直接使用解析流 url 与 pic）
      ========================================================== */
   async function loadPlaylistById(playlistId) {
-    showToast('正在同步歌单全量单曲...');
+    showToast('正在同步 1000 首曲库...');
     try {
-      let songs = [];
+      const res = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
+      const list = await res.json();
 
-      // 优先从全量接口拉取（直接支持 1000 首）
-      try {
-        const fallbackRes = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
-        const fallbackList = await fallbackRes.json();
-        if (Array.isArray(fallbackList) && fallbackList.length > 20) {
-          songs = fallbackList.map(item => ({
-            id: item.id,
-            title: item.name || '未知曲目',
-            artist: item.artist || '未知歌手',
-            album: item.album || '',
-            cover: (item.pic || '').replace(/^http:/, 'https:') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
-          }));
-        }
-      } catch (_) {}
-
-      // 如果备用全量接口失败，再退回 Worker 详情
-      if (!songs.length) {
-        try {
-          const res = await fetch(`${WORKER_BASE}/api/v6/playlist/detail?id=${playlistId}`);
-          const data = await res.json();
-          const pl = data?.playlist;
-          if (Array.isArray(pl?.tracks)) {
-            songs = pl.tracks.map(t => ({
-              id: t.id,
-              title: t.name || '未知曲目',
-              artist: (t.ar || []).map(a => a.name).join(' / ') || '未知歌手',
-              album: t.al?.name || '',
-              cover: (t.al?.picUrl ? t.al.picUrl.replace(/^http:/, 'https:') : '') || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg'
-            }));
-          }
-        } catch (_) {}
+      if (Array.isArray(list) && list.length > 0) {
+        playlist = list.map(item => ({
+          title: item.name || '未知曲目',
+          artist: item.artist || '未知歌手',
+          url: item.url, // 真实可用播放链接
+          cover: item.pic || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg',
+          lrcUrl: item.lrc
+        }));
       }
 
-      if (!songs.length) {
-        showToast('歌单为空或未公开');
+      if (!playlist.length) {
+        showToast('歌单读取失败');
         return;
       }
 
-      playlist = songs;
       localStorage.setItem('CA_USER_NETEASE_PID', playlistId);
       consecutiveErrorCount = 0;
 
-      // 渲染首页推荐横滑
       renderHomeScroll();
-
-      // 渲染“我的”页面千首长列表
       initMineSongList();
 
-      // 载入第一首
       currentIndex = 0;
       playTrack(playlist[0], false);
-      showToast(`已成功载入 ${playlist.length} 首歌曲！`);
+      showToast(`已载入全部 ${playlist.length} 首歌曲！`);
     } catch (err) {
       console.error(err);
-      showToast('歌单读取失败');
+      showToast('网络异常，歌单加载失败');
     }
   }
 
   /* ==========================================================
-     2. 首页横滑卡片 (105px 官方原生规范，纯原生 DOM 挂载)
+     2. 首页横滑卡片
      ========================================================== */
   function renderHomeScroll() {
     const homeList = document.getElementById('neHomePlaylist');
@@ -155,7 +111,7 @@ export function initNetease() {
       coverWrap.className = 'card-cover-wrap';
 
       const img = document.createElement('img');
-      img.src = `${s.cover}?param=240y240`;
+      img.src = s.cover;
       img.alt = s.title;
       img.loading = 'lazy';
       img.className = 'card-cover-img';
@@ -178,7 +134,7 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     3. “我的”全量长列表（Lazy 分块平滑加载 + 播放中高亮）
+     3. “我的”千首长列表
      ========================================================== */
   function initMineSongList() {
     const mineContainer = document.getElementById('minePlaylists');
@@ -194,7 +150,6 @@ export function initNetease() {
     listWrap.replaceChildren();
     renderedChunkCount = 0;
 
-    // 顶部统计栏
     const headerBar = document.createElement('div');
     headerBar.className = 'song-list-header';
     headerBar.innerHTML = `
@@ -209,12 +164,11 @@ export function initNetease() {
 
     appendSongRows(CHUNK_SIZE);
 
-    // 触底延时分块加载
     const scrollParent = document.getElementById('tabMine');
     if (scrollParent) {
       scrollParent.onscroll = () => {
         if (renderedChunkCount >= playlist.length) return;
-        if (scrollParent.scrollTop + scrollParent.clientHeight >= scrollParent.scrollHeight - 180) {
+        if (scrollParent.scrollTop + scrollParent.clientHeight >= scrollParent.scrollHeight - 200) {
           appendSongRows(CHUNK_SIZE);
         }
       };
@@ -247,7 +201,7 @@ export function initNetease() {
 
       const img = document.createElement('img');
       img.className = 'song-thumb';
-      img.src = `${s.cover}?param=90y90`;
+      img.src = s.cover;
       img.alt = s.title;
       img.loading = 'lazy';
 
@@ -260,14 +214,14 @@ export function initNetease() {
 
       const subEl = document.createElement('div');
       subEl.className = 'song-sub';
-      subEl.textContent = `${s.artist}${s.album ? ` - ${s.album}` : ''}`;
+      subEl.textContent = s.artist;
 
       meta.appendChild(titleEl);
       meta.appendChild(subEl);
 
       const moreBtn = document.createElement('button');
       moreBtn.className = 'song-more-btn';
-      moreBtn.setAttribute('aria-label', '更多操作');
+      moreBtn.setAttribute('aria-label', '更多');
       moreBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
 
       row.appendChild(num);
@@ -312,7 +266,7 @@ export function initNetease() {
   };
 
   /* ==========================================================
-     4. 单曲播放与 VIP/容错降级
+     4. 播放单曲（使用真正可播的流地址）
      ========================================================== */
   async function playTrack(song, autoPlay = true) {
     if (!song) return;
@@ -322,24 +276,35 @@ export function initNetease() {
     document.getElementById('miniTitle').textContent = song.title;
     document.getElementById('miniArtist').textContent = `- ${song.artist}`;
 
-    const coverUrl = song.cover || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg';
+    // 动态挂载黑胶中心图片
+    const discArt = document.getElementById('vinylDiscArt');
+    if (discArt) {
+      discArt.replaceChildren();
+      const pImg = document.createElement('img');
+      pImg.src = song.cover;
+      pImg.alt = song.title;
+      discArt.appendChild(pImg);
+    }
 
-    // 动态挂载封面，彻底屏蔽任何源码裸露
-    const playerCover = ensureCoverElement('vinylDiscArt', 'playerCoverImg');
-    if (playerCover) playerCover.src = coverUrl;
-
-    const miniCover = ensureCoverElement('miniDiscWrap', 'miniCover');
-    if (miniCover) miniCover.src = coverUrl;
+    // 动态挂载 Mini 封面
+    const miniWrap = document.getElementById('miniDiscWrap');
+    if (miniWrap) {
+      miniWrap.replaceChildren();
+      const mImg = document.createElement('img');
+      mImg.src = song.cover;
+      mImg.alt = song.title;
+      miniWrap.appendChild(mImg);
+    }
 
     const bgImg = document.getElementById('playerBgImg');
-    if (bgImg) bgImg.src = coverUrl;
+    if (bgImg) bgImg.src = song.cover;
 
     const heroBg = document.getElementById('mineHeroBg');
-    if (heroBg) heroBg.src = coverUrl;
+    if (heroBg) heroBg.src = song.cover;
 
-    // 音频源指向网易云官方 mp3 流
-    audio.src = `https://music.163.com/song/media/outer/url?id=${song.id}.mp3`;
-    loadLyrics(song.id);
+    // 关键：直接使用返回的真实播放流
+    audio.src = song.url;
+    loadLyrics(song.lrcUrl);
 
     if (autoPlay) {
       audio.load();
@@ -348,8 +313,7 @@ export function initNetease() {
         p.then(() => {
           consecutiveErrorCount = 0;
           updatePlayState(true);
-        }).catch((err) => {
-          console.warn('Playback intercepted/failed:', err);
+        }).catch(() => {
           updatePlayState(false);
         });
       }
@@ -358,42 +322,37 @@ export function initNetease() {
     }
   }
 
-  // VIP / 试听报错拦截并自动顺延下一首
   audio.onerror = () => {
     consecutiveErrorCount++;
     updatePlayState(false);
 
-    if (consecutiveErrorCount >= 8) {
-      showToast('连续多首受 VIP 版权限制，已暂停');
+    if (consecutiveErrorCount >= 10) {
+      showToast('多首歌曲受版权保护，已暂停');
       consecutiveErrorCount = 0;
       return;
     }
 
     const currentTitle = playlist[currentIndex]?.title || '当前曲目';
-    showToast(`《${currentTitle}》为 VIP 专享，已为您顺延下一首`, 2200);
+    showToast(`《${currentTitle}》暂无播放源，已为您顺延`, 1800);
 
     setTimeout(() => {
       nextTrack(true);
-    }, 450);
+    }, 400);
   };
 
   /* ==========================================================
-     5. 歌词解析
+     5. 歌词
      ========================================================== */
-  async function loadLyrics(songId) {
+  async function loadLyrics(lrcUrl) {
     currentLyrics = [];
+    if (!lrcUrl) {
+      currentLyrics = [{ time: 0, text: '纯音乐，请享受旋律' }];
+      renderLyrics(0);
+      return;
+    }
     try {
-      let lrcStr = '';
-      try {
-        const res = await fetch(`${WORKER_BASE}/api/song/lyric?id=${songId}&lv=1&kv=1&tv=-1`);
-        const data = await res.json();
-        lrcStr = data?.lrc?.lyric || '';
-      } catch (_) {}
-
-      if (!lrcStr) {
-        const fallback = await fetch(`https://api.injahow.cn/meting/?type=lrc&id=${songId}`);
-        lrcStr = await fallback.text();
-      }
+      const res = await fetch(lrcUrl);
+      const lrcStr = await res.text();
       parseLrc(lrcStr);
     } catch (_) {
       currentLyrics = [{ time: 0, text: '纯音乐，请享受旋律' }];
@@ -443,7 +402,7 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     6. 播放控制器与事件绑定
+     6. 控制器
      ========================================================== */
   function updatePlayState(playing) {
     isPlaying = playing;
@@ -539,7 +498,6 @@ export function initNetease() {
     lyricsView.classList.toggle('active', isLyricsMode);
   });
 
-  // Tab 切换
   document.querySelectorAll('.tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
@@ -549,50 +507,32 @@ export function initNetease() {
     });
   });
 
-  /* 导入按钮绑定 */
   const mineContainer = document.getElementById('minePlaylists');
   if (mineContainer && !document.getElementById('btnMyPlaylistImport')) {
     const importBox = document.createElement('div');
     importBox.className = 'mine-import-box';
-
-    const importBtn = document.createElement('button');
-    importBtn.id = 'btnMyPlaylistImport';
-    importBtn.className = 'btn btn-primary';
-    importBtn.innerHTML = `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>导入我的网易云公开歌单</span>
+    importBox.innerHTML = `
+      <button id="btnMyPlaylistImport" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>导入我的网易云公开歌单</span>
+      </button>
+      <p class="mine-import-tip">支持输入歌单 ID 或直接粘贴网易云分享链接</p>
     `;
-
-    const tip = document.createElement('p');
-    tip.className = 'mine-import-tip';
-    tip.textContent = '支持输入歌单 ID 或直接粘贴网易云分享链接';
-
-    importBox.appendChild(importBtn);
-    importBox.appendChild(tip);
     mineContainer.insertBefore(importBox, mineContainer.firstChild);
 
-    importBtn.onclick = async () => {
+    document.getElementById('btnMyPlaylistImport').onclick = async () => {
       const input = prompt('请输入你的网易云公开歌单链接或歌单 ID：', '');
       if (!input || !input.trim()) return;
-
-      const raw = input.trim();
-      let pid = '';
-      const match = raw.match(/[?&]id=(\d+)/) || raw.match(/playlist\/(\d+)/) || raw.match(/(\d{7,12})/);
-      if (match) {
-        pid = match[1];
-      } else {
-        pid = raw.replace(/[^0-9]/g, '');
-      }
-
+      const match = input.match(/[?&]id=(\d+)/) || input.match(/playlist\/(\d+)/) || input.match(/(\d{7,12})/);
+      const pid = match ? match[1] : input.replace(/[^0-9]/g, '');
       if (!pid) {
-        alert('未能从输入中识别出歌单数字 ID');
+        alert('未能识别歌单 ID');
         return;
       }
       loadPlaylistById(pid);
     };
   }
 
-  // 默认自启歌单 2409170451
   const savedPid = localStorage.getItem('CA_USER_NETEASE_PID') || DEFAULT_PLAYLIST_ID;
   loadPlaylistById(savedPid);
 }
