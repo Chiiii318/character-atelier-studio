@@ -21,6 +21,25 @@
   overflow: hidden !important;
 }
 
+#page-netease .ne-app-exit-btn {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  cursor: pointer;
+}
+
 #page-netease .ne-phone-viewport {
   position: relative;
   width: 100%;
