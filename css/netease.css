@@ -1080,20 +1080,23 @@
   transform: translateX(-50%) translateY(0);
 }
 
-/* 弹窗 Modal 体系 */
+/* 弹窗 Modal 体系 (全局固定顶层，绝对不被遮挡) */
 #page-netease .ne-modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 200;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999 !important; /* 提到全屏最高层 */
   display: none;
   align-items: center;
   justify-content: center;
   padding: 20px;
 }
-#page-netease .ne-modal-overlay.open { display: flex; }
+#page-netease .ne-modal-overlay.open {
+  display: flex !important;
+}
+
 #page-netease .ne-modal-card {
   width: 100%;
   max-width: 340px;
