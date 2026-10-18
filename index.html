@@ -400,183 +400,205 @@
       </div>
     </section>
 
-    <!-- ======== 网易云音乐播放器 ======== -->
+    <!-- ======== 网易云音乐原生视窗 ======== -->
     <section class="page" id="page-netease">
-      <div class="ne-device" id="neDevice">
+      <div class="app-device" id="appDevice">
         
-        <!-- 返回生活切片导航 -->
-        <div class="ne-back-bar">
-          <button class="btn btn-small" data-page="vignettes" style="border:none;background:none;padding:0">
-            <svg class="ui-icon"><use href="#i-chevron"></use></svg>
-          </button>
-          <span>网易云音乐</span>
+        <!-- 左上角返回键 -->
+        <button class="ne-exit-back" data-page="vignettes" aria-label="返回切片">
+          <svg class="ui-icon" style="width:16px;height:16px"><use href="#i-chevron"></use></svg>
+        </button>
+
+        <!-- iOS 状态栏 -->
+        <div class="ios-status" id="iosStatus">
+          <span id="neClock">01:23</span>
+          <div style="display:flex;align-items:center;gap:5px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor">
+              <rect x="0" y="8" width="3" height="3" rx="0.5"/>
+              <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5"/>
+              <rect x="9" y="3" width="3" height="8" rx="0.5"/>
+              <rect x="13.5" y="0" width="3" height="11" rx="0.5"/>
+            </svg>
+            <span class="battery-chip">54</span>
+          </div>
         </div>
 
-        <div class="ne-toast" id="neToast"></div>
+        <div class="cloud-toast" id="cloudToast"></div>
 
-        <!-- Tab 页面容器 -->
-        <div class="ne-views">
-          <!-- 首页推荐 -->
-          <div class="ne-view active" id="neViewHome">
-            <div class="ne-home-header">
-              <div class="ne-home-tabs">
-                <span>发现</span>
+        <!-- 主视图容器 -->
+        <div class="main-views">
+          <!-- 1. 发现/推荐页 -->
+          <section class="tab-page active" id="tabHome">
+            <header class="home-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <div class="home-tabs">
+                <span>心动</span>
                 <span class="active">推荐</span>
                 <span>播客</span>
               </div>
-              <svg class="ui-icon" style="width:18px;height:18px;color:#333"><use href="#i-search"></use></svg>
-            </div>
-            <div class="ne-section-title">推荐歌单</div>
-            <div class="ne-playlist-scroll">
-              <div class="ne-playlist-item">
-                <img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="Cover">
-                <p>于是我放下执念 接受缘分到此为止</p>
-              </div>
-              <div class="ne-playlist-item">
-                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80" alt="Cover">
-                <p>深夜独处时才敢打开的歌单</p>
-              </div>
-              <div class="ne-playlist-item">
-                <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=300&auto=format&fit=crop&q=80" alt="Cover">
-                <p>你和我的缘 像极了何时终止的雨</p>
-              </div>
-            </div>
-          </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </header>
+            <div class="section-title-wrap"><span>当前播放</span></div>
+            <div class="playlist-scroll" id="neHomePlaylist"></div>
+          </section>
 
-          <!-- 搜索 -->
-          <div class="ne-view" id="neViewSearch">
-            <div style="padding:14px 16px">
-              <div style="height:38px;background:#eceef2;border-radius:19px;display:flex;align-items:center;padding:0 14px;gap:8px;color:#999;font-size:14px">
-                <svg class="ui-icon"><use href="#i-search"></use></svg>
-                <span>搜索歌曲、歌手、歌词</span>
+          <!-- 2. 搜索页 -->
+          <section class="tab-page" id="tabSearch">
+            <div class="search-box-wrap">
+              <div class="search-input-pill">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="neSearchInput" placeholder="搜索歌曲、歌手" style="border:none;background:transparent;outline:none;width:100%;font-size:13px;color:#333"/>
               </div>
             </div>
-          </div>
+          </section>
 
-          <!-- 我的 -->
-          <div class="ne-view" id="neViewMine">
-            <div style="padding:20px 16px;text-align:center;color:var(--muted);font-size:13px">
-              <div style="width:60px;height:60px;border-radius:50%;background:var(--soft);margin:0 auto 10px;display:grid;place-items:center">
-                <svg class="ui-icon" style="width:24px;height:24px"><use href="#i-users"></use></svg>
+          <!-- 3. 我的页 -->
+          <section class="tab-page" id="tabMine">
+            <div class="profile-hero">
+              <img class="profile-bg-img" id="mineHeroBg" src="" alt="bg">
+              <div class="profile-hero-content">
+                <img class="avatar-big" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" alt="avatar">
+                <h2 class="profile-name">我喜欢的音乐</h2>
+                <div class="profile-stats"><span>VIP 尊享</span><span>双人连线中</span></div>
               </div>
-              <strong style="display:block;font-size:16px;color:var(--ink);margin-bottom:4px">我的音乐</strong>
-              <span>1099 首收藏 / 3992 次播放</span>
             </div>
-          </div>
+            <div class="profile-content-body" id="minePlaylists"></div>
+          </section>
         </div>
 
-        <!-- Mini 播放条 -->
-        <div class="ne-mini-bar" id="neMiniBar">
-          <div class="ne-mini-disc">
-            <img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="cover">
+        <!-- 悬浮 Mini 播放条 -->
+        <div class="mini-player-bar" id="miniPlayerBar">
+          <div class="mini-disc">
+            <img id="miniCover" src="" alt="cover">
           </div>
-          <div class="ne-mini-info">
-            泪海<span class="artist">- 许茹芸</span>
+          <div class="mini-title-wrap">
+            <span id="miniTitle">--</span>
+            <span class="author" id="miniArtist"></span>
           </div>
-          <button class="ne-mini-btn" id="neMiniPlayBtn" aria-label="播放">
-            <svg id="neMiniPlayIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg>
-          </button>
-          <button class="ne-mini-btn" aria-label="列表">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/></svg>
+          <button class="mini-btn" id="miniPlayBtn" aria-label="播放/暂停">
+            <svg id="miniPlaySvg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="7,4 20,12 7,20"/>
+            </svg>
           </button>
         </div>
 
-        <!-- 底部 TabBar -->
-        <nav class="ne-tabbar">
-          <button class="ne-tab active" data-view="neViewHome">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <!-- 底部三大 TabBar -->
+        <nav class="bottom-tabbar">
+          <div class="tab-item active" data-tab="tabHome">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>首页</span>
-          </button>
-          <button class="ne-tab" data-view="neViewSearch">
+          </div>
+          <div class="tab-item" data-tab="tabSearch">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>
             <span>搜索</span>
-          </button>
-          <button class="ne-tab" data-view="neViewMine">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="tab-item" data-tab="tabMine">
+            <div class="tab-avatar-wrap">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="me">
+            </div>
             <span>我的</span>
-          </button>
+          </div>
         </nav>
 
-        <!-- 全屏播放器 -->
-        <div class="ne-full-player" id="neFullPlayer">
-          <img class="ne-blur-bg" src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="bg">
-          <div class="ne-vignette"></div>
+        <!-- 全屏播放器 Modal -->
+        <div class="full-player-modal paused" id="fullPlayer">
+          <img id="playerBgImg" class="player-dynamic-bg" src="" alt="Bg">
+          <div class="player-vignette"></div>
 
-          <div class="ne-player-content">
-            <div class="ne-player-nav">
-              <button class="ne-player-nav-btn" id="neClosePlayer" aria-label="收起">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <div class="player-content">
+            <div class="player-nav">
+              <button class="player-nav-btn" id="closePlayerBtn" aria-label="收起">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <span class="ne-player-nav-title">我喜欢的音乐</span>
-              <button class="ne-player-nav-btn" aria-label="分享">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              </button>
+              <span class="player-nav-title" id="playerTopTitle">网易云音乐</span>
+              <div style="width:44px"></div>
             </div>
 
-            <div class="ne-vinyl-stage" id="neStage">
-              <div class="ne-vinyl-view" id="neVinylView">
-                <div class="ne-tonearm">
-                  <div class="ne-tonearm-pivot"></div>
-                  <svg width="130" height="190" viewBox="0 0 140 200" fill="none" style="filter:drop-shadow(4px 10px 12px rgba(0,0,0,0.45))">
-                    <path d="M 15,15 Q 26,72 54,115 L 66,135" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+            <!-- 点击舞台无缝切换黑胶/歌词 -->
+            <div class="player-body" id="playerBodyStage">
+              <!-- 黑胶视图 -->
+              <div class="vinyl-view" id="vinylView">
+                <div class="stylus-rig">
+                  <div class="stylus-pivot"></div>
+                  <svg class="stylus-svg" viewBox="0 0 140 200">
+                    <path d="M 15,15 Q 26,72 54,115 L 66,135" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
                     <g transform="translate(66, 135) rotate(52)">
                       <rect x="-8" y="0" width="16" height="26" rx="4" fill="#E8E8E8" stroke="#D1D1D1" stroke-width="1.5"/>
                       <line x1="-5" y1="8" x2="5" y2="8" stroke="#A8A8A8" stroke-width="1.2"/>
                       <line x1="-5" y1="14" x2="5" y2="14" stroke="#A8A8A8" stroke-width="1.2"/>
-                      <line x1="-5" y1="20" x2="5" y2="20" stroke="#A8A8A8" stroke-width="1.2"/>
                     </g>
                   </svg>
                 </div>
-                <div class="ne-vinyl-disc">
-                  <div class="ne-disc-art"><img src="https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg" alt="Cover"></div>
+                <div class="vinyl-halo"></div>
+                <div class="vinyl-disc">
+                  <div class="disc-art">
+                    <img id="playerCoverImg" src="" alt="Cover">
+                  </div>
                 </div>
               </div>
 
-              <div class="ne-lyrics-view" id="neLyricsView">
-                <div class="ne-lyric-row">思念是一整片海洋</div>
-                <div class="ne-lyric-row current">我整夜泡在你的泪海中</div>
-                <div class="ne-lyric-row">爱已不能动</div>
-                <div class="ne-lyric-row" style="opacity:0.3">还有什么值得我心痛</div>
+              <!-- 全屏歌词流视图（容器全空，由数据注入） -->
+              <div class="lyrics-view" id="lyricsView">
+                <div class="lyric-lines-flow" id="lyricLinesFlow"></div>
               </div>
             </div>
 
-            <div class="ne-lower">
-              <div class="ne-meta-line">
-                <div>
-                  <div class="ne-song-title">泪海</div>
-                  <div class="ne-artist-name">许茹芸</div>
+            <!-- 底部控制区 -->
+            <div class="player-lower">
+              <div class="meta-line">
+                <div class="song-box">
+                  <div style="display:flex;align-items:center">
+                    <span class="song-name-h1" id="songNameH1">--</span>
+                    <span class="vip-tag">VIP</span>
+                  </div>
+                  <div class="singer-info">
+                    <span class="singer-name" id="singerName">--</span>
+                  </div>
                 </div>
-                <div class="ne-badge-bar">
-                  <button class="ne-badge-btn" id="neLikeBtn">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="#FF3A3A"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                    <span class="ne-heart-count">78w+</span>
-                  </button>
-                  <button class="ne-badge-btn">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+
+                <div class="badge-bar">
+                  <button class="badge-btn" id="likeBtn">
+                    <svg class="heart-svg" viewBox="0 0 24 24">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span class="red-count" id="likeCount">10w+</span>
                   </button>
                 </div>
               </div>
 
-              <div class="ne-progress-wrap">
-                <div class="ne-progress-track"><div class="ne-progress-rail"><div class="ne-progress-fill"></div><div class="ne-progress-knob"></div></div></div>
-                <div class="ne-time-row"><span>00:06</span><span style="color:rgba(255,255,255,0.55);font-size:11px">极高音质</span><span>04:52</span></div>
+              <!-- 真实进度条 -->
+              <div class="progress-box">
+                <div class="progress-track" id="progressTrack">
+                  <div class="progress-rail">
+                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="progress-knob" id="progressKnob"></div>
+                  </div>
+                </div>
+                <div class="time-strip">
+                  <span id="currentTime">00:00</span>
+                  <span class="quality-tip">极高音质</span>
+                  <span id="totalTime">00:00</span>
+                </div>
               </div>
 
-              <div class="ne-controls">
-                <button class="ne-ctrl-btn" id="neModeBtn" aria-label="播放模式">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M 3 19 C 8 19, 13 5, 21 5"/><polyline points="17 2 21 5 17 8"/><path d="M 3 5 C 8 5, 10 9, 12 12"/><path d="M 15 15 C 17 18, 19 19, 21 19"/><polyline points="17 16 21 19 17 22"/></svg>
+              <!-- 播放控制器 -->
+              <div class="controls-strip">
+                <button class="ctrl-item" id="modeToggleBtn">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
                 </button>
-                <button class="ne-ctrl-btn" id="nePrevBtn" aria-label="上一首">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zm2.34 7.55 9.4 6.27A1 1 0 0 0 19 18V6a1 1 0 0 0-1.26-.82l-9.4 6.27a1 1 0 0 0 0 1.66z"/></svg>
+                <button class="ctrl-item" id="prevBtn">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zm2.34 7.55 9.4 6.27A1 1 0 0 0 19 18V6a1 1 0 0 0-1.26-.82l-9.4 6.27a1 1 0 0 0 0 1.66z"/></svg>
                 </button>
-                <button class="ne-ctrl-btn ne-play-big" id="nePlayBtn" aria-label="播放">
-                  <svg id="nePlayIcon" width="42" height="42" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg>
+                <button class="ctrl-item play-big-btn" id="playBtn">
+                  <svg id="playSvg" width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="7,4 20,12 7,20"/>
+                  </svg>
                 </button>
-                <button class="ne-ctrl-btn" id="neNextBtn" aria-label="下一首">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zM5.26 5.18A1 1 0 0 0 4 6v12a1 1 0 0 0 1.26.82l9.4-6.27a1 1 0 0 0 0-1.66l-9.4-6.27z"/></svg>
+                <button class="ctrl-item" id="nextBtn">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18 5a1 1 0 0 1 1 1v12a1 1 0 1 1-2 0V6a1 1 0 0 1 1-1zM5.26 5.18A1 1 0 0 0 4 6v12a1 1 0 0 0 1.26.82l9.4-6.27a1 1 0 0 0 0-1.66l-9.4-6.27z"/></svg>
                 </button>
-                <button class="ne-ctrl-btn" aria-label="列表">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/><polyline points="17 14 20 17 17 20"/></svg>
+                <button class="ctrl-item">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="11" y2="17"/></svg>
                 </button>
               </div>
             </div>
