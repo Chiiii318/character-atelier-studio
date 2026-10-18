@@ -1,31 +1,78 @@
 /* ================================================================
-   netease.js — 网易云真实数据解析与播放引擎 (支持搜索/真实封面/实时歌词)
+   netease.js — 工业级纯净数据驱动网易云引擎
    ================================================================ */
 
 export function initNetease() {
-  const device = document.getElementById('neDevice');
+  const device = document.getElementById('appDevice');
   if (!device) return;
 
-  const fullPlayer = document.getElementById('neFullPlayer');
-  const miniBar = document.getElementById('neMiniBar');
-  const vinylView = document.getElementById('neVinylView');
-  const lyricsView = document.getElementById('neLyricsView');
-  const stage = document.getElementById('neStage');
-  const toast = document.getElementById('neToast');
+  const fullPlayer = document.getElementById('fullPlayer');
+  const miniBar = document.getElementById('miniPlayerBar');
+  const vinylView = document.getElementById('vinylView');
+  const lyricsView = document.getElementById('lyricsView');
+  const lyricFlow = document.getElementById('lyricLinesFlow');
+  const playBtn = document.getElementById('playBtn');
+  const miniPlayBtn = document.getElementById('miniPlayBtn');
+  const playSvg = document.getElementById('playSvg');
+  const miniPlaySvg = document.getElementById('miniPlaySvg');
+  const toast = document.getElementById('cloudToast');
 
-  // 音频核心
-  let audio = document.getElementById('neRealAudio');
+  // 全局唯一原生音频引擎
+  let audio = document.getElementById('neAudioCore');
   if (!audio) {
-    audio = document.createElement('audio');
-    audio.id = 'neRealAudio';
+    audio = new Audio();
+    audio.id = 'neAudioCore';
     audio.preload = 'auto';
-    document.body.appendChild(audio);
   }
 
+  /* ==========================================================
+     核心曲库定义（你可以随时在这里追加新歌，纯净数据对象）
+     ========================================================== */
+  const TRACKS = [
+    {
+      id: 254486,
+      title: "泪海",
+      artist: "许茹芸",
+      album: "泪海",
+      cover: "https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg",
+      likes: "78w+",
+      url: "https://music.163.com/song/media/outer/url?id=254486.mp3",
+      lyrics: [
+        { time: 0, text: "泪海 - 许茹芸" },
+        { time: 18, text: "爱已不能动" },
+        { time: 23, text: "还有什么值得我心痛" },
+        { time: 31, text: "想你的天空 下起雨来" },
+        { time: 38, text: "没人心疼的黑夜 脸颊两行泪" },
+        { time: 48, text: "那是你留给我最后的等待" },
+        { time: 55, text: "我的眼泪成海 淹没我的爱" },
+        { time: 64, text: "闭上了双眼 以为你在" },
+        { time: 72, text: "就算注定分开 为什么还要相爱" },
+        { time: 81, text: "我的泪 怎么也停不下来" }
+      ]
+    },
+    {
+      id: 186016,
+      title: "晴天",
+      artist: "周杰伦",
+      album: "叶惠美",
+      cover: "https://y.gtimg.cn/music/photo_new/T002R300x300M000000MkHUk1918Dg_1.jpg",
+      likes: "240w+",
+      url: "https://music.163.com/song/media/outer/url?id=186016.mp3",
+      lyrics: [
+        { time: 0, text: "晴天 - 周杰伦" },
+        { time: 28, text: "故事的小黄花 从出生那年就飘着" },
+        { time: 34, text: "童年的荡秋千 随记忆一直晃到现在" },
+        { time: 42, text: "Re So So Si Do Si La So La Si Si Si Si La Si La So" },
+        { time: 57, text: "吹着前奏望着天空 我想起花瓣试着掉落" },
+        { time: 66, text: "为你翘课的那一天 花落的那一天" }
+      ]
+    }
+  ];
+
+  let currentTrackIdx = 0;
   let isPlaying = false;
   let isLyricsMode = false;
   let toastTimer = null;
-  let currentLyrics = []; // 解析后的歌词数组 [{time: 12.5, text: "..."}]
 
   function showToast(text) {
     if (!toast) return;
@@ -35,219 +82,170 @@ export function initNetease() {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 1500);
   }
 
-  /* ================================================================
-     1. 网易云真实歌曲加载核心 (按歌曲 ID 拉取官方原画、真实音频与歌词)
-     ================================================================ */
-  async function loadNeteaseSong(songId) {
-    showToast('正在从网易云加载真实专辑...');
+  function fmtTime(sec) {
+    if (isNaN(sec)) return "00:00";
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
 
-    // 1. 网易云官方音频直链
-    audio.src = `https://music.163.com/song/media/outer/url?id=${songId}.mp3`;
+  /* ==========================================================
+     纯净灌注渲染函数：将选中的数据对象灌入全站骨架
+     ========================================================== */
+  function renderTrack(track, autoPlay = false) {
+    if (!track) return;
 
-    try {
-      // 2. 获取网易云真实歌曲详情与官方专辑封面 (通过公开高可用代理网关)
-      const detailRes = await fetch(`https://api.injahow.cn/meting/?type=song&id=${songId}`);
-      const data = await detailRes.json();
+    // 1. 文本信息注入
+    document.getElementById('songNameH1').textContent = track.title;
+    document.getElementById('singerName').textContent = track.artist;
+    document.getElementById('miniTitle').textContent = track.title;
+    document.getElementById('miniArtist').textContent = `- ${track.artist}`;
+    document.getElementById('likeCount').textContent = track.likes;
 
-      if (data && data[0]) {
-        const song = data[0];
-        const title = song.name || '未知曲目';
-        const artist = song.artist || '群星';
-        const coverUrl = song.pic || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg';
+    // 2. 真实专辑原图注入（黑胶内圈 + Mini胶囊 + 高斯模糊底 + 个人主页）
+    document.getElementById('playerCoverImg').src = track.cover;
+    document.getElementById('miniCover').src = track.cover;
+    document.getElementById('playerBgImg').src = track.cover;
+    document.getElementById('mineHeroBg').src = track.cover;
 
-        // 更新界面上所有的标题、歌手名
-        document.querySelectorAll('.ne-song-title').forEach(el => el.textContent = title);
-        document.querySelectorAll('.ne-artist-name, .ne-mini-info .artist').forEach(el => el.textContent = `- ${artist}`);
-        const miniInfo = document.querySelector('.ne-mini-info');
-        if (miniInfo) miniInfo.innerHTML = `${title}<span class="artist">- ${artist}</span>`;
+    // 3. 音频源切换
+    audio.src = track.url;
 
-        // 核心更新：替换为真实的网易云官方专辑封面！
-        const discImg = document.querySelector('.ne-disc-art img');
-        if (discImg) discImg.src = coverUrl;
+    // 4. 歌词流灌注
+    updateLyricsDisplay(0);
 
-        const miniDiscImg = document.querySelector('.ne-mini-disc img');
-        if (miniDiscImg) miniDiscImg.src = coverUrl;
-
-        const blurBg = document.querySelector('.ne-blur-bg');
-        if (blurBg) blurBg.src = coverUrl;
-      }
-
-      // 3. 获取真实的网易云原版 LRC 逐字滚动歌词
-      const lrcRes = await fetch(`https://api.injahow.cn/meting/?type=lrc&id=${songId}`);
-      const lrcText = await lrcRes.text();
-      parseAndRenderLyrics(lrcText);
-
-      showToast('已载入网易云官方原版专辑');
-    } catch (e) {
-      console.warn('获取网易云扩展详情失败，使用基础音频流', e);
-      showToast('网易云直链已就绪');
+    // 5. 播放状态同步
+    if (autoPlay) {
+      audio.play().then(() => updatePlayState(true)).catch(() => updatePlayState(false));
+    } else {
+      updatePlayState(false);
     }
   }
 
-  /* 解析标准 LRC 歌词时间戳 [00:12.34] */
-  function parseAndRenderLyrics(lrcText) {
-    currentLyrics = [];
-    const lines = lrcText.split('\n');
-    const timeReg = /\[(\d{2}):(\d{2})\.?(\d{0,3})\]/;
+  /* 动态歌词刷新 */
+  function updateLyricsDisplay(currentTime) {
+    const track = TRACKS[currentTrackIdx];
+    if (!track || !lyricFlow) return;
 
-    lines.forEach(line => {
-      const match = timeReg.exec(line);
-      if (match) {
-        const min = parseInt(match[1], 10);
-        const sec = parseInt(match[2], 10);
-        const ms = match[3] ? parseInt(match[3].padEnd(3, '0').slice(0, 3), 10) : 0;
-        const time = min * 60 + sec + ms / 1000;
-        const text = line.replace(timeReg, '').trim();
-        if (text) {
-          currentLyrics.push({ time, text });
-        }
-      }
-    });
-
-    // 默认初始渲染歌词
-    renderLyricsView(0);
-  }
-
-  function renderLyricsView(currentTime) {
-    if (!lyricsView || !currentLyrics.length) return;
-    
-    // 找出当前唱到哪一句
     let activeIdx = 0;
-    for (let i = 0; i < currentLyrics.length; i++) {
-      if (currentTime >= currentLyrics[i].time) {
-        activeIdx = i;
-      } else {
-        break;
-      }
+    for (let i = 0; i < track.lyrics.length; i++) {
+      if (currentTime >= track.lyrics[i].time) activeIdx = i;
+      else break;
     }
 
-    // 渲染当前句及前后各两句
     const start = Math.max(0, activeIdx - 1);
-    const end = Math.min(currentLyrics.length, activeIdx + 3);
-    const slice = currentLyrics.slice(start, end);
+    const end = Math.min(track.lyrics.length, activeIdx + 4);
+    const slice = track.lyrics.slice(start, end);
 
-    lyricsView.innerHTML = slice.map((item, idx) => {
-      const isCurrent = (start + idx) === activeIdx;
-      return `<div class="ne-lyric-row ${isCurrent ? 'current' : ''}">${item.text}</div>`;
+    lyricFlow.innerHTML = slice.map((item, idx) => {
+      const isCur = (start + idx) === activeIdx;
+      return `<p class="lyric-row ${isCur ? 'current' : ''}">${item.text}</p>`;
     }).join('');
   }
 
-  /* ================================================================
-     2. 播放 / 暂停 与 唱针物理摆动
-     =============================================================== */
-  function togglePlay(e) {
-    if (e) e.stopPropagation();
-    const pauseSvg = '<rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/>';
-    const playSvg = '<polygon points="7,4 20,12 7,20"/>';
-    const mainIcon = document.getElementById('nePlayIcon');
-    const miniIcon = document.getElementById('neMiniPlayIcon');
+  /* 切换播放/暂停 UI */
+  function updatePlayState(playing) {
+    isPlaying = playing;
+    const pauseHtml = `<rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/>`;
+    const playHtml = `<polygon points="7,4 20,12 7,20"/>`;
 
-    if (!isPlaying) {
-      audio.play().then(() => {
-        isPlaying = true;
-        fullPlayer.classList.remove('paused');
-        device.classList.remove('paused');
-        if (mainIcon) mainIcon.innerHTML = pauseSvg;
-        if (miniIcon) miniIcon.innerHTML = pauseSvg;
-      }).catch(() => {
-        showToast('请再次点击播放按钮');
-      });
+    if (playing) {
+      fullPlayer.classList.remove('paused');
+      device.classList.remove('paused');
+      playSvg.innerHTML = pauseHtml;
+      miniPlaySvg.innerHTML = pauseHtml;
     } else {
-      audio.pause();
-      isPlaying = false;
       fullPlayer.classList.add('paused');
       device.classList.add('paused');
-      if (mainIcon) mainIcon.innerHTML = playSvg;
-      if (miniIcon) miniIcon.innerHTML = playSvg;
+      playSvg.innerHTML = playHtml;
+      miniPlaySvg.innerHTML = playHtml;
     }
   }
 
-  document.getElementById('nePlayBtn')?.addEventListener('click', togglePlay);
-  document.getElementById('neMiniPlayBtn')?.addEventListener('click', togglePlay);
+  function togglePlay(e) {
+    if (e) e.stopPropagation();
+    if (!audio.src) return;
+    if (isPlaying) {
+      audio.pause();
+      updatePlayState(false);
+    } else {
+      audio.play().then(() => updatePlayState(true)).catch(() => updatePlayState(false));
+    }
+  }
 
-  /* 音频实时播放进度与歌词滚动对齐 */
+  playBtn?.addEventListener('click', togglePlay);
+  miniPlayBtn?.addEventListener('click', togglePlay);
+
+  /* 音频实时进度 */
   audio.ontimeupdate = () => {
     if (!audio.duration) return;
     const pct = (audio.currentTime / audio.duration) * 100;
-    
-    const fill = document.querySelector('.ne-progress-fill');
-    const knob = document.querySelector('.ne-progress-knob');
+
+    const fill = document.getElementById('progressFill');
+    const knob = document.getElementById('progressKnob');
     if (fill) fill.style.width = `${pct}%`;
     if (knob) knob.style.left = `${pct}%`;
 
-    // 动态同步歌词
-    renderLyricsView(audio.currentTime);
+    document.getElementById('currentTime').textContent = fmtTime(audio.currentTime);
+    document.getElementById('totalTime').textContent = fmtTime(audio.duration);
 
-    // 更新时间文本
-    const timeRow = document.querySelector('.ne-time-row');
-    if (timeRow) {
-      const curM = Math.floor(audio.currentTime / 60).toString().padStart(2, '0');
-      const curS = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
-      const durM = Math.floor(audio.duration / 60).toString().padStart(2, '0');
-      const durS = Math.floor(audio.duration % 60).toString().padStart(2, '0');
-      timeRow.children[0].textContent = `${curM}:${curS}`;
-      timeRow.children[2].textContent = `${durM}:${durS}`;
-    }
+    updateLyricsDisplay(audio.currentTime);
   };
 
   /* 点击进度条快进 */
-  const track = document.querySelector('.ne-progress-track');
-  if (track) {
-    track.onclick = (e) => {
-      const rect = track.getBoundingClientRect();
+  const trackBar = document.getElementById('progressTrack');
+  if (trackBar) {
+    trackBar.onclick = (e) => {
+      const rect = trackBar.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const pct = clickX / rect.width;
       audio.currentTime = pct * audio.duration;
     };
   }
 
-  // 展开与收起全屏主播放器
-  miniBar?.addEventListener('click', () => fullPlayer.classList.add('open'));
-  document.getElementById('neClosePlayer')?.addEventListener('click', () => fullPlayer.classList.remove('open'));
+  /* 切歌：上/下一首 */
+  function nextTrack() {
+    currentTrackIdx = (currentTrackIdx + 1) % TRACKS.length;
+    renderTrack(TRACKS[currentTrackIdx], true);
+    showToast(`切换至: ${TRACKS[currentTrackIdx].title}`);
+  }
+  function prevTrack() {
+    currentTrackIdx = (currentTrackIdx - 1 + TRACKS.length) % TRACKS.length;
+    renderTrack(TRACKS[currentTrackIdx], true);
+    showToast(`切换至: ${TRACKS[currentTrackIdx].title}`);
+  }
 
-  // 轻触黑胶舞台无缝切换黑胶/歌词
-  stage?.addEventListener('click', () => {
+  document.getElementById('nextBtn')?.addEventListener('click', nextTrack);
+  document.getElementById('prevBtn')?.addEventListener('click', prevTrack);
+  audio.onended = nextTrack;
+
+  /* 展开/收起主播放器 */
+  miniBar?.addEventListener('click', () => {
+    fullPlayer.classList.add('open');
+    device.classList.add('theme-dark');
+  });
+  document.getElementById('closePlayerBtn')?.addEventListener('click', () => {
+    fullPlayer.classList.remove('open');
+    device.classList.remove('theme-dark');
+  });
+
+  /* 点击黑胶舞台切换黑胶/全屏歌词流 */
+  document.getElementById('playerBodyStage')?.addEventListener('click', () => {
     isLyricsMode = !isLyricsMode;
     vinylView.classList.toggle('hidden', isLyricsMode);
     lyricsView.classList.toggle('active', isLyricsMode);
   });
 
-  // 底部 Tab 切换
-  document.querySelectorAll('.ne-tab').forEach(tab => {
+  /* 底部三大 TabBar 切换 */
+  document.querySelectorAll('.tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.ne-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.ne-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById(tab.dataset.view)?.classList.add('active');
+      document.getElementById(tab.dataset.tab)?.classList.add('active');
     });
   });
 
-  // 默认启动时：自动按网易云真实 ID 加载《泪海》(ID: 254486)
-  loadNeteaseSong(254486);
-
-  // 支持搜索框回车搜索任意网易云歌曲
-  const searchInput = document.querySelector('#neViewSearch input');
-  if (searchInput) {
-    searchInput.onkeydown = async (e) => {
-      if (e.key === 'Enter') {
-        const q = searchInput.value.trim();
-        if (!q) return;
-        showToast(`正在网易云检索: ${q}`);
-        try {
-          const res = await fetch(`https://api.injahow.cn/meting/?type=search&keyword=${encodeURIComponent(q)}`);
-          const list = await res.json();
-          if (list && list.length > 0) {
-            loadNeteaseSong(list[0].id);
-            // 自动跳回首页并打开播放器
-            document.querySelector('.ne-tab[data-view="neViewHome"]')?.click();
-            fullPlayer.classList.add('open');
-          } else {
-            showToast('未在网易云找到该歌曲');
-          }
-        } catch (_) {
-          showToast('搜索请求失败，请检查网络');
-        }
-      }
-    };
-  }
+  /* 初始渲染第一首《泪海》 */
+  renderTrack(TRACKS[0], false);
 }
