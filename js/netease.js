@@ -1,14 +1,16 @@
 /* ================================================================
-   netease.js — 网易云原生播放引擎 (真实可用流解析 + 全量千首 + 纯净DOM)
+   netease.js — 网易云原生播放与交互核心 (支持 RP 角色/自定义名片/全量曲库/流光取色)
    ================================================================ */
 
 export function initNetease() {
-  const device = document.getElementById('appDevice');
+  const device = document.getElementById('neViewport');
   if (!device) return;
 
-  const DEFAULT_PLAYLIST_ID = '2409170451';
+  const DEFAULT_PLAYLIST_ID = '2409170451'; // 默认歌单 ID
 
+  // DOM 节点
   const fullPlayer = document.getElementById('fullPlayer');
+  const playlistDetailPage = document.getElementById('playlistDetailPage');
   const miniBar = document.getElementById('miniPlayerBar');
   const vinylView = document.getElementById('vinylView');
   const lyricsView = document.getElementById('lyricsView');
@@ -19,6 +21,7 @@ export function initNetease() {
   const miniPlaySvg = document.getElementById('miniPlaySvg');
   const toast = document.getElementById('cloudToast');
 
+  // 全局唯一原生 Audio
   let audio = document.getElementById('neAudioCore');
   if (!audio) {
     audio = new Audio();
@@ -36,8 +39,6 @@ export function initNetease() {
   let toastTimer = null;
   let currentLyrics = [];
   let consecutiveErrorCount = 0;
-  let renderedChunkCount = 0;
-  const CHUNK_SIZE = 50;
 
   function showToast(text, duration = 2000) {
     if (!toast) return;
@@ -55,10 +56,95 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     1. 全量曲库抓取（直接使用解析流 url 与 pic）
+     1. 自定义名片 (可用于你与 AI 角色设定)
+     ========================================================== */
+  const userProfile = {
+    name: localStorage.getItem('CA_NE_USER_NAME') || '我想送你整个世界',
+    avatar: localStorage.getItem('CA_NE_USER_AVATAR') || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    bg: localStorage.getItem('CA_NE_USER_BG') || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800&auto=format&fit=crop&q=80',
+    vipCookie: localStorage.getItem('CA_NE_USER_COOKIE') || ''
+  };
+
+  function applyProfile() {
+    document.getElementById('mineUserName').textContent = userProfile.name;
+    document.getElementById('detailAuthorName').textContent = userProfile.name;
+    document.getElementById('mineAvatarImg').src = userProfile.avatar;
+    document.getElementById('detailAuthorAvatar').src = userProfile.avatar;
+    document.getElementById('mineHeroBg').src = userProfile.bg;
+  }
+  applyProfile();
+
+  // 名片弹窗
+  const modalProfile = document.getElementById('modalProfileEdit');
+  const openProfile = () => {
+    document.getElementById('iptProfileName').value = userProfile.name;
+    document.getElementById('iptProfileAvatar').value = userProfile.avatar;
+    document.getElementById('iptProfileBg').value = userProfile.bg;
+    modalProfile.classList.add('open');
+  };
+  document.getElementById('btnEditProfile')?.addEventListener('click', openProfile);
+  document.getElementById('btnEditProfile2')?.addEventListener('click', openProfile);
+  document.getElementById('btnCancelProfile')?.addEventListener('click', () => modalProfile.classList.remove('open'));
+  document.getElementById('btnSaveProfile')?.addEventListener('click', () => {
+    userProfile.name = document.getElementById('iptProfileName').value.trim() || '我想送你整个世界';
+    userProfile.avatar = document.getElementById('iptProfileAvatar').value.trim() || userProfile.avatar;
+    userProfile.bg = document.getElementById('iptProfileBg').value.trim() || userProfile.bg;
+    localStorage.setItem('CA_NE_USER_NAME', userProfile.name);
+    localStorage.setItem('CA_NE_USER_AVATAR', userProfile.avatar);
+    localStorage.setItem('CA_NE_USER_BG', userProfile.bg);
+    applyProfile();
+    modalProfile.classList.remove('open');
+    showToast('名片已更新！');
+  });
+
+  // VIP Cookie 弹窗
+  const modalCookie = document.getElementById('modalVipAuth');
+  document.getElementById('btnOpenCookieModal')?.addEventListener('click', () => {
+    document.getElementById('iptVipCookie').value = userProfile.vipCookie;
+    modalCookie.classList.add('open');
+  });
+  document.getElementById('btnCancelCookie')?.addEventListener('click', () => modalCookie.classList.remove('open'));
+  document.getElementById('btnSaveCookie')?.addEventListener('click', () => {
+    userProfile.vipCookie = document.getElementById('iptVipCookie').value.trim();
+    localStorage.setItem('CA_NE_USER_COOKIE', userProfile.vipCookie);
+    modalCookie.classList.remove('open');
+    showToast(userProfile.vipCookie ? 'VIP Cookie 已配置，生效中' : '已清除自定义 Cookie');
+  });
+
+  /* ==========================================================
+     2. 封面自适应取色引擎 (黑胶与详情页背景随歌变色)
+     ========================================================== */
+  function extractAmbientColor(imgUrl) {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = imgUrl;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        const darkR = Math.max(20, Math.floor(r * 0.45));
+        const darkG = Math.max(20, Math.floor(g * 0.45));
+        const darkB = Math.max(20, Math.floor(b * 0.45));
+        const colorStr = `rgb(${darkR}, ${darkG}, ${darkB})`;
+
+        const ambientBg = document.getElementById('playerAmbientBg');
+        if (ambientBg) ambientBg.style.backgroundColor = colorStr;
+
+        const detailPage = document.getElementById('playlistDetailPage');
+        if (detailPage) detailPage.style.backgroundColor = colorStr;
+      } catch (_) {}
+    };
+  }
+
+  /* ==========================================================
+     3. 歌单全量读取与界面渲染
      ========================================================== */
   async function loadPlaylistById(playlistId) {
-    showToast('正在同步 1000 首曲库...');
+    showToast('正在读取云端歌单...');
     try {
       const res = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
       const list = await res.json();
@@ -67,42 +153,47 @@ export function initNetease() {
         playlist = list.map(item => ({
           title: item.name || '未知曲目',
           artist: item.artist || '未知歌手',
-          url: item.url, // 真实可用播放链接
+          url: item.url,
           cover: item.pic || 'https://y.gtimg.cn/music/photo_new/T002R300x300M000003b5P5w1j7Uqf_1.jpg',
           lrcUrl: item.lrc
         }));
       }
 
       if (!playlist.length) {
-        showToast('歌单读取失败');
+        showToast('歌单未公开或为空');
         return;
       }
 
       localStorage.setItem('CA_USER_NETEASE_PID', playlistId);
       consecutiveErrorCount = 0;
 
+      // 更新数量与详情大图
+      document.getElementById('neHomeTrackCount').textContent = `共 ${playlist.length} 首`;
+      document.getElementById('detailSongCountTag').textContent = `(共 ${playlist.length} 首)`;
+      document.getElementById('detailCoverImg').src = playlist[0].cover;
+      extractAmbientColor(playlist[0].cover);
+
+      // 渲染组件
       renderHomeScroll();
-      initMineSongList();
+      renderMyPlaylistCards();
+      renderDetailSongList();
 
       currentIndex = 0;
       playTrack(playlist[0], false);
-      showToast(`已载入全部 ${playlist.length} 首歌曲！`);
+      showToast(`已加载 ${playlist.length} 首曲目`);
     } catch (err) {
       console.error(err);
-      showToast('网络异常，歌单加载失败');
+      showToast('歌单同步失败');
     }
   }
 
-  /* ==========================================================
-     2. 首页横滑卡片
-     ========================================================== */
+  // 渲染首页横滑
   function renderHomeScroll() {
     const homeList = document.getElementById('neHomePlaylist');
     if (!homeList) return;
-    homeList.className = 'playlist-scroll';
     homeList.replaceChildren();
 
-    playlist.slice(0, 20).forEach((s, idx) => {
+    playlist.slice(0, 18).forEach((s, idx) => {
       const item = document.createElement('div');
       item.className = 'playlist-card-item';
       item.onclick = () => window.playNeteaseTrack(idx);
@@ -112,145 +203,110 @@ export function initNetease() {
 
       const img = document.createElement('img');
       img.src = s.cover;
-      img.alt = s.title;
-      img.loading = 'lazy';
       img.className = 'card-cover-img';
+      img.loading = 'lazy';
 
       const playIcon = document.createElement('div');
       playIcon.className = 'card-play-tag';
-      playIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="#ffffff"><polygon points="7,4 20,12 7,20"/></svg>`;
+      playIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><polygon points="7,4 20,12 7,20"/></svg>`;
 
       coverWrap.appendChild(img);
       coverWrap.appendChild(playIcon);
 
-      const title = document.createElement('p');
-      title.className = 'card-title';
-      title.textContent = s.title;
+      const p = document.createElement('p');
+      p.className = 'card-title';
+      p.textContent = s.title;
 
       item.appendChild(coverWrap);
-      item.appendChild(title);
+      item.appendChild(p);
       homeList.appendChild(item);
     });
   }
 
-  /* ==========================================================
-     3. “我的”千首长列表
-     ========================================================== */
-  function initMineSongList() {
-    const mineContainer = document.getElementById('minePlaylists');
-    if (!mineContainer) return;
+  // 渲染“我的”页面中的歌单主卡片
+  function renderMyPlaylistCards() {
+    const container = document.getElementById('neMyPlaylists');
+    if (!container) return;
+    container.replaceChildren();
 
-    let listWrap = document.getElementById('neMineSongListWrap');
-    if (!listWrap) {
-      listWrap = document.createElement('div');
-      listWrap.id = 'neMineSongListWrap';
-      listWrap.className = 'mine-song-list-wrap';
-      mineContainer.appendChild(listWrap);
-    }
-    listWrap.replaceChildren();
-    renderedChunkCount = 0;
-
-    const headerBar = document.createElement('div');
-    headerBar.className = 'song-list-header';
-    headerBar.innerHTML = `
-      <div class="sl-left">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EC4141" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="#EC4141"/></svg>
-        <span class="sl-title">播放全部</span>
-        <span class="sl-count">(共 ${playlist.length} 首)</span>
+    const mainCard = document.createElement('div');
+    mainCard.className = 'ne-pl-card';
+    mainCard.innerHTML = `
+      <img class="ne-pl-thumb" src="${playlist[0]?.cover || ''}">
+      <div class="ne-pl-info">
+        <div class="ne-pl-title">我喜欢的音乐</div>
+        <div class="ne-pl-sub">${playlist.length} 首 · ${userProfile.name}</div>
       </div>
+      <button class="ne-btn-heart-mode">♡ 心动模式</button>
     `;
-    headerBar.onclick = () => window.playNeteaseTrack(0);
-    listWrap.appendChild(headerBar);
-
-    appendSongRows(CHUNK_SIZE);
-
-    const scrollParent = document.getElementById('tabMine');
-    if (scrollParent) {
-      scrollParent.onscroll = () => {
-        if (renderedChunkCount >= playlist.length) return;
-        if (scrollParent.scrollTop + scrollParent.clientHeight >= scrollParent.scrollHeight - 200) {
-          appendSongRows(CHUNK_SIZE);
-        }
-      };
-    }
+    mainCard.onclick = () => playlistDetailPage.classList.add('open');
+    container.appendChild(mainCard);
   }
 
-  function appendSongRows(count) {
-    const listWrap = document.getElementById('neMineSongListWrap');
-    if (!listWrap || renderedChunkCount >= playlist.length) return;
+  // 渲染二级歌单详情长列表
+  function renderDetailSongList() {
+    const container = document.getElementById('detailSongList');
+    if (!container) return;
+    container.replaceChildren();
 
-    const start = renderedChunkCount;
-    const end = Math.min(playlist.length, start + count);
-    const fragment = document.createDocumentFragment();
-
-    for (let i = start; i < end; i++) {
-      const s = playlist[i];
-      const isCurrent = i === currentIndex;
-
+    const frag = document.createDocumentFragment();
+    playlist.forEach((s, idx) => {
       const row = document.createElement('div');
-      row.className = `song-row ${isCurrent ? 'active' : ''}`;
-      row.dataset.index = i;
-      row.onclick = () => window.playNeteaseTrack(i);
+      row.className = `song-row ${idx === currentIndex ? 'active' : ''}`;
+      row.dataset.index = idx;
+      row.onclick = () => window.playNeteaseTrack(idx);
 
       const num = document.createElement('span');
       num.className = 'song-num';
-      num.textContent = isCurrent ? '' : (i + 1);
-      if (isCurrent) {
+      num.textContent = idx === currentIndex ? '' : (idx + 1);
+      if (idx === currentIndex) {
         num.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#EC4141"><polygon points="7,4 20,12 7,20"/></svg>`;
       }
 
       const img = document.createElement('img');
       img.className = 'song-thumb';
       img.src = s.cover;
-      img.alt = s.title;
       img.loading = 'lazy';
 
       const meta = document.createElement('div');
       meta.className = 'song-meta';
 
-      const titleEl = document.createElement('div');
-      titleEl.className = 'song-name';
-      titleEl.textContent = s.title;
+      const title = document.createElement('div');
+      title.className = 'song-name';
+      title.textContent = s.title;
 
-      const subEl = document.createElement('div');
-      subEl.className = 'song-sub';
-      subEl.textContent = s.artist;
+      const sub = document.createElement('div');
+      sub.className = 'song-sub';
+      sub.textContent = s.artist;
 
-      meta.appendChild(titleEl);
-      meta.appendChild(subEl);
+      meta.appendChild(title);
+      meta.appendChild(sub);
 
-      const moreBtn = document.createElement('button');
-      moreBtn.className = 'song-more-btn';
-      moreBtn.setAttribute('aria-label', '更多');
-      moreBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+      const more = document.createElement('button');
+      more.className = 'song-more-btn';
+      more.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
 
       row.appendChild(num);
       row.appendChild(img);
       row.appendChild(meta);
-      row.appendChild(moreBtn);
+      row.appendChild(more);
 
-      fragment.appendChild(row);
-    }
-
-    listWrap.appendChild(fragment);
-    renderedChunkCount = end;
+      frag.appendChild(row);
+    });
+    container.appendChild(frag);
   }
 
-  function updateActiveSongRow() {
-    const listWrap = document.getElementById('neMineSongListWrap');
-    if (!listWrap) return;
-    const rows = listWrap.querySelectorAll('.song-row');
+  function updateActiveRow() {
+    const rows = document.querySelectorAll('.song-row');
     rows.forEach(r => {
       const idx = parseInt(r.dataset.index, 10);
       const isCur = idx === currentIndex;
       r.classList.toggle('active', isCur);
-      const numSpan = r.querySelector('.song-num');
-      if (numSpan) {
-        if (isCur) {
-          numSpan.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#EC4141"><polygon points="7,4 20,12 7,20"/></svg>`;
-        } else {
-          numSpan.textContent = idx + 1;
-        }
+      const num = r.querySelector('.song-num');
+      if (num) {
+        num.innerHTML = isCur
+          ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="#EC4141"><polygon points="7,4 20,12 7,20"/></svg>`
+          : (idx + 1);
       }
     });
   }
@@ -259,14 +315,13 @@ export function initNetease() {
     if (playlist[idx]) {
       currentIndex = idx;
       playTrack(playlist[idx], true);
-      updateActiveSongRow();
+      updateActiveRow();
       fullPlayer.classList.add('open');
-      device.classList.add('theme-dark');
     }
   };
 
   /* ==========================================================
-     4. 播放单曲（使用真正可播的流地址）
+     4. 单曲播放与自适应流光
      ========================================================== */
   async function playTrack(song, autoPlay = true) {
     if (!song) return;
@@ -276,33 +331,25 @@ export function initNetease() {
     document.getElementById('miniTitle').textContent = song.title;
     document.getElementById('miniArtist').textContent = `- ${song.artist}`;
 
-    // 动态挂载黑胶中心图片
+    // 动态黑胶与 Mini 封面
     const discArt = document.getElementById('vinylDiscArt');
     if (discArt) {
       discArt.replaceChildren();
       const pImg = document.createElement('img');
       pImg.src = song.cover;
-      pImg.alt = song.title;
       discArt.appendChild(pImg);
     }
-
-    // 动态挂载 Mini 封面
     const miniWrap = document.getElementById('miniDiscWrap');
     if (miniWrap) {
       miniWrap.replaceChildren();
       const mImg = document.createElement('img');
       mImg.src = song.cover;
-      mImg.alt = song.title;
       miniWrap.appendChild(mImg);
     }
 
-    const bgImg = document.getElementById('playerBgImg');
-    if (bgImg) bgImg.src = song.cover;
+    // 实时提取封面色自适应背景
+    extractAmbientColor(song.cover);
 
-    const heroBg = document.getElementById('mineHeroBg');
-    if (heroBg) heroBg.src = song.cover;
-
-    // 关键：直接使用返回的真实播放流
     audio.src = song.url;
     loadLyrics(song.lrcUrl);
 
@@ -313,9 +360,7 @@ export function initNetease() {
         p.then(() => {
           consecutiveErrorCount = 0;
           updatePlayState(true);
-        }).catch(() => {
-          updatePlayState(false);
-        });
+        }).catch(() => updatePlayState(false));
       }
     } else {
       updatePlayState(false);
@@ -325,19 +370,14 @@ export function initNetease() {
   audio.onerror = () => {
     consecutiveErrorCount++;
     updatePlayState(false);
-
-    if (consecutiveErrorCount >= 10) {
-      showToast('多首歌曲受版权保护，已暂停');
+    if (consecutiveErrorCount >= 8) {
+      showToast('连续多首受版权保护，已暂停');
       consecutiveErrorCount = 0;
       return;
     }
-
-    const currentTitle = playlist[currentIndex]?.title || '当前曲目';
-    showToast(`《${currentTitle}》暂无播放源，已为您顺延`, 1800);
-
-    setTimeout(() => {
-      nextTrack(true);
-    }, 400);
+    const curTitle = playlist[currentIndex]?.title || '当前曲目';
+    showToast(`《${curTitle}》暂无播放源，已为您顺延`, 1800);
+    setTimeout(() => nextTrack(true), 400);
   };
 
   /* ==========================================================
@@ -402,21 +442,19 @@ export function initNetease() {
   }
 
   /* ==========================================================
-     6. 控制器
+     6. 控制器绑定
      ========================================================== */
   function updatePlayState(playing) {
     isPlaying = playing;
-    const pauseSvgLines = `<line x1="6" y1="4" x2="6" y2="20" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><line x1="18" y1="4" x2="18" y2="20" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`;
+    const pauseSvg = `<line x1="6" y1="4" x2="6" y2="20" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><line x1="18" y1="4" x2="18" y2="20" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>`;
     const playSvgPoly = `<polygon points="7,4 20,12 7,20" fill="currentColor"/>`;
 
     if (playing) {
       fullPlayer.classList.remove('paused');
-      device.classList.remove('paused');
-      if (playSvg) playSvg.innerHTML = pauseSvgLines;
-      if (miniPlaySvg) miniPlaySvg.innerHTML = pauseSvgLines;
+      if (playSvg) playSvg.innerHTML = pauseSvg;
+      if (miniPlaySvg) miniPlaySvg.innerHTML = pauseSvg;
     } else {
       fullPlayer.classList.add('paused');
-      device.classList.add('paused');
       if (playSvg) playSvg.innerHTML = playSvgPoly;
       if (miniPlaySvg) miniPlaySvg.innerHTML = playSvgPoly;
     }
@@ -462,7 +500,7 @@ export function initNetease() {
     if (!playlist.length) return;
     currentIndex = (currentIndex + 1) % playlist.length;
     playTrack(playlist[currentIndex], true);
-    updateActiveSongRow();
+    updateActiveRow();
     if (!isAutoSkip) {
       consecutiveErrorCount = 0;
       showToast(`下一首: ${playlist[currentIndex].title}`);
@@ -474,7 +512,7 @@ export function initNetease() {
     currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
     consecutiveErrorCount = 0;
     playTrack(playlist[currentIndex], true);
-    updateActiveSongRow();
+    updateActiveRow();
     showToast(`上一首: ${playlist[currentIndex].title}`);
   }
 
@@ -482,15 +520,11 @@ export function initNetease() {
   document.getElementById('prevBtn')?.addEventListener('click', prevTrack);
   audio.onended = () => nextTrack(true);
 
-  miniBar?.addEventListener('click', () => {
-    fullPlayer.classList.add('open');
-    device.classList.add('theme-dark');
-  });
-
-  document.getElementById('closePlayerBtn')?.addEventListener('click', () => {
-    fullPlayer.classList.remove('open');
-    device.classList.remove('theme-dark');
-  });
+  // 路由跳转
+  miniBar?.addEventListener('click', () => fullPlayer.classList.add('open'));
+  document.getElementById('closePlayerBtn')?.addEventListener('click', () => fullPlayer.classList.remove('open'));
+  document.getElementById('btnCloseDetail')?.addEventListener('click', () => playlistDetailPage.classList.remove('open'));
+  document.getElementById('sheetPlayAllBtn')?.addEventListener('click', () => window.playNeteaseTrack(0));
 
   document.getElementById('playerBodyStage')?.addEventListener('click', () => {
     isLyricsMode = !isLyricsMode;
@@ -498,41 +532,83 @@ export function initNetease() {
     lyricsView.classList.toggle('active', isLyricsMode);
   });
 
-  document.querySelectorAll('.tab-item').forEach(tab => {
+  // Tab 切换
+  document.querySelectorAll('.bottom-tabbar .tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.bottom-tabbar .tab-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.ne-tab-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tab.dataset.tab)?.classList.add('active');
     });
   });
 
-  const mineContainer = document.getElementById('minePlaylists');
-  if (mineContainer && !document.getElementById('btnMyPlaylistImport')) {
-    const importBox = document.createElement('div');
-    importBox.className = 'mine-import-box';
-    importBox.innerHTML = `
-      <button id="btnMyPlaylistImport" class="btn btn-primary">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        <span>导入我的网易云公开歌单</span>
-      </button>
-      <p class="mine-import-tip">支持输入歌单 ID 或直接粘贴网易云分享链接</p>
-    `;
-    mineContainer.insertBefore(importBox, mineContainer.firstChild);
+  document.getElementById('btnGoSearchTab')?.addEventListener('click', () => {
+    document.querySelector('.tab-item[data-tab="tabSearch"]')?.click();
+  });
 
-    document.getElementById('btnMyPlaylistImport').onclick = async () => {
-      const input = prompt('请输入你的网易云公开歌单链接或歌单 ID：', '');
-      if (!input || !input.trim()) return;
-      const match = input.match(/[?&]id=(\d+)/) || input.match(/playlist\/(\d+)/) || input.match(/(\d{7,12})/);
-      const pid = match ? match[1] : input.replace(/[^0-9]/g, '');
-      if (!pid) {
-        alert('未能识别歌单 ID');
-        return;
+  /* ==========================================================
+     7. 全网真实歌曲搜索
+     ========================================================== */
+  const searchInput = document.getElementById('neSearchInput');
+  const searchList = document.getElementById('neSearchList');
+  const searchTip = document.getElementById('neSearchPlaceholder');
+
+  searchInput?.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const q = searchInput.value.trim();
+      if (!q) return;
+      showToast(`正在搜索《${q}》...`);
+      try {
+        const res = await fetch(`https://api.injahow.cn/meting/?type=search&id=${encodeURIComponent(q)}`);
+        const results = await res.json();
+        if (Array.isArray(results) && results.length > 0) {
+          searchTip.style.display = 'none';
+          searchList.replaceChildren();
+          results.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'song-row';
+            row.innerHTML = `
+              <img class="song-thumb" src="${item.pic}" loading="lazy">
+              <div class="song-meta">
+                <div class="song-name">${item.name}</div>
+                <div class="song-sub">${item.artist}</div>
+              </div>
+            `;
+            row.onclick = () => {
+              playlist.unshift({
+                title: item.name,
+                artist: item.artist,
+                url: item.url,
+                cover: item.pic,
+                lrcUrl: item.lrc
+              });
+              currentIndex = 0;
+              playTrack(playlist[0], true);
+              fullPlayer.classList.add('open');
+              showToast(`正在播放: ${item.name}`);
+            };
+            searchList.appendChild(row);
+          });
+        } else {
+          showToast('未找到匹配歌曲');
+        }
+      } catch (_) {
+        showToast('搜索失败，请稍后再试');
       }
-      loadPlaylistById(pid);
-    };
-  }
+    }
+  });
 
+  // 自定义导入歌单
+  document.getElementById('btnImportAnyPlaylist')?.addEventListener('click', () => {
+    const input = prompt('请输入网易云歌单 ID 或分享链接：', '');
+    if (!input || !input.trim()) return;
+    const match = input.match(/[?&]id=(\d+)/) || input.match(/playlist\/(\d+)/) || input.match(/(\d{7,12})/);
+    const pid = match ? match[1] : input.replace(/[^0-9]/g, '');
+    if (!pid) return alert('未能识别歌单 ID');
+    loadPlaylistById(pid);
+  });
+
+  // 默认启动
   const savedPid = localStorage.getItem('CA_USER_NETEASE_PID') || DEFAULT_PLAYLIST_ID;
   loadPlaylistById(savedPid);
 }
