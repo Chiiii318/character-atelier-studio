@@ -1106,3 +1106,10 @@
 #page-netease .ne-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 #page-netease .ne-btn-cancel { background: #eee; border: none; padding: 7px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; color: #555; }
 #page-netease .ne-btn-confirm { background: #EC4141; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; color: #fff; font-weight: 600; }
+
+/* 当打开全屏播放器或歌单详情时，隐藏左上角的全局退出按钮，避免和返回箭头重叠 */
+#page-netease:has(.full-player-modal.open) .ne-app-exit-btn,
+#page-netease:has(.ne-playlist-detail-page.open) .ne-app-exit-btn {
+  display: none !important;
+}
+
