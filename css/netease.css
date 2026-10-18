@@ -504,3 +504,204 @@
 @media(min-width:600px) { #page-netease .app-device { height:min(94dvh,932px); border-radius:32px; box-shadow:0 20px 60px #0008; } }
 @media(max-height:600px) { #page-netease { --ne-disc:min(57vw,32dvh); } #page-netease .meta-line,#page-netease .controls-strip,#page-netease .progress-box { margin-bottom:6px; } #page-netease .stylus-rig { height:110px; width:77px; } }
 @media(prefers-reduced-motion:reduce) { #page-netease * { animation:none !important; transition:none !important; } }
+
+/* ================================================================
+   netease.css — UI/UX Pro Max 官方真机像素级升级
+   ================================================================ */
+
+/* 1. 首页“当前播放”横向滑动组件规范 */
+#page-netease .playlist-scroll {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+#page-netease .playlist-scroll::-webkit-scrollbar {
+  display: none;
+}
+#page-netease .playlist-card-item {
+  width: 105px;
+  min-width: 105px;
+  flex-shrink: 0;
+  cursor: pointer;
+  text-align: left;
+}
+#page-netease .card-cover-wrap {
+  position: relative;
+  width: 105px;
+  height: 105px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #2a2a2e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+#page-netease .card-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#page-netease .card-play-tag {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#page-netease .card-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 6px 0 0 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. “我的”长列表与流畅滚动规范 */
+#page-netease .mine-song-list-wrap {
+  padding: 4px 16px 85px;
+  display: flex;
+  flex-direction: column;
+}
+#page-netease .song-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 6px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+#page-netease .sl-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#page-netease .sl-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1f1f1f;
+}
+#page-netease .sl-count {
+  font-size: 12px;
+  color: #999;
+}
+#page-netease .song-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+#page-netease .song-row:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+#page-netease .song-row.active {
+  background: rgba(236, 65, 65, 0.07);
+}
+#page-netease .song-num {
+  width: 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #999;
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#page-netease .song-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #e8e8e8;
+  display: block;
+}
+#page-netease .song-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#page-netease .song-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#page-netease .song-row.active .song-name {
+  color: #EC4141;
+}
+#page-netease .song-sub {
+  font-size: 11.5px;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#page-netease .song-more-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3. 导入组件规范 */
+#page-netease .mine-import-box {
+  padding: 14px 16px 6px;
+  text-align: center;
+}
+#page-netease .mine-import-tip {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-top: 7px;
+}
+
+/* 4. 浮动 Toast 弹窗（原生毛玻璃胶囊） */
+#page-netease .cloud-toast {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(30, 30, 32, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.26s cubic-bezier(0.2, 0.9, 0.2, 1);
+  z-index: 120;
+  white-space: nowrap;
+}
+#page-netease .cloud-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
