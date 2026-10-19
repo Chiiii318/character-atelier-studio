@@ -555,8 +555,8 @@ async function parseCardJSONContent(text, filename) {
     return { cardData, blob };
   }
 
-  throw new Error('未识别的角色卡 JSON   
-  }              
+throw new Error('未识别的角色卡 JSON 格式');
+}             
 /* ---- 导入角色卡（PNG + XML + JSON 三轨支持） ---- */
 
 export async function importPNGs(files) {
