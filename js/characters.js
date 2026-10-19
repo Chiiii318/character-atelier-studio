@@ -451,6 +451,98 @@ async function parseCardJSONContent(text, filename) {
   throw new Error('未识别的角色卡 JSON 格式');
 }
 
+  // 3. Tavern V1 或通用平铺角色卡
+  if (json.name || json.description || json.first_mes || json.system_prompt) {
+    const charName = String(json.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
+    const cardData = {
+      name: charName,
+      description: json.description || '',
+      personality: json.personality || '',
+      scenario: json.scenario || '',
+      first_mes: json.first_mes || '',
+      mes_example: json.mes_example || '',
+      creator_notes: json.creator_notes || '',
+      system_prompt: json.system_prompt || '',
+      tags: Array.isArray(json.tags) ? json.tags : [],
+      alternate_greetings: Array.isArray(json.alternate_greetings) ? json.alternate_greetings : [],
+      character_book: json.character_book || null,
+      extensions: json.extensions || {}
+    };
+    let blob = null;
+    if (typeof json.avatar === 'string' && json.avatar.trim()) {
+      try {
+        const cleanBase64 = json.avatar.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+        blob = base64ToBlob(cleanBase64, 'image/png');
+      } catch (_) {}
+    }
+    if (!blob) blob = await resolveMufyAvatarBlob('', charName);
+    return { cardData, blob };
+  }
+
+  // 4. 酒馆独立世界书 / Lorebook 架构角色卡（如《狐儿脸狗儿心.生生不已^v^》）
+  if (json.entries && (typeof json.entries === 'object' || Array.isArray(json.entries))) {
+    const rawName = json.originalData?.name || json.name || filename.replace(/\.json$/i, '') || '世界书角色';
+    const charName = String(rawName);
+
+    const rawList = Array.isArray(json.entries) ? json.entries : Object.values(json.entries);
+    const entries = [];
+    let extractedPersonality = '';
+    let extractedDesc = json.originalData?.description || '';
+
+    rawList.forEach((ent, idx) => {
+      if (!ent) return;
+      const comment = ent.comment || ent.name || `条目 ${idx + 1}`;
+      const content = ent.content || '';
+      const keys = Array.isArray(ent.key) ? ent.key : (Array.isArray(ent.keys) ? ent.keys : [comment]);
+
+      // 智能识别：如果是“性格锚定”，提出来放进角色性格面板
+      if (!extractedPersonality && (comment.includes('性格') || comment.includes('设定'))) {
+        extractedPersonality = content;
+      }
+      if (!extractedDesc && comment.includes('性格锚定')) {
+        extractedDesc = content.slice(0, 120) + '...';
+      }
+
+      entries.push({
+        id: ent.uid ?? idx + 1,
+        keys: keys,
+        secondary_keys: ent.keysecondary || [],
+        comment: comment,
+        content: content,
+        constant: !!ent.constant,
+        selective: !!ent.selective,
+        insertion_order: ent.order || (idx + 1),
+        enabled: !ent.disable,
+        position: ent.position === 4 ? 'after_impression' : 'before_prompt'
+      });
+    });
+
+    const cardData = {
+      name: charName,
+      description: extractedDesc || '世界书设定角色',
+      personality: extractedPersonality,
+      scenario: '',
+      first_mes: '',
+      mes_example: '',
+      creator_notes: '',
+      system_prompt: '',
+      tags: ['世界书设定', '生生不已'],
+      alternate_greetings: [],
+      character_book: { entries },
+      extensions: {
+        originalData: json.originalData || {}
+      }
+    };
+
+    // 自动为盛不已生成首字“盛”的清爽头像
+    const avatarChar = charName.includes('生生不已') ? '盛' : charName.charAt(0);
+    const blob = await resolveMufyAvatarBlob('', avatarChar);
+
+    return { cardData, blob };
+  }
+
+  throw new Error('未识别的角色卡 JSON   
+  }              
 /* ---- 导入角色卡（PNG + XML + JSON 三轨支持） ---- */
 
 export async function importPNGs(files) {
