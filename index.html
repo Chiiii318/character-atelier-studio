@@ -296,11 +296,16 @@
     <section class="page" id="page-prompts">
       <div class="page-heading">
         <div><div class="eyebrow">SCRIPT ATELIER · v5.1 RELAY ENGINE</div><h1>剧本改编工坊</h1><p class="muted" style="color:var(--muted)">演艺圈 / 戏中戏双轨编译流水线。</p></div>
-        <div class="heading-actions">
-          <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
-          <button class="btn btn-quiet" id="saEditTemplateBtn" type="button"><svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>v5.1 母本词库</span></button>
-          <button class="btn btn-quiet" id="saLoadDemoBtn" type="button"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>填入本步演示定稿</span></button>
-        </div>
+          <div class="heading-actions">
+            <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
+            <button class="btn btn-quiet" id="saEditTemplateBtn" type="button"><svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>v5.1 母本词库</span></button>
+            <button class="btn btn-quiet" id="saLoadDemoBtn" type="button"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>填入本步演示定稿</span></button>
+            <label class="btn btn-primary" for="saTxtFilePicker" style="cursor:pointer">
+              <svg class="ui-icon"><use href="#i-upload"></use></svg>
+              <span>导入原著小说 TXT</span>
+            </label>
+            <input type="file" id="saTxtFilePicker" accept=".txt,text/plain" style="display:none" aria-label="上传原著文本文件"/>
+          </div>
       </div>
       <div class="sa-shell">
         <div class="sa-project-bar">
