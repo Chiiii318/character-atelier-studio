@@ -262,6 +262,33 @@ export function initScriptAtelier() {
   });
 
   $('saLoadDemoBtn')?.addEventListener('click', () => { saState.drafts[saState.currentStep] = STEP_META[saState.currentStep]?.demo || ''; persistState(); renderAll(); window.toast(`已填入 [${saState.currentStep}] 演示`); });
+
+  // ★ 新增：导入原著小说 .txt 文件读取逻辑
+  $('saTxtFilePicker')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result || '';
+      saState.novelText = content;
+      persistState();
+
+      saState.currentStep = 'P0';
+      renderAll();
+
+      const projInput = $('saProjectName');
+      if (projInput && !projInput.value.trim()) {
+        projInput.value = `《${file.name.replace(/\.txt$/i, '')}》剧组世界书`;
+      }
+
+      window.toast(`✓ 成功读取《${file.name}》（共 ${content.length} 字），已填入 P0！`);
+      e.target.value = '';
+    };
+    reader.onerror = () => window.toast('读取文件失败');
+    reader.readAsText(file, 'utf-8');
+  });
+
   $('saInitCoreBtn')?.addEventListener('click', () => compileEntriesToWorldBook(CORE_RT_ENTRY_RAW, false));
   $('saEditTemplateBtn')?.addEventListener('click', () => window.toast('母本词库编辑器可在 localStorage 中直接修改 CA_SCRIPT_ATELIER_V51_DICT'));
   $('saRandomSlotBtn')?.addEventListener('click', () => { document.querySelectorAll('#saSlotConsole .sa-pill-group').forEach(g => { const pills = Array.from(g.querySelectorAll('.sa-opt-pill')); if (pills.length) pills[Math.floor(Math.random() * pills.length)].click(); }); window.toast('🎲 已随机参数'); });
