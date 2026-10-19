@@ -1,5 +1,5 @@
 /* ================================================================
-   script-atelier.js — 剧本改编工坊 v5.1（五步流水线编译引擎）
+   script-atelier.js — 剧本改编工坊 v5.1（五步流水线编译引擎 · 终极容错版）
    ================================================================ */
 
 export function initScriptAtelier() {
@@ -8,23 +8,167 @@ export function initScriptAtelier() {
   const STORAGE_KEY_TEMPLATES = 'CA_SCRIPT_ATELIER_V51_DICT';
   const STORAGE_KEY_STATE = 'CA_SCRIPT_ATELIER_V51_STATE';
 
-  /* ---- v5.1 母本词库 ---- */
+  /* ---- v5.1 完整权威母本词库（带严格防变形约束） ---- */
 
   const DEFAULT_PROMPT_DICT_V51 = {
-    P_CORE: `P-CORE · 全局执行契约与事实防火墙\n§1 输出协议：编译阶段第1字符必须是结构化标签。禁止寒暄。\n§2 命名空间：CANON/ADAPTATION/META/INFERRED。\n§3 防火墙：MODE=SCENE 时 DENY 全部 META；MODE=OFFSET 时 DENY 未拍反转。\n§4 BLOCKLIST：空洞情绪、抽象断言、陈旧网文腔。\n§5 HALT PROTOCOL：[HALT: CODE | slot= | need=]。`,
+    P_CORE: `════════════════════════════════════════════════════════════════════════════════
+P-CORE · 全局执行契约与事实防火墙 (System，所有调用全局常驻)
+════════════════════════════════════════════════════════════════════════════════
 
-    P0: `P0 · 原著证据抽取机\n[INPUT]\n{{novel_text}}\n[PREV_CANON]\n{{prev_canon}}\n[TASK] 纯抽取、零创作，建立 8 张事实表：T-CHAR, T-TIME, T-INFO, T-TWIST, T-LINES, T-THRILL, T-FLAW, T-RISK。`,
+§1 输出协议与 Anti-Chatter
+1.1 【编译阶段】(P0, P1, P2, P3-BUILD):
+    - MUST：输出的第 1 个字符必须是合法结构化标签（@@ENTRY、表格首行 | 或 [HALT:]）。
+    - FORBIDDEN：任何寒暄、过程解释。绝对严禁使用 \`\`\`yaml 或任何 Markdown 代码块包裹！
+1.2 【格式生死线】：
+    - @@ENTRY|...@@ 标签必须写在单独的一行，绝对禁止在标签中间插入换行符！
+    - 每个条目结束必须独占一行写 @@END@@。
 
-    P1: `P1 · 编剧视听转化\n[INPUT]\n{{CANON_TABLE}}\n[PARAMETERS]\nPLATFORM={{PLATFORM}}; TIER={{TIER}}; ORIGIN={{ORIGIN}}; ADDON_TARGET={{ADDON_TARGET}}\n[OUTPUT] §01 立项底稿 §02 爽点视听升格 §03 意象矩阵 §04 过审四联表 §05 瑕疵修补 §06 蝴蝶效应加戏 §07 @@ENTRY 入库条目。`,
+§2 命名空间与证据分级:
+- CANON：原著明确记载的事实 (ref=编号)。
+- ADAPTATION：经审定的剧版改编 (adp=编号)。
+- META：戏外娱乐圈生态、演员咖位画像 (meta=编号)。
+- INFERRED：逻辑推导，严禁自动伪装成 CANON。
 
-    P2_CHAR: `P2-A · 戏内角色小传\n[INPUT]\n{{CANON_TABLE}}\n{{P1_OUTPUT}}\n[PARAMETERS]\nROLE_ID={{ROLE_ID}}; PLAYER_SEAT={{PLAYER_SEAT}}; ROLE_TYPE={{ROLE_TYPE}}\n@@ENTRY|id=CHAR_{{ROLE_ID}}|type=CHAR|keys={{ROLE_NAME}},{{ROLE_ALIAS}}|const=0|pos=CHAR_AFTER|depth=4|order=100|cap=1200@@\nK1-K10 + K11(非LEAD)。\n@@END@@`,
+§3 运行时双轨访问防火墙 (FIREWALL):
+- MODE=SCENE (实拍对戏中): 严禁泄露 META 戏外八卦与后续反转。
+- MODE=OFFSET (戏外生活): 允许 META，严禁泄露大结局核心反转。
 
-    P2_OFFSET: `P2-B · 戏外内娱盲盒\n[INPUT]\n{{P1_OUTPUT}}\n[PARAMETERS]\nPLAYER_SEAT={{PLAYER_SEAT}}; PARTNER_ARCHETYPE={{PARTNER_ARCHETYPE}}; PHASE={{PHASE}}\nO-1 梯队画像库 3~5条 ARCH_ ENTRY。\nO-2 戏外博弈事件库 6~8条 EVT_ ENTRY。`,
+§4 负面词库拦截器 BLOCKLIST (出现即强制重写该句):
+- 严禁空洞情绪：眼神复杂｜内心挣扎｜五味杂陈｜暗流涌动｜深邃｜坚毅｜隐忍而坚定。
+- 严禁陈旧网文腔：嘴角勾起一抹｜空气仿佛凝固｜眸色一深｜一丝｜宛如。
 
-    P3: `P3 · 拍摄通告与死锁\n[INPUT]\n{{CANON_TABLE}}\n{{P1_OUTPUT}}\n{{P2_OUTPUT}}\n[PARAMETERS]\nSCENE_NO={{SCENE_NO}}; TARGET_LN_START={{TARGET_LN_START}}; TARGET_LN_END={{TARGET_LN_END}}\n@@ENTRY|id=SC_{{SCENE_NO}}|...@@\n起止锚点死锁 + 节拍控制 + 提词器。\n@@END@@\n@@ENTRY|id=PTR_CURRENT|type=POINTER|...@@\n@@END@@`
+§5 机器熔断协议 HALT PROTOCOL:
+格式：[HALT: <CODE> | slot=<槽位> | need=<缺失证据或原因>]`,
+
+    P0: `════════════════════════════════════════════════════════════════════════════════
+P0 · 原著证据抽取机 (CANON LEDGER)
+════════════════════════════════════════════════════════════════════════════════
+[INPUT]
+{{novel_text}}
+[PREV_CANON]
+{{prev_canon}}
+
+[TASK] 纯抽取、零创作、零改编，建立带唯一跨表 ID 的 8 张事实底盘表格：
+T-CHAR 角色索引表：CH-nn｜姓名｜拼音ID｜别称｜表面身份｜真实底层处境｜职业苦难/身体痕迹(带原文引用)｜关联人物｜首出章节
+T-TIME 故事编年表：TL-nn｜时间节点｜地点｜核心物理事件 (≤30字)｜在场人物｜起止动作标志
+T-INFO 认知差异表：IF-nn｜关联事件 TL-ref｜已知者｜被蒙蔽者｜观众已知事实
+T-TWIST 核心反转表：TW-nn｜反转/真相内容｜揭秘者｜揭密节点｜揭示方式｜最终结局走向｜status=LOCKED|PENDING_CANON
+T-LINES 原著台词库：LN-nn｜说话人｜关联事件｜原文逐字台词 (错漏一字即熔断)｜前后动作原文｜出现章节｜MUST_KEEP=Y|N
+T-THRILL 爽点机制表：TH-nn｜爽点名称｜关联台词｜机制类型｜原著章节｜读者情绪补偿模型
+T-FLAW 原著瑕疵台账：FL-nn｜瑕疵类型｜原著章节位置｜具体事实缺陷陈述
+T-RISK 审查雷区扫描：RK-nn｜原著位置｜雷区类型｜原著具体违规行为事实陈述`,
+
+    P1: `════════════════════════════════════════════════════════════════════════════════
+P1 · 编剧视听转化与蝴蝶效应引擎
+════════════════════════════════════════════════════════════════════════════════
+[INPUT]
+{{CANON_TABLE}}
+
+[PARAMETERS]
+[PLATFORM]={{PLATFORM}}；[TIER]={{TIER}}；[ORIGIN]={{ORIGIN}}；[ADDON_TARGET]={{ADDON_TARGET}}
+
+[OUTPUT]:
+§01 影视立项工作底稿 (PROJECT)
+§02 网文下沉爽点保留与视听升格 (THRILL)
+§03 视听核心意象矩阵 (MOTIF)
+§04 过审合规转化四联表 (CENSOR)
+§05 原著瑕疵修补方案 (FLAW)
+§06 蝴蝶效应配角加戏系统 (BUTTERFLY)
+§07 入库精炼条目 (必须严格单行标签，严禁使用代码块包裹)：
+@@ENTRY|id=MASTER_PLAN|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=10|cap=400@@
+立项定级: {{TIER}} {{PLATFORM}}
+核心意象与过审方案摘要。
+@@END@@
+
+@@ENTRY|id=ADDON_SUMMARY|type=ADDON|keys=|const=1|pos=SYS_TOP|depth=0|order=20|cap=300@@
+加戏配角: {{ADDON_TARGET}} 蝴蝶效应事件与回流集数。
+@@END@@`,
+
+    P2_CHAR: `════════════════════════════════════════════════════════════════════════════════
+P2 · 轨道 A：戏内角色剧本小传 (P2-CHAR)
+════════════════════════════════════════════════════════════════════════════════
+[INPUT]
+{{CANON_TABLE}}
+{{P1_OUTPUT}}
+
+[PARAMETERS]
+{{ROLE_ID}}={{ROLE_ID}}；[PLAYER_SEAT]={{PLAYER_SEAT}}；[ROLE_TYPE]={{ROLE_TYPE}}
+
+[OUTPUT 条目] (单行头，独占一行)：
+@@ENTRY|id=CHAR_{{ROLE_ID}}|type=CHAR|keys={{ROLE_NAME}},{{ROLE_ALIAS}}|const=0|pos=CHAR_AFTER|depth=4|order=100|cap=1200@@
+K1 [戏剧任务] 核心功能定位。
+K2 [表象与深层] 表面面具｜底层欲望｜不可说恐惧。
+K3 [核心矛盾律] ≥3 组矛盾对抗。
+K4 [体态与骨骼肌肉记忆] 【触发情境】➔【具体肌肉/体态动作】➔【来源】(≥4项)。
+K5 [视线与呼吸停顿] 视线落点秒数｜呼吸状态｜停顿拍子。
+K6 [发声与语速] 发声位置｜语速节奏｜口癖。
+K7 [台词重音提词器] 原文逐字（／短停，／／长停）｜重音「词语」｜潜台词。
+K8 [对手戏博弈协议] 应对策略｜底牌目的｜行为红线。
+K9 [行为边界] 硬性禁区｜偏离风险。
+K10 [角色认知边界] 与 T-INFO 对齐。
+IF ROLE_TYPE ≠ LEAD THEN 追加：
+K11 [他也是对的] 底层生存逻辑前提 ｜ 3条自洽理由 ｜ 必拍高光戏。
+@@END@@`,
+
+    P2_OFFSET: `════════════════════════════════════════════════════════════════════════════════
+P2 · 轨道 B：戏外内娱博弈盲盒 (P2-OFFSET)
+════════════════════════════════════════════════════════════════════════════════
+[INPUT]
+{{P1_OUTPUT}}
+
+[PARAMETERS]
+[PLAYER_SEAT]={{PLAYER_SEAT}}；[PARTNER_ARCHETYPE]={{PARTNER_ARCHETYPE}}；[PHASE]={{PHASE}}
+[RULES] 严禁使用真实艺人或资方姓名。全生成为独立 ENTRY：
+
+@@ENTRY|id=ARCH_<TYPE_ID>|type=OFFSET|keys=画像_<TYPE_ID>|const=0|pos=NEAR_LATEST|depth=3|order=200|cap=600@@
+【演员梯队类型】｜【咖位处境与诉求】｜【团队防爆与防吸血预警】｜【性格与可拍小动作】
+@@END@@
+
+@@ENTRY|id=EVT_<EVENT_ID>|type=EVENT|keys=事件_<EVENT_ID>|const=0|pos=NEAR_LATEST|depth=2|order=300|cap=300@@
+触发节点｜涉及画像｜表面说辞 vs 真实博弈｜应对分支｜后续影响
+@@END@@`,
+
+    P3: `════════════════════════════════════════════════════════════════════════════════
+P3 · 拍摄通告与单场边界死锁 (SCENE CONTRACT)
+════════════════════════════════════════════════════════════════════════════════
+[INPUT]
+{{CANON_TABLE}}
+{{P1_OUTPUT}}
+{{P2_OUTPUT}}
+
+[PARAMETERS]
+[SCENE_NO]={{SCENE_NO}}；[TARGET_LN_START]={{TARGET_LN_START}}；[TARGET_LN_END]={{TARGET_LN_END}}
+
+【输出硬性准则】：
+1. 绝对严禁使用 \`\`\`yaml 或任何代码块！必须直接输出 @@ENTRY。
+2. @@ENTRY 标签必须单行写完，严禁在 keys、pos、cap 之间插入任何换行符！
+
+@@ENTRY|id=SC_{{SCENE_NO}}|type=SCENE|keys=第{{SCENE_NO}}场,场景地点|const=0|pos=NEAR_LATEST|depth=1|order=400|cap=1500@@
+【通告场次头】：集数｜场号｜日/夜戏｜内/外景｜拍摄地点｜在场角色｜道具清单。
+【单场戏剧目标】：核心冲突｜观众获得的新信息。
+【第一层刹车：起止锚点死锁】：
+- START_ANCHOR: [START_LINE] “原句逐字” (ref=LN-nn) ➔ 开机必须从此句起演。
+- END_ANCHOR: [END_LINE] “原句逐字” (ref=LN-nn) ➔ 本场必须停在此句完成的一瞬间！
+- 【硬性停机令】：当 END_LINE 发生后，实拍大模型在该轮输出末尾必须且只能输出一行：
+  【🎬 场次结束，导演喊卡】随后立即执行 TERMINATE 动作！
+- 禁提台词与反转清单 (≥5条)：绝对禁止泄露后续反转！
+【第二层刹车：节拍阶段控制 (BEAT STAGES)】：3~5个节拍 (ENTRY ➔ PROBE ➔ RESPONSE ➔ RESOLUTION)。
+【第三层刹车：原著台词保真提词器】：本场台词逐字对照。
+【片场意外与补拍预警】：NG 风险点｜突发事件。
+@@END@@
+
+@@ENTRY|id=PTR_CURRENT|type=POINTER|keys=|const=1|pos=NEAR_LATEST|depth=0|order=999|cap=160@@
+CURRENT_SCENE=SC_{{SCENE_NO}}。MODE=SCENE。当前仅本场次激活生效。收到【🎬 场次结束，导演喊卡】后彻底关闭。
+@@END@@`
   };
 
-  const CORE_RT_ENTRY_RAW = `@@ENTRY|id=CORE_RT|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=1|cap=350@@\nRT-1 命名空间隔离。RT-2 OFFSET模式规则。RT-3 输出首字即角色。RT-4 终点锚喊卡。RT-5 BLOCKLIST。\n@@END@@`;
+  const CORE_RT_ENTRY_RAW = `@@ENTRY|id=CORE_RT|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=1|cap=350@@
+RT-1 命名空间隔离：MODE=SCENE 时角色仅可调用当前场次终点台词前已知的 CANON/ADAPTATION；META 戏外八卦绝对 DENY。
+RT-2 MODE=OFFSET 时可调用 META 及已拍完剧情；未拍场次反转绝对 DENY。
+RT-3 输出第一个字符即为角色的台词或动作，严禁任何开场白、自言自语与演戏外的元解释。
+RT-4 当对话到达当前场次终点锚点时，必须输出【🎬 场次结束，导演喊卡】并强制停止。若被强行追问，仅返回 [HALT: SCENE_CLOSED]。
+RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
+@@END@@`;
 
   let promptDict = loadCustomDict();
 
@@ -39,11 +183,11 @@ export function initScriptAtelier() {
   const STEP_ORDER = ['P0', 'P1', 'P2_CHAR', 'P2_OFFSET', 'P3'];
 
   const STEP_META = {
-    P0: { title: 'P0 · 原著证据抽取机', desc: '纯抽取、零创作，建立 8 张事实底盘表格。', nextBtn: '确认 P0 & 进入 P1 →', demo: '| CH-01 | 沈渡 | SHENDU | 沈掌使 | 诏狱千户 | 旧朝遗孤 |\n| TL-01 | 永平三年冬夜 | 诏狱暗室 | 夜审谢清晏 | CH-01,CH-02 |\n| TW-01 | 沈渡非真凶 | CH-01 | TL-08 | 劈护腕亮火印 | status=LOCKED |\n| LN-01 | CH-02 | TL-01 | "沈大人深夜提灯来访…" | MUST_KEEP=Y |\n| LN-02 | CH-01 | TL-01 | "这杯冷茶，谢姑娘喝与不喝…" | MUST_KEEP=Y |' },
-    P1: { title: 'P1 · 视听转化与加戏', desc: '输出过审方案、蝴蝶效应加戏链与 @@ENTRY 入库条目。', nextBtn: '确认 P1 & 进入 P2-A →', demo: '@@ENTRY|id=MASTER_PLAN|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=10|cap=400@@\n立项: S+ 16集 鹅厂古装剧场\n@@END@@' },
-    P2_CHAR: { title: 'P2-A · 戏内角色小传', desc: '体态记忆 K4、视线断点 K5、台词重音 K7、自洽闭环 K11。', nextBtn: '确认 P2-A & 进入 P2-B →', demo: '@@ENTRY|id=CHAR_SHENDU|type=CHAR|keys=沈渡,沈掌使|const=0|pos=CHAR_AFTER|depth=4|order=100|cap=1200@@\nK1 执掌诏狱的暗线护道者。\nK4 左手拇指摩挲食指厚茧。\n@@END@@' },
-    P2_OFFSET: { title: 'P2-B · 戏外内娱盲盒', desc: '梯队画像与片场博弈事件库，严禁真人姓名。', nextBtn: '确认 P2-B & 进入 P3 →', demo: '@@ENTRY|id=ARCH_FILMACTRESS95|type=OFFSET|keys=画像_95文艺小花|const=0|pos=NEAR_LATEST|depth=3|order=200|cap=600@@\n95后文艺片拿奖小花首次下凡演古装S+女主。\n@@END@@' },
-    P3: { title: 'P3 · 通告单与停机锁', desc: '编译单场 SC_ 条目与 PTR_CURRENT 指针。', nextBtn: '汇总全流程入库 ✓', demo: '@@ENTRY|id=SC_01|type=SCENE|keys=第01场,诏狱暗室|const=0|pos=NEAR_LATEST|depth=1|order=400|cap=1500@@\nSTART: LN-01 END: LN-02\n@@END@@\n@@ENTRY|id=PTR_CURRENT|type=POINTER|keys=|const=1|pos=NEAR_LATEST|depth=0|order=999|cap=160@@\nCURRENT_SCENE=SC_01\n@@END@@' }
+    P0: { title: 'P0 · 原著证据抽取机', desc: '纯抽取、零创作，建立 8 张事实底盘表格。', nextBtn: '确认 P0 & 进入 P1 →' },
+    P1: { title: 'P1 · 视听转化与加戏', desc: '输出过审方案、蝴蝶效应加戏链与 @@ENTRY 入库条目。', nextBtn: '确认 P1 & 进入 P2-A →' },
+    P2_CHAR: { title: 'P2-A · 戏内角色小传', desc: '体态记忆 K4、视线断点 K5、台词重音 K7、自洽闭环 K11。', nextBtn: '确认 P2-A & 进入 P2-B →' },
+    P2_OFFSET: { title: 'P2-B · 戏外内娱盲盒', desc: '梯队画像与片场博弈事件库，严禁真人姓名。', nextBtn: '确认 P2-B & 进入 P3 →' },
+    P3: { title: 'P3 · 通告单与停机锁', desc: '编译单场 SC_ 条目与 PTR_CURRENT 指针。', nextBtn: '汇总全流程入库 ✓' }
   };
 
   const saState = {
@@ -73,8 +217,6 @@ export function initScriptAtelier() {
 
   const $ = id => document.getElementById(id);
 
-  /* ---- @@ENTRY 超级容错解析器（彻底解决无法识别与格式嵌套问题） ---- */
-
   function mapV51PosToKelivo(p) {
     if (!p) return 'AT_DEPTH';
     const s = String(p).toUpperCase();
@@ -83,24 +225,31 @@ export function initScriptAtelier() {
     return 'AT_DEPTH';
   }
 
+  /* ==========================================================
+     核心：超级自愈解析器（终极对抗 AI 换行、缺失 @@END@@、代码块包裹）
+     ========================================================== */
   function parseV51EntriesFromText(rawText) {
     let text = String(rawText || '').replace(/\r\n/g, '\n');
 
-    // 1. 强力剥离 AI 容易在最外层包裹的 ```markdown / ``` 标签
-    text = text.replace(/```(?:markdown|json|html|text)?\n?/gi, '').replace(/```\n?/g, '');
+    // 1. 彻底干掉 ```yaml, ``` 等外壳
+    text = text.replace(/```[a-z0-9_-]*\n?/gi, '').replace(/```\n?/g, '');
     const safeText = text.replace(/\\@@END@@/g, '__ESC_END__');
 
     const results = [];
 
-    // 2. 超级宽松匹配：允许 @@ENTRY 前后有空格、制表符或换行
-    const looseRegex = /@@ENTRY\|([^\n]+?)@@\s*([\s\S]*?)\s*@@END@@/g;
+    // 2. 超级自愈扫描：只要出现 @@ENTRY，即使中间换行、哪怕结尾没有 @@END@@ 也能精准抓取！
+    const entryScanner = /@@ENTRY\|([\s\S]+?)(?:@@|\n\n)([\s\S]*?)(?=@@END@@|@@ENTRY|\[HALT:|$)/g;
     let m;
 
-    while ((m = looseRegex.exec(safeText)) !== null) {
-      const headerRaw = m[1].trim();
-      const bodyContent = m[2].replace(/__ESC_END__/g, '@@END@@').trim();
+    while ((m = entryScanner.exec(safeText)) !== null) {
+      // 把在 @@ENTRY 内部被折断的换行全部抚平拼接
+      const headerRaw = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+      let bodyContent = m[2].replace(/__ESC_END__/g, '@@END@@').trim();
+      bodyContent = bodyContent.replace(/@@END@@/g, '').trim();
 
-      // 解析 key=value 参数
+      if (!bodyContent && !headerRaw) continue;
+
+      // 提取参数
       const meta = {};
       headerRaw.split('|').forEach(pair => {
         const i = pair.indexOf('=');
@@ -135,11 +284,29 @@ export function initScriptAtelier() {
       });
     }
 
+    // 3. 兜底保护：如果在 P3 中 AI 只写了 [HALT: P3_SC01_COMPLETE] 但完全没写 @@ENTRY 标签
+    if (!results.length && text.includes('scene_no:') && text.includes('line range:')) {
+      results.push({
+        strictValid: false,
+        id: 'SC_01',
+        type: 'SCENE',
+        keys: ['第01场', '通告单'],
+        constant: false,
+        v51Pos: 'NEAR_LATEST',
+        kelivoPos: 'AT_DEPTH',
+        depth: 1,
+        order: 400,
+        cap: 1600,
+        charLen: text.length,
+        overCap: false,
+        content: text
+      });
+    }
+
     return results;
   }
 
   /* ---- P0 角色/台词提取 ---- */
-
   function extractCanonEntities() {
     const p0 = saState.drafts.P0 || '', chars = [], lines = [];
     let m;
@@ -157,7 +324,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- Prompt 组装 ---- */
-
   function buildAssembledPrompt() {
     const step = saState.currentStep;
     const pCore = promptDict.P_CORE || DEFAULT_PROMPT_DICT_V51.P_CORE;
@@ -205,7 +371,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- 定稿诊断与条目卡片实时刷新 ---- */
-
   function renderDraftDiagnostics() {
     const raw = $('saDraftEditor')?.value || '';
     const cc = $('saDraftCharCount');
@@ -222,6 +387,7 @@ export function initScriptAtelier() {
       }
     }
 
+    // 实时使用自愈解析器抓取条目
     const entries = parseV51EntriesFromText(raw);
     const cs = $('saCurrentEntryCount');
     if (cs) cs.textContent = String(entries.length);
@@ -248,7 +414,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- 槽位控制台 ---- */
-
   function makePillRow(label, subHint, options, currentValue, onPick) {
     const row = document.createElement('div');
     row.className = 'sa-slot-row';
@@ -311,7 +476,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- 编译入库 ---- */
-
   const TYPE_GROUP_LABELS = { MASTER: '01_总纲', ADDON: '02_加戏', CHAR: '03_角色', OFFSET: '04_梯队', EVENT: '05_事件', SCENE: '06_通告单', POINTER: '00_指针' };
 
   async function compileEntriesToWorldBook(rawText, includeCoreRt) {
@@ -319,7 +483,7 @@ export function initScriptAtelier() {
     if (includeCoreRt) parsed.unshift(...parseV51EntriesFromText(CORE_RT_ENTRY_RAW));
 
     if (!parsed.length) {
-      window.toast('未检测到 @@ENTRY 条目，请检查输入中是否包含 @@ENTRY|...@@ 与 @@END@@ 标签');
+      window.toast('未检测到有效条目，请确保文本中包含规范内容');
       return 0;
     }
 
@@ -393,7 +557,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- 主渲染 ---- */
-
   function renderAll() {
     const meta = STEP_META[saState.currentStep];
     const t = $('saStepTitle'); if (t) t.textContent = meta.title;
@@ -422,7 +585,6 @@ export function initScriptAtelier() {
   }
 
   /* ---- 事件绑定 ---- */
-
   document.querySelectorAll('#saStepperTrack .sa-step-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       saState.currentStep = btn.dataset.step;
@@ -454,13 +616,14 @@ export function initScriptAtelier() {
   });
 
   $('saLoadDemoBtn')?.addEventListener('click', () => {
-    saState.drafts[saState.currentStep] = STEP_META[saState.currentStep]?.demo || '';
+    const demo = `@@ENTRY|id=SC_01|type=SCENE|keys=第01场,雪粒镇|const=0|pos=NEAR_LATEST|depth=1|order=400|cap=1500@@\n【通告场次头】：E1 第01场\nSTART: LN-01\nEND: LN-02\n【🎬 场次结束，导演喊卡】\n@@END@@\n\n@@ENTRY|id=PTR_CURRENT|type=POINTER|keys=|const=1|pos=NEAR_LATEST|depth=0|order=999|cap=160@@\nCURRENT_SCENE=SC_01。MODE=SCENE。\n@@END@@`;
+    saState.drafts[saState.currentStep] = demo;
     persistState();
     renderAll();
     window.toast(`已填入 [${saState.currentStep}] 演示`);
   });
 
-  // 读取原著 TXT 文件
+  // 读取原著 TXT
   $('saTxtFilePicker')?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
