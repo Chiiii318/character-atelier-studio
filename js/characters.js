@@ -482,6 +482,9 @@ export function setupLibraryToolbar() {
   renderFolderPills();
 }
 
+// 在 setupLibraryToolbar 或顶层事件中监听新建按钮
+document.getElementById('btnCreateNewChar')?.addEventListener('click', openCreateCharModal);
+
 /* ---- 提取内嵌世界书到独立书库 ---- */
 
 export async function extractLoreToWorldBook() {
@@ -513,4 +516,149 @@ export async function extractLoreToWorldBook() {
   emit('worldbooks-changed');
   notify(`成功提取 ${list.length} 条世界书至《${newBookName}》！`);
   emit('go', 'worlds');
+}
+
+/* ================================================================
+   新建角色卡弹窗与保存逻辑（纯净本地人设，存入 IndexedDB）
+   ================================================================ */
+
+export function openCreateCharModal() {
+  const modalWrap = document.createElement('div');
+  modalWrap.style.cssText = 'background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;max-height:88dvh;overflow-y:auto;';
+
+  modalWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">
+      <strong style="font-size:16px;color:var(--ink)">新建本地角色卡</strong>
+      <button type="button" class="close" id="btnCloseCreateModal" style="border:none;background:var(--soft);border-radius:8px;width:30px;height:30px;cursor:pointer">×</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- 头像上传 -->
+      <div style="display:flex;align-items:center;gap:14px;background:var(--soft);padding:12px;border-radius:12px">
+        <img id="newCharAvatarPreview" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" style="width:58px;height:78px;border-radius:8px;object-fit:cover;border:1px solid var(--line)">
+        <div style="flex:1">
+          <label class="btn btn-small btn-primary" for="newCharAvatarPicker" style="cursor:pointer">上传头像照片</label>
+          <input type="file" id="newCharAvatarPicker" accept="image/*" style="display:none">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">支持任何相册照片作为角色卡封面</div>
+        </div>
+      </div>
+
+      <!-- 角色名 -->
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">角色名称</label>
+        <input type="text" id="newCharName" placeholder="例如：沈昱北" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
+      </div>
+
+      <!-- 标签与分类 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">文件夹/分类</label>
+          <input type="text" id="newCharFolder" placeholder="例如：自建、主角" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">标签（逗号隔开）</label>
+          <input type="text" id="newCharTags" placeholder="例如：现代, 艺人, 傲娇" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
+        </div>
+      </div>
+
+      <!-- 描述设定 -->
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">描述设定 (Description / 人设)</label>
+        <textarea id="newCharDesc" placeholder="写下他的背景、身份、外貌特征等..." style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
+      </div>
+
+      <!-- 性格 -->
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">性格特点 (Personality)</label>
+        <textarea id="newCharPersonality" placeholder="例如：表面冷淡克制，私底下极度护短，发烧也不肯承认的死傲娇..." style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
+      </div>
+
+      <!-- 默认开场白 -->
+      <div>
+        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">第一句开场白 (First Message)</label>
+        <textarea id="newCharFirstMes" placeholder="第一句跟你说的话..." style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
+      </div>
+    </div>
+
+    <!-- 底部保存按钮 -->
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
+      <button type="button" class="btn btn-quiet" id="btnCancelCreate">取消</button>
+      <button type="button" class="btn btn-primary" id="btnSaveNewChar">创建并加入资料库</button>
+    </div>
+  `;
+
+  // 打开弹窗
+  emit('open-modal', { title: '新建角色卡', builder: () => modalWrap });
+
+  let avatarBlob = null;
+
+  setTimeout(() => {
+    // 监听头像选择
+    const picker = modalWrap.querySelector('#newCharAvatarPicker');
+    const preview = modalWrap.querySelector('#newCharAvatarPreview');
+    picker.onchange = (e) => {
+      const f = e.target.files?.[0];
+      if (f) {
+        avatarBlob = f;
+        preview.src = URL.createObjectURL(f);
+      }
+    };
+
+    modalWrap.querySelector('#btnCloseCreateModal').onclick = () => emit('close-modal');
+    modalWrap.querySelector('#btnCancelCreate').onclick = () => emit('close-modal');
+
+    // 保存新角色卡
+    modalWrap.querySelector('#btnSaveNewChar').onclick = async () => {
+      const name = modalWrap.querySelector('#newCharName').value.trim();
+      if (!name) {
+        alert('请输入角色名称');
+        return;
+      }
+
+      // 如果没传头像，自动生成一张纯色占位图
+      if (!avatarBlob) {
+        const { createMufyPlaceholderAvatar } = await import('./png-parser.js');
+        avatarBlob = await createMufyPlaceholderAvatar(name);
+      }
+
+      const tags = modalWrap.querySelector('#newCharTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+      const folder = modalWrap.querySelector('#newCharFolder').value.trim() || '自建';
+      const desc = modalWrap.querySelector('#newCharDesc').value.trim();
+      const personality = modalWrap.querySelector('#newCharPersonality').value.trim();
+      const firstMes = modalWrap.querySelector('#newCharFirstMes').value.trim();
+
+      // 标准 V2 数据模型（无复杂正则，纯净好用）
+      const newCard = {
+        id: uuid(),
+        time: Date.now(),
+        category: folder,
+        customTags: [],
+        favorite: false,
+        blob: avatarBlob,
+        data: {
+          spec: 'chara_card_v2',
+          spec_version: '2.0',
+          data: {
+            name: name,
+            description: desc,
+            personality: personality,
+            scenario: '',
+            first_mes: firstMes,
+            mes_example: '',
+            creator_notes: '自建角色卡',
+            system_prompt: '',
+            tags: tags,
+            alternate_greetings: [],
+            character_book: null,
+            extensions: {}
+          }
+        }
+      };
+
+      await saveCard(newCard);
+      await loadCards();
+      emit('close-modal');
+      notify(`✓ 角色卡「${name}」已创建成功！`);
+    };
+  }, 0);
 }
