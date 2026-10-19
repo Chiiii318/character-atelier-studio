@@ -82,7 +82,17 @@
           <h1>角色卡资料库</h1>
           <p class="muted" style="color:var(--muted)">完整管理 PNG 角色卡、Mufy XML 角色卡、设定字段、世界书与原始元数据。数据保存在本地浏览器。</p>
         </div>
-        <div class="heading-actions"><label class="btn btn-primary file-trigger" id="newImportAction" for="filePicker" role="button" tabindex="0">＋ 导入角色卡 (PNG / XML)</label></div>
+        <div class="heading-actions">
+          <button class="btn btn-primary" id="btnCreateNewChar" type="button">
+            <svg class="ui-icon"><use href="#i-plus"></use></svg>
+            <span>新建角色卡</span>
+          </button>
+          <label class="btn btn-soft file-trigger" id="newImportAction" for="filePicker" role="button" tabindex="0">
+            <svg class="ui-icon"><use href="#i-upload"></use></svg>
+            <span>导入卡片 (PNG/XML)</span>
+          </label>
+        </div>
+
       </div>
       <div class="notice hidden" id="notice"></div>
       <div class="character-workspace">
