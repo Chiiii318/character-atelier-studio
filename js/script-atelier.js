@@ -29,7 +29,10 @@ export function initScriptAtelier() {
   let promptDict = loadCustomDict();
 
   function loadCustomDict() {
-    try { const s = localStorage.getItem(STORAGE_KEY_TEMPLATES); if (s) return { ...DEFAULT_PROMPT_DICT_V51, ...JSON.parse(s) }; } catch (_) {}
+    try {
+      const s = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+      if (s) return { ...DEFAULT_PROMPT_DICT_V51, ...JSON.parse(s) };
+    } catch (_) {}
     return { ...DEFAULT_PROMPT_DICT_V51 };
   }
 
@@ -53,48 +56,103 @@ export function initScriptAtelier() {
     drafts: { P0: '', P1: '', P2_CHAR: '', P2_OFFSET: '', P3: '' }
   };
 
-  try { const s = localStorage.getItem(STORAGE_KEY_STATE); if (s) { const p = JSON.parse(s); Object.assign(saState, p); if (p.drafts) saState.drafts = { ...saState.drafts, ...p.drafts }; } } catch (_) {}
+  try {
+    const s = localStorage.getItem(STORAGE_KEY_STATE);
+    if (s) {
+      const p = JSON.parse(s);
+      Object.assign(saState, p);
+      if (p.drafts) saState.drafts = { ...saState.drafts, ...p.drafts };
+    }
+  } catch (_) {}
 
-  function persistState() { try { localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(saState)); } catch (_) {} }
+  function persistState() {
+    try {
+      localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(saState));
+    } catch (_) {}
+  }
 
   const $ = id => document.getElementById(id);
 
-  /* ---- @@ENTRY 解析器 ---- */
+  /* ---- @@ENTRY 超级容错解析器（彻底解决无法识别与格式嵌套问题） ---- */
 
-  const V51_HEADER_REGEX = /^@@ENTRY\|id=([A-Za-z0-9_]{2,40})\|type=(MASTER|ADDON|CHAR|OFFSET|EVENT|SCENE|POINTER)\|keys=([^|\n]*)\|const=([01])\|pos=(SYS_TOP|CHAR_AFTER|NEAR_LATEST)\|depth=([0-8])\|order=(\d{1,3})\|cap=(\d{2,4})@@$/;
-
-  function mapV51PosToKelivo(p) { return p === 'SYS_TOP' ? 'BEFORE_SYSTEM_PROMPT' : p === 'CHAR_AFTER' ? 'AFTER_SYSTEM_PROMPT' : 'AT_DEPTH'; }
+  function mapV51PosToKelivo(p) {
+    if (!p) return 'AT_DEPTH';
+    const s = String(p).toUpperCase();
+    if (s.includes('SYS_TOP') || s.includes('BEFORE_SYSTEM')) return 'BEFORE_SYSTEM_PROMPT';
+    if (s.includes('CHAR_AFTER') || s.includes('AFTER_SYSTEM')) return 'AFTER_SYSTEM_PROMPT';
+    return 'AT_DEPTH';
+  }
 
   function parseV51EntriesFromText(rawText) {
-    const text = String(rawText || '').replace(/\r\n/g, '\n');
+    let text = String(rawText || '').replace(/\r\n/g, '\n');
+
+    // 1. 强力剥离 AI 容易在最外层包裹的 ```markdown / ``` 标签
+    text = text.replace(/```(?:markdown|json|html|text)?\n?/gi, '').replace(/```\n?/g, '');
     const safeText = text.replace(/\\@@END@@/g, '__ESC_END__');
-    const blockRegex = /(^@@ENTRY\|[^\n]+@@)\s*\n([\s\S]*?)\n@@END@@/gm;
-    const results = []; let match;
-    while ((match = blockRegex.exec(safeText)) !== null) {
-      const headerLine = match[1].trim(), bodyContent = match[2].replace(/__ESC_END__/g, '@@END@@').trim();
-      const strict = headerLine.match(V51_HEADER_REGEX);
-      if (strict) {
-        const [, id, type, keysRaw, constBit, pos, depthStr, orderStr, capStr] = strict;
-        const cap = parseInt(capStr, 10);
-        results.push({ strictValid: true, id, type, keys: keysRaw.split(/[,，]/).map(s => s.trim()).filter(Boolean), constant: constBit === '1', v51Pos: pos, kelivoPos: mapV51PosToKelivo(pos), depth: parseInt(depthStr, 10), order: parseInt(orderStr, 10), cap, charLen: bodyContent.length, overCap: bodyContent.length > cap, content: bodyContent });
-      } else {
-        const meta = {}; headerLine.replace(/^@@ENTRY\||@@$/g, '').split('|').forEach(pair => { const i = pair.indexOf('='); if (i > 0) meta[pair.slice(0, i).trim()] = pair.slice(i + 1).trim(); });
-        const cap = parseInt(meta.cap || '800', 10) || 800;
-        results.push({ strictValid: false, id: meta.id || 'ENTRY_' + (results.length + 1), type: meta.type || 'MASTER', keys: (meta.keys || '').split(/[,，]/).map(s => s.trim()).filter(Boolean), constant: meta.const === '1', v51Pos: meta.pos || 'CHAR_AFTER', kelivoPos: mapV51PosToKelivo(meta.pos || 'CHAR_AFTER'), depth: parseInt(meta.depth || '4', 10), order: parseInt(meta.order || '100', 10), cap, charLen: bodyContent.length, overCap: bodyContent.length > cap, content: bodyContent });
-      }
+
+    const results = [];
+
+    // 2. 超级宽松匹配：允许 @@ENTRY 前后有空格、制表符或换行
+    const looseRegex = /@@ENTRY\|([^\n]+?)@@\s*([\s\S]*?)\s*@@END@@/g;
+    let m;
+
+    while ((m = looseRegex.exec(safeText)) !== null) {
+      const headerRaw = m[1].trim();
+      const bodyContent = m[2].replace(/__ESC_END__/g, '@@END@@').trim();
+
+      // 解析 key=value 参数
+      const meta = {};
+      headerRaw.split('|').forEach(pair => {
+        const i = pair.indexOf('=');
+        if (i > 0) {
+          meta[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+        }
+      });
+
+      const id = meta.id || ('ENTRY_' + (results.length + 1));
+      const type = meta.type || 'SCENE';
+      const keys = (meta.keys || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+      const isConst = meta.const === '1' || meta.const === 'true';
+      const pos = meta.pos || 'NEAR_LATEST';
+      const depth = parseInt(meta.depth, 10) || 1;
+      const order = parseInt(meta.order, 10) || 400;
+      const cap = parseInt(meta.cap, 10) || 1500;
+
+      results.push({
+        strictValid: true,
+        id,
+        type,
+        keys,
+        constant: isConst,
+        v51Pos: pos,
+        kelivoPos: mapV51PosToKelivo(pos),
+        depth,
+        order,
+        cap,
+        charLen: bodyContent.length,
+        overCap: bodyContent.length > cap,
+        content: bodyContent
+      });
     }
+
     return results;
   }
 
   /* ---- P0 角色/台词提取 ---- */
 
   function extractCanonEntities() {
-    const p0 = saState.drafts.P0 || '', chars = [], lines = []; let m;
+    const p0 = saState.drafts.P0 || '', chars = [], lines = [];
+    let m;
     const chR = /\b(CH-\d+)\s*[｜|]\s*([^｜|\n]+?)\s*[｜|]\s*([A-Za-z0-9_]+)\s*[｜|]\s*([^｜|\n]*)/g;
-    while ((m = chR.exec(p0)) !== null) chars.push({ ref: m[1].trim(), name: m[2].trim(), pinyin: m[3].trim().toUpperCase(), alias: m[4].trim() });
+    while ((m = chR.exec(p0)) !== null) {
+      chars.push({ ref: m[1].trim(), name: m[2].trim(), pinyin: m[3].trim().toUpperCase(), alias: m[4].trim() });
+    }
     const lnR = /\b(LN-\d+)\s*[｜|]\s*([^｜|\n]+?)\s*[｜|]\s*([^｜|\n]+?)\s*[｜|]\s*([^｜|\n]+)/g;
-    while ((m = lnR.exec(p0)) !== null) lines.push({ ref: m[1].trim(), speaker: m[2].trim(), quote: m[4].trim().slice(0, 28) });
-    const badge = $('saExtractedStats'); if (badge) badge.textContent = `P0已识别角色: ${chars.length} · 台词锚点: ${lines.length}`;
+    while ((m = lnR.exec(p0)) !== null) {
+      lines.push({ ref: m[1].trim(), speaker: m[2].trim(), quote: m[4].trim().slice(0, 28) });
+    }
+    const badge = $('saExtractedStats');
+    if (badge) badge.textContent = `P0已识别角色: ${chars.length} · 台词锚点: ${lines.length}`;
     return { chars, lines };
   }
 
@@ -107,88 +165,144 @@ export function initScriptAtelier() {
     const p0D = (saState.drafts.P0 || '').trim() || '（尚未填入 P0）';
     const p1D = (saState.drafts.P1 || '').trim() || '（尚未填入 P1）';
     const p2D = [saState.drafts.P2_CHAR, saState.drafts.P2_OFFSET].filter(Boolean).join('\n\n').trim() || '（尚未填入 P2）';
-    body = body.replace(/\{\{novel_text\}\}/g, saState.novelText.trim() || '（请根据原文抽取）').replace(/\{\{prev_canon\}\}/g, saState.prevCanon || '无').replace(/\{\{CANON_TABLE\}\}/g, p0D).replace(/\{\{P1_OUTPUT\}\}/g, p1D).replace(/\{\{P2_OUTPUT\}\}/g, p2D).replace(/\{\{PLATFORM\}\}/g, saState.platform).replace(/\{\{TIER\}\}/g, saState.tier).replace(/\{\{ORIGIN\}\}/g, saState.origin).replace(/\{\{ADDON_TARGET\}\}/g, saState.addonTarget).replace(/\{\{ROLE_ID\}\}/g, saState.roleId || 'ROLE01').replace(/\{\{ROLE_NAME\}\}/g, saState.roleName || '待定').replace(/\{\{ROLE_ALIAS\}\}/g, saState.roleAlias || '').replace(/\{\{PLAYER_SEAT\}\}/g, saState.playerSeat).replace(/\{\{ROLE_TYPE\}\}/g, saState.roleType).replace(/\{\{PARTNER_ARCHETYPE\}\}/g, saState.partnerArchetype).replace(/\{\{PHASE\}\}/g, saState.phase).replace(/\{\{SCENE_NO\}\}/g, saState.sceneNo || '01').replace(/\{\{TARGET_LN_START\}\}/g, saState.targetLnStart || 'AUTO').replace(/\{\{TARGET_LN_END\}\}/g, saState.targetLnEnd || 'AUTO');
+    body = body
+      .replace(/\{\{novel_text\}\}/g, saState.novelText.trim() || '（请根据原文抽取）')
+      .replace(/\{\{prev_canon\}\}/g, saState.prevCanon || '无')
+      .replace(/\{\{CANON_TABLE\}\}/g, p0D)
+      .replace(/\{\{P1_OUTPUT\}\}/g, p1D)
+      .replace(/\{\{P2_OUTPUT\}\}/g, p2D)
+      .replace(/\{\{PLATFORM\}\}/g, saState.platform)
+      .replace(/\{\{TIER\}\}/g, saState.tier)
+      .replace(/\{\{ORIGIN\}\}/g, saState.origin)
+      .replace(/\{\{ADDON_TARGET\}\}/g, saState.addonTarget)
+      .replace(/\{\{ROLE_ID\}\}/g, saState.roleId || 'ROLE01')
+      .replace(/\{\{ROLE_NAME\}\}/g, saState.roleName || '待定')
+      .replace(/\{\{ROLE_ALIAS\}\}/g, saState.roleAlias || '')
+      .replace(/\{\{PLAYER_SEAT\}\}/g, saState.playerSeat)
+      .replace(/\{\{ROLE_TYPE\}\}/g, saState.roleType)
+      .replace(/\{\{PARTNER_ARCHETYPE\}\}/g, saState.partnerArchetype)
+      .replace(/\{\{PHASE\}\}/g, saState.phase)
+      .replace(/\{\{SCENE_NO\}\}/g, saState.sceneNo || '01')
+      .replace(/\{\{TARGET_LN_START\}\}/g, saState.targetLnStart || 'AUTO')
+      .replace(/\{\{TARGET_LN_END\}\}/g, saState.targetLnEnd || 'AUTO');
     return `${pCore}\n\n${body}`;
   }
 
   function updatePromptPreview() {
-    const pre = $('saPromptPreview'); if (pre) pre.textContent = buildAssembledPrompt();
-    const banner = $('saRelayBanner'), bannerTxt = $('saRelayBannerText'); if (!banner || !bannerTxt) return;
+    const pre = $('saPromptPreview');
+    if (pre) pre.textContent = buildAssembledPrompt();
+    const banner = $('saRelayBanner'), bannerTxt = $('saRelayBannerText');
+    if (!banner || !bannerTxt) return;
     const stepIdx = STEP_ORDER.indexOf(saState.currentStep);
     const readySteps = STEP_ORDER.slice(0, stepIdx).filter(k => (saState.drafts[k] || '').trim().length > 0);
-    if (readySteps.length) { banner.classList.add('ready'); bannerTxt.textContent = `✓ 已自动注入 [${readySteps.join(' / ')}] 定稿！`; }
-    else { banner.classList.remove('ready'); bannerTxt.textContent = saState.currentStep === 'P0' ? '当前为首步（P0）。' : '提示：前置步骤尚未填入定稿。'; }
+    if (readySteps.length) {
+      banner.classList.add('ready');
+      bannerTxt.textContent = `✓ 已自动注入 [${readySteps.join(' / ')}] 定稿！`;
+    } else {
+      banner.classList.remove('ready');
+      bannerTxt.textContent = saState.currentStep === 'P0' ? '当前为首步（P0）。' : '提示：前置步骤尚未填入定稿。';
+    }
   }
 
-  /* ---- 定稿诊断 ---- */
+  /* ---- 定稿诊断与条目卡片实时刷新 ---- */
 
   function renderDraftDiagnostics() {
     const raw = $('saDraftEditor')?.value || '';
-    const cc = $('saDraftCharCount'); if (cc) cc.textContent = `${raw.length} 字`;
+    const cc = $('saDraftCharCount');
+    if (cc) cc.textContent = `${raw.length} 字`;
+
     const ha = $('saHaltAlert');
-    const hm = raw.match(/\[HALT:\s*([A-Z_]+)\s*\|\s*slot=([^|\]]+)\|\s*need=([^\]]+)\]/);
-    if (ha) { if (hm) { ha.classList.remove('hidden'); ha.textContent = `⚠️ [${hm[1].trim()}] 槽位: ${hm[2].trim()} 需: ${hm[3].trim()}`; } else ha.classList.add('hidden'); }
+    const hm = raw.match(/\[HALT:\s*([A-Z0-9_]+)\s*\|\s*slot=([^|\]]+)\|\s*need=([^\]]+)\]/);
+    if (ha) {
+      if (hm) {
+        ha.classList.remove('hidden');
+        ha.textContent = `⚠️ [${hm[1].trim()}] 槽位: ${hm[2].trim()} | 状态: ${hm[3].trim()}`;
+      } else {
+        ha.classList.add('hidden');
+      }
+    }
+
     const entries = parseV51EntriesFromText(raw);
-    const cs = $('saCurrentEntryCount'); if (cs) cs.textContent = String(entries.length);
-    const box = $('saParsedEntriesBox'); if (!box) return; box.innerHTML = '';
+    const cs = $('saCurrentEntryCount');
+    if (cs) cs.textContent = String(entries.length);
+
+    const box = $('saParsedEntriesBox');
+    if (!box) return;
+    box.innerHTML = '';
+
     entries.forEach(ent => {
       const capCls = ent.overCap ? 'warn' : 'ok';
-      box.innerHTML += `<div class="sa-entry-card"><div class="sa-entry-left"><span class="sa-mini-tag dark">${ent.type}</span><span class="sa-entry-id">${ent.id}</span></div><div class="sa-entry-badges"><span class="sa-mini-tag">${ent.constant ? '常驻' : '按词触发'}</span><span class="sa-mini-tag ${capCls}">${ent.charLen}/${ent.cap}字</span></div></div>`;
+      box.innerHTML += `
+        <div class="sa-entry-card">
+          <div class="sa-entry-left">
+            <span class="sa-mini-tag dark">${ent.type}</span>
+            <span class="sa-entry-id">${ent.id}</span>
+          </div>
+          <div class="sa-entry-badges">
+            <span class="sa-mini-tag">${ent.constant ? '常驻' : '按词触发'}</span>
+            <span class="sa-mini-tag ${capCls}">${ent.charLen}/${ent.cap}字</span>
+          </div>
+        </div>
+      `;
     });
   }
 
   /* ---- 槽位控制台 ---- */
 
   function makePillRow(label, subHint, options, currentValue, onPick) {
-    const row = document.createElement('div'); row.className = 'sa-slot-row';
-    const lbl = document.createElement('div'); lbl.className = 'sa-slot-label';
+    const row = document.createElement('div');
+    row.className = 'sa-slot-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'sa-slot-label';
     lbl.innerHTML = `<span>${label}</span><small>${subHint || ''}</small>`;
-    const group = document.createElement('div'); group.className = 'sa-pill-group';
+    const group = document.createElement('div');
+    group.className = 'sa-pill-group';
     options.forEach(opt => {
       const val = typeof opt === 'string' ? opt : opt.val, text = typeof opt === 'string' ? opt : opt.label;
-      const btn = document.createElement('button'); btn.type = 'button';
+      const btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'sa-opt-pill' + (val.startsWith('AUTO') ? ' auto-pill' : '') + (currentValue === val ? ' active' : '');
-      btn.textContent = text; btn.onclick = () => { onPick(val, opt); renderAll(); };
+      btn.textContent = text;
+      btn.onclick = () => { onPick(val, opt); renderAll(); };
       group.appendChild(btn);
     });
-    row.append(lbl, group); return row;
+    row.append(lbl, group);
+    return row;
   }
 
   function renderSlotConsole() {
-    const box = $('saSlotConsole'); if (!box) return; box.innerHTML = '';
+    const box = $('saSlotConsole');
+    if (!box) return;
+    box.innerHTML = '';
     const { chars, lines } = extractCanonEntities();
 
     if (saState.currentStep === 'P0') {
-      const row = document.createElement('div'); row.className = 'sa-slot-row';
+      const row = document.createElement('div');
+      row.className = 'sa-slot-row';
       row.innerHTML = '<div class="sa-slot-label"><span>原著片段输入</span></div>';
-      const ta = document.createElement('textarea'); ta.className = 'sa-slot-textarea';
-      ta.placeholder = '粘贴原著正文...'; ta.value = saState.novelText || '';
+      const ta = document.createElement('textarea');
+      ta.className = 'sa-slot-textarea';
+      ta.placeholder = '粘贴原著正文...';
+      ta.value = saState.novelText || '';
       ta.oninput = e => { saState.novelText = e.target.value; persistState(); updatePromptPreview(); };
-      row.appendChild(ta); box.appendChild(row);
-    }
-
-    else if (saState.currentStep === 'P1') {
+      row.appendChild(ta);
+      box.appendChild(row);
+    } else if (saState.currentStep === 'P1') {
       box.appendChild(makePillRow('播出平台 [PLATFORM]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: '鹅厂 S+', val: '腾讯视频S+' }, { label: '桃厂 迷雾剧场', val: '爱奇艺迷雾剧场' }, { label: '优酷 白夜剧场', val: '优酷白夜剧场' }], saState.platform, val => { saState.platform = val; persistState(); }));
       box.appendChild(makePillRow('商业定级 [TIER]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: 'S+ 顶配', val: 'S+' }, { label: 'S 级', val: 'S' }, { label: 'A+ 黑马', val: 'A+' }], saState.tier, val => { saState.tier = val; persistState(); }));
       box.appendChild(makePillRow('原著基因 [ORIGIN]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: '晋江', val: '晋江IP' }, { label: '起点', val: '起点权谋' }, { label: '番茄', val: '番茄爽文' }], saState.origin, val => { saState.origin = val; persistState(); }));
       const addonOpts = [{ label: '✦ AUTO', val: 'AUTO' }, ...chars.map(c => ({ label: `${c.ref} ${c.name}`, val: `${c.ref} ${c.name}` }))];
       box.appendChild(makePillRow('加戏配角 [ADDON_TARGET]', chars.length ? '从P0提取' : '', addonOpts, saState.addonTarget, val => { saState.addonTarget = val; persistState(); }));
-    }
-
-    else if (saState.currentStep === 'P2_CHAR') {
+    } else if (saState.currentStep === 'P2_CHAR') {
       if (chars.length) {
         box.appendChild(makePillRow('快速选角', '', chars.map(c => ({ label: `${c.ref} · ${c.name}`, val: c.pinyin, raw: c })), saState.roleId, (val, opt) => { saState.roleId = opt.raw.pinyin; saState.roleName = opt.raw.name; saState.roleAlias = opt.raw.alias || opt.raw.name; persistState(); }));
       }
       box.appendChild(makePillRow('番位 [PLAYER_SEAT]', '', [{ label: '男一', val: '男一' }, { label: '女一', val: '女一' }, { label: '反派/男二', val: '特邀反派/男二' }, { label: '✦ AUTO', val: 'AUTO' }], saState.playerSeat, val => { saState.playerSeat = val; persistState(); }));
       box.appendChild(makePillRow('角色类型 [ROLE_TYPE]', '', [{ label: 'LEAD', val: 'LEAD' }, { label: 'VILLAIN', val: 'VILLAIN' }, { label: 'SUPPORT', val: 'SUPPORT' }], saState.roleType, val => { saState.roleType = val; persistState(); }));
-    }
-
-    else if (saState.currentStep === 'P2_OFFSET') {
+    } else if (saState.currentStep === 'P2_OFFSET') {
       box.appendChild(makePillRow('梯队盲盒 [PARTNER]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: '95花+叔圈戏骨', val: '95花+叔圈戏骨' }, { label: '文艺小生+国民青衣', val: '文艺小生+国民青衣' }], saState.partnerArchetype, val => { saState.partnerArchetype = val; persistState(); }));
       box.appendChild(makePillRow('剧组阶段 [PHASE]', '', [{ label: 'ALL', val: 'ALL' }, { label: '进组前', val: '进组' }, { label: '围读', val: '围读' }, { label: '拍摄中期', val: '拍摄中期' }], saState.phase, val => { saState.phase = val; persistState(); }));
-    }
-
-    else if (saState.currentStep === 'P3') {
+    } else if (saState.currentStep === 'P3') {
       if (lines.length) {
         box.appendChild(makePillRow('起点锚 START', '', lines.map(l => ({ label: `${l.ref}: ${l.quote}`, val: l.ref })), saState.targetLnStart, val => { saState.targetLnStart = val; persistState(); }));
         box.appendChild(makePillRow('终点锚 END', '', lines.map(l => ({ label: `${l.ref}: ${l.quote}`, val: l.ref })), saState.targetLnEnd, val => { saState.targetLnEnd = val; persistState(); }));
@@ -203,7 +317,12 @@ export function initScriptAtelier() {
   async function compileEntriesToWorldBook(rawText, includeCoreRt) {
     const parsed = parseV51EntriesFromText(rawText);
     if (includeCoreRt) parsed.unshift(...parseV51EntriesFromText(CORE_RT_ENTRY_RAW));
-    if (!parsed.length) { window.toast('未检测到 @@ENTRY'); return 0; }
+
+    if (!parsed.length) {
+      window.toast('未检测到 @@ENTRY 条目，请检查输入中是否包含 @@ENTRY|...@@ 与 @@END@@ 标签');
+      return 0;
+    }
+
     const bookName = ($('saProjectName')?.value || '').trim() || '《未命名》世界书';
     const req = indexedDB.open('TavernLiteVault', 3);
     return new Promise((resolve, reject) => {
@@ -212,18 +331,60 @@ export function initScriptAtelier() {
         getAll.onsuccess = () => {
           const books = getAll.result || [];
           let book = books.find(b => b.name === bookName);
-          if (!book) book = { id: 'wb_script_' + Date.now(), name: bookName, description: 'Script Atelier v5.1 编译', enabled: true, createdAt: Date.now(), updatedAt: Date.now(), entries: [] };
-          else if (!Array.isArray(book.entries)) book.entries = Object.values(book.entries || {});
+          if (!book) {
+            book = { id: 'wb_script_' + Date.now(), name: bookName, description: 'Script Atelier v5.1 编译', enabled: true, createdAt: Date.now(), updatedAt: Date.now(), entries: [] };
+          } else if (!Array.isArray(book.entries)) {
+            book.entries = Object.values(book.entries || {});
+          }
+
           parsed.forEach(item => {
-            const obj = { id: item.id, group: TYPE_GROUP_LABELS[item.type] || item.type, name: `[${item.type}] ${item.id}`, comment: `[${item.type}] ${item.id}`, enabled: true, priority: item.order, order: item.order, position: item.kelivoPos, role: 'USER', content: item.content, injectDepth: item.depth, depth: item.depth, keywords: item.keys, key: item.keys, useRegex: true, caseSensitive: false, scanDepth: 4, constantActive: item.constant, constant: item.constant, sticky: 0, cooldown: 0, delay: 0 };
+            const obj = {
+              id: item.id,
+              group: TYPE_GROUP_LABELS[item.type] || item.type,
+              name: `[${item.type}] ${item.id}`,
+              comment: `[${item.type}] ${item.id}`,
+              enabled: true,
+              priority: item.order,
+              order: item.order,
+              position: item.kelivoPos,
+              role: 'USER',
+              content: item.content,
+              injectDepth: item.depth,
+              depth: item.depth,
+              keywords: item.keys,
+              key: item.keys,
+              useRegex: true,
+              caseSensitive: false,
+              scanDepth: 4,
+              constantActive: item.constant,
+              constant: item.constant,
+              sticky: 0,
+              cooldown: 0,
+              delay: 0
+            };
             const idx = book.entries.findIndex(e => e.id === item.id);
-            if (idx >= 0) book.entries[idx] = obj; else book.entries.push(obj);
+            if (idx >= 0) book.entries[idx] = obj;
+            else book.entries.push(obj);
           });
-          book.updatedAt = Date.now(); store.put(book);
+
+          book.updatedAt = Date.now();
+          store.put(book);
+
           tx.oncomplete = () => {
             const sel = document.getElementById('wbBookSelect');
-            if (sel) { let opt = Array.from(sel.options).find(o => o.value === book.id); if (!opt) { opt = new Option(`${book.name} (${book.entries.length})`, book.id); sel.add(opt, 0); } else opt.textContent = `${book.name} (${book.entries.length})`; sel.value = book.id; sel.dispatchEvent(new Event('change')); }
-            window.toast(`✓ 编译 ${parsed.length} 条至《${bookName}》！`); resolve(parsed.length);
+            if (sel) {
+              let opt = Array.from(sel.options).find(o => o.value === book.id);
+              if (!opt) {
+                opt = new Option(`${book.name} (${book.entries.length})`, book.id);
+                sel.add(opt, 0);
+              } else {
+                opt.textContent = `${book.name} (${book.entries.length})`;
+              }
+              sel.value = book.id;
+              sel.dispatchEvent(new Event('change'));
+            }
+            window.toast(`✓ 成功编译 ${parsed.length} 条条目至世界书《${bookName}》！`);
+            resolve(parsed.length);
           };
         };
       };
@@ -238,32 +399,68 @@ export function initScriptAtelier() {
     const t = $('saStepTitle'); if (t) t.textContent = meta.title;
     const d = $('saStepDesc'); if (d) d.textContent = meta.desc;
     const n = $('saNextStepBtnText'); if (n) n.textContent = meta.nextBtn;
-    const ed = $('saDraftEditor'); if (ed && ed.value !== (saState.drafts[saState.currentStep] || '')) ed.value = saState.drafts[saState.currentStep] || '';
+    const ed = $('saDraftEditor');
+    if (ed && ed.value !== (saState.drafts[saState.currentStep] || '')) {
+      ed.value = saState.drafts[saState.currentStep] || '';
+    }
+
     document.querySelectorAll('#saStepperTrack .sa-step-pill').forEach(btn => {
-      const s = btn.dataset.step; btn.classList.toggle('active', s === saState.currentStep);
-      const hasDraft = (saState.drafts[s] || '').trim().length > 0; btn.classList.toggle('done', hasDraft);
-      const code = btn.querySelector('.sa-step-code'); if (code) { const lbl = s === 'P2_CHAR' ? 'P2-A' : s === 'P2_OFFSET' ? 'P2-B' : s; code.textContent = hasDraft && s !== saState.currentStep ? `${lbl} ✓` : lbl; }
+      const s = btn.dataset.step;
+      btn.classList.toggle('active', s === saState.currentStep);
+      const hasDraft = (saState.drafts[s] || '').trim().length > 0;
+      btn.classList.toggle('done', hasDraft);
+      const code = btn.querySelector('.sa-step-code');
+      if (code) {
+        const lbl = s === 'P2_CHAR' ? 'P2-A' : s === 'P2_OFFSET' ? 'P2-B' : s;
+        code.textContent = hasDraft && s !== saState.currentStep ? `${lbl} ✓` : lbl;
+      }
     });
-    renderSlotConsole(); updatePromptPreview(); renderDraftDiagnostics();
+
+    renderSlotConsole();
+    updatePromptPreview();
+    renderDraftDiagnostics();
   }
 
   /* ---- 事件绑定 ---- */
 
   document.querySelectorAll('#saStepperTrack .sa-step-pill').forEach(btn => {
-    btn.addEventListener('click', () => { saState.currentStep = btn.dataset.step; persistState(); renderAll(); });
+    btn.addEventListener('click', () => {
+      saState.currentStep = btn.dataset.step;
+      persistState();
+      renderAll();
+    });
   });
 
-  $('saDraftEditor')?.addEventListener('input', e => { saState.drafts[saState.currentStep] = e.target.value; persistState(); extractCanonEntities(); renderDraftDiagnostics(); });
+  $('saDraftEditor')?.addEventListener('input', e => {
+    saState.drafts[saState.currentStep] = e.target.value;
+    persistState();
+    extractCanonEntities();
+    renderDraftDiagnostics();
+  });
 
   $('saCopyPromptBtn')?.addEventListener('click', async () => {
     const text = buildAssembledPrompt();
-    try { await navigator.clipboard.writeText(text); } catch (_) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
     window.toast(`✓ 已复制 [${saState.currentStep}] 指令`);
   });
 
-  $('saLoadDemoBtn')?.addEventListener('click', () => { saState.drafts[saState.currentStep] = STEP_META[saState.currentStep]?.demo || ''; persistState(); renderAll(); window.toast(`已填入 [${saState.currentStep}] 演示`); });
+  $('saLoadDemoBtn')?.addEventListener('click', () => {
+    saState.drafts[saState.currentStep] = STEP_META[saState.currentStep]?.demo || '';
+    persistState();
+    renderAll();
+    window.toast(`已填入 [${saState.currentStep}] 演示`);
+  });
 
-  // ★ 新增：导入原著小说 .txt 文件读取逻辑
+  // 读取原著 TXT 文件
   $('saTxtFilePicker')?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -290,17 +487,42 @@ export function initScriptAtelier() {
   });
 
   $('saInitCoreBtn')?.addEventListener('click', () => compileEntriesToWorldBook(CORE_RT_ENTRY_RAW, false));
-  $('saEditTemplateBtn')?.addEventListener('click', () => window.toast('母本词库编辑器可在 localStorage 中直接修改 CA_SCRIPT_ATELIER_V51_DICT'));
-  $('saRandomSlotBtn')?.addEventListener('click', () => { document.querySelectorAll('#saSlotConsole .sa-pill-group').forEach(g => { const pills = Array.from(g.querySelectorAll('.sa-opt-pill')); if (pills.length) pills[Math.floor(Math.random() * pills.length)].click(); }); window.toast('🎲 已随机参数'); });
-  $('saResetAllDraftsBtn')?.addEventListener('click', () => { if (!confirm('清空全部定稿？')) return; saState.drafts = { P0: '', P1: '', P2_CHAR: '', P2_OFFSET: '', P3: '' }; persistState(); renderAll(); window.toast('已清空'); });
+  $('saEditTemplateBtn')?.addEventListener('click', () => window.toast('母本词库可在 localStorage 中直接修改 CA_SCRIPT_ATELIER_V51_DICT'));
+  $('saRandomSlotBtn')?.addEventListener('click', () => {
+    document.querySelectorAll('#saSlotConsole .sa-pill-group').forEach(g => {
+      const pills = Array.from(g.querySelectorAll('.sa-opt-pill'));
+      if (pills.length) pills[Math.floor(Math.random() * pills.length)].click();
+    });
+    window.toast('🎲 已随机参数');
+  });
+
+  $('saResetAllDraftsBtn')?.addEventListener('click', () => {
+    if (!confirm('清空全部定稿？')) return;
+    saState.drafts = { P0: '', P1: '', P2_CHAR: '', P2_OFFSET: '', P3: '' };
+    persistState();
+    renderAll();
+    window.toast('已清空');
+  });
+
   $('saCompileCurrentBtn')?.addEventListener('click', () => compileEntriesToWorldBook(saState.drafts[saState.currentStep] || '', false));
 
   $('saConfirmNextBtn')?.addEventListener('click', async () => {
-    const raw = $('saDraftEditor')?.value || ''; saState.drafts[saState.currentStep] = raw; persistState();
-    const cur = parseV51EntriesFromText(raw); if (cur.length > 0) await compileEntriesToWorldBook(raw, false);
+    const raw = $('saDraftEditor')?.value || '';
+    saState.drafts[saState.currentStep] = raw;
+    persistState();
+
+    const cur = parseV51EntriesFromText(raw);
+    if (cur.length > 0) await compileEntriesToWorldBook(raw, false);
+
     const idx = STEP_ORDER.indexOf(saState.currentStep);
-    if (idx < STEP_ORDER.length - 1) { saState.currentStep = STEP_ORDER[idx + 1]; persistState(); renderAll(); window.toast(`✓ 进入 [${saState.currentStep}]`); }
-    else { await compileEntriesToWorldBook(Object.values(saState.drafts).join('\n\n'), true); }
+    if (idx < STEP_ORDER.length - 1) {
+      saState.currentStep = STEP_ORDER[idx + 1];
+      persistState();
+      renderAll();
+      window.toast(`✓ 进入 [${saState.currentStep}]`);
+    } else {
+      await compileEntriesToWorldBook(Object.values(saState.drafts).join('\n\n'), true);
+    }
   });
 
   renderAll();
