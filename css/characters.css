@@ -489,7 +489,14 @@
   }
 
   #page-characters .heading-actions {
-    display: none !important;
+    display: flex !important;
+    width: 100% !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+  #page-characters .heading-actions .btn {
+    flex: 1 !important;
+    min-height: 42px !important;
   }
 
   #page-characters .library-toolbar-filter-row {
