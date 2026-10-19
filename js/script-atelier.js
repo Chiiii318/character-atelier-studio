@@ -1,5 +1,5 @@
 /* ================================================================
-   script-atelier.js — 剧本改编工坊 v5.1（五步流水线编译引擎 · 终极容错版）
+   script-atelier.js — 剧本改编工坊 v5.1（带小说角色智能嗅探器）
    ================================================================ */
 
 export function initScriptAtelier() {
@@ -8,37 +8,17 @@ export function initScriptAtelier() {
   const STORAGE_KEY_TEMPLATES = 'CA_SCRIPT_ATELIER_V51_DICT';
   const STORAGE_KEY_STATE = 'CA_SCRIPT_ATELIER_V51_STATE';
 
-  /* ---- v5.1 完整权威母本词库（带严格防变形约束） ---- */
+  /* ---- v5.1 母本词库 ---- */
 
   const DEFAULT_PROMPT_DICT_V51 = {
     P_CORE: `════════════════════════════════════════════════════════════════════════════════
 P-CORE · 全局执行契约与事实防火墙 (System，所有调用全局常驻)
 ════════════════════════════════════════════════════════════════════════════════
-
-§1 输出协议与 Anti-Chatter
-1.1 【编译阶段】(P0, P1, P2, P3-BUILD):
-    - MUST：输出的第 1 个字符必须是合法结构化标签（@@ENTRY、表格首行 | 或 [HALT:]）。
-    - FORBIDDEN：任何寒暄、过程解释。绝对严禁使用 \`\`\`yaml 或任何 Markdown 代码块包裹！
-1.2 【格式生死线】：
-    - @@ENTRY|...@@ 标签必须写在单独的一行，绝对禁止在标签中间插入换行符！
-    - 每个条目结束必须独占一行写 @@END@@。
-
-§2 命名空间与证据分级:
-- CANON：原著明确记载的事实 (ref=编号)。
-- ADAPTATION：经审定的剧版改编 (adp=编号)。
-- META：戏外娱乐圈生态、演员咖位画像 (meta=编号)。
-- INFERRED：逻辑推导，严禁自动伪装成 CANON。
-
-§3 运行时双轨访问防火墙 (FIREWALL):
-- MODE=SCENE (实拍对戏中): 严禁泄露 META 戏外八卦与后续反转。
-- MODE=OFFSET (戏外生活): 允许 META，严禁泄露大结局核心反转。
-
-§4 负面词库拦截器 BLOCKLIST (出现即强制重写该句):
-- 严禁空洞情绪：眼神复杂｜内心挣扎｜五味杂陈｜暗流涌动｜深邃｜坚毅｜隐忍而坚定。
-- 严禁陈旧网文腔：嘴角勾起一抹｜空气仿佛凝固｜眸色一深｜一丝｜宛如。
-
-§5 机器熔断协议 HALT PROTOCOL:
-格式：[HALT: <CODE> | slot=<槽位> | need=<缺失证据或原因>]`,
+§1 输出协议：编译阶段第1字符必须是结构化标签。严禁使用 \`\`\`yaml 或任何代码块包裹！
+§2 @@ENTRY|...@@ 标签必须单行写完，严禁在标签中间插入任何换行符！每个条目结束独占一行写 @@END@@。
+§3 命名空间：CANON/ADAPTATION/META/INFERRED。
+§4 负面词库拦截器 BLOCKLIST：严禁空洞情绪与陈旧网文腔。
+§5 机器熔断协议：[HALT: CODE | slot= | need=]`,
 
     P0: `════════════════════════════════════════════════════════════════════════════════
 P0 · 原著证据抽取机 (CANON LEDGER)
@@ -47,13 +27,15 @@ P0 · 原著证据抽取机 (CANON LEDGER)
 {{novel_text}}
 [PREV_CANON]
 {{prev_canon}}
+[FOCUS_ROLES]
+{{focus_roles}}
 
 [TASK] 纯抽取、零创作、零改编，建立带唯一跨表 ID 的 8 张事实底盘表格：
-T-CHAR 角色索引表：CH-nn｜姓名｜拼音ID｜别称｜表面身份｜真实底层处境｜职业苦难/身体痕迹(带原文引用)｜关联人物｜首出章节
-T-TIME 故事编年表：TL-nn｜时间节点｜地点｜核心物理事件 (≤30字)｜在场人物｜起止动作标志
+T-CHAR 角色索引表：CH-nn｜姓名｜拼音ID｜别称｜表面身份｜真实底层处境｜职业苦难/身体痕迹｜关联人物｜首出章节
+T-TIME 故事编年表：TL-nn｜时间节点｜地点｜核心物理事件｜在场人物｜起止动作标志
 T-INFO 认知差异表：IF-nn｜关联事件 TL-ref｜已知者｜被蒙蔽者｜观众已知事实
 T-TWIST 核心反转表：TW-nn｜反转/真相内容｜揭秘者｜揭密节点｜揭示方式｜最终结局走向｜status=LOCKED|PENDING_CANON
-T-LINES 原著台词库：LN-nn｜说话人｜关联事件｜原文逐字台词 (错漏一字即熔断)｜前后动作原文｜出现章节｜MUST_KEEP=Y|N
+T-LINES 原著台词库：LN-nn｜说话人｜关联事件｜原文逐字台词｜前后动作原文｜出现章节｜MUST_KEEP=Y|N
 T-THRILL 爽点机制表：TH-nn｜爽点名称｜关联台词｜机制类型｜原著章节｜读者情绪补偿模型
 T-FLAW 原著瑕疵台账：FL-nn｜瑕疵类型｜原著章节位置｜具体事实缺陷陈述
 T-RISK 审查雷区扫描：RK-nn｜原著位置｜雷区类型｜原著具体违规行为事实陈述`,
@@ -63,26 +45,9 @@ P1 · 编剧视听转化与蝴蝶效应引擎
 ════════════════════════════════════════════════════════════════════════════════
 [INPUT]
 {{CANON_TABLE}}
-
 [PARAMETERS]
 [PLATFORM]={{PLATFORM}}；[TIER]={{TIER}}；[ORIGIN]={{ORIGIN}}；[ADDON_TARGET]={{ADDON_TARGET}}
-
-[OUTPUT]:
-§01 影视立项工作底稿 (PROJECT)
-§02 网文下沉爽点保留与视听升格 (THRILL)
-§03 视听核心意象矩阵 (MOTIF)
-§04 过审合规转化四联表 (CENSOR)
-§05 原著瑕疵修补方案 (FLAW)
-§06 蝴蝶效应配角加戏系统 (BUTTERFLY)
-§07 入库精炼条目 (必须严格单行标签，严禁使用代码块包裹)：
-@@ENTRY|id=MASTER_PLAN|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=10|cap=400@@
-立项定级: {{TIER}} {{PLATFORM}}
-核心意象与过审方案摘要。
-@@END@@
-
-@@ENTRY|id=ADDON_SUMMARY|type=ADDON|keys=|const=1|pos=SYS_TOP|depth=0|order=20|cap=300@@
-加戏配角: {{ADDON_TARGET}} 蝴蝶效应事件与回流集数。
-@@END@@`,
+[OUTPUT]: §01 立项底稿 §02 爽点视听升格 §03 意象矩阵 §04 过审四联表 §05 瑕疵修补 §06 蝴蝶效应加戏 §07 入库条目 (MASTER_PLAN / ADDON_SUMMARY)。`,
 
     P2_CHAR: `════════════════════════════════════════════════════════════════════════════════
 P2 · 轨道 A：戏内角色剧本小传 (P2-CHAR)
@@ -90,24 +55,10 @@ P2 · 轨道 A：戏内角色剧本小传 (P2-CHAR)
 [INPUT]
 {{CANON_TABLE}}
 {{P1_OUTPUT}}
-
 [PARAMETERS]
 {{ROLE_ID}}={{ROLE_ID}}；[PLAYER_SEAT]={{PLAYER_SEAT}}；[ROLE_TYPE]={{ROLE_TYPE}}
-
-[OUTPUT 条目] (单行头，独占一行)：
 @@ENTRY|id=CHAR_{{ROLE_ID}}|type=CHAR|keys={{ROLE_NAME}},{{ROLE_ALIAS}}|const=0|pos=CHAR_AFTER|depth=4|order=100|cap=1200@@
-K1 [戏剧任务] 核心功能定位。
-K2 [表象与深层] 表面面具｜底层欲望｜不可说恐惧。
-K3 [核心矛盾律] ≥3 组矛盾对抗。
-K4 [体态与骨骼肌肉记忆] 【触发情境】➔【具体肌肉/体态动作】➔【来源】(≥4项)。
-K5 [视线与呼吸停顿] 视线落点秒数｜呼吸状态｜停顿拍子。
-K6 [发声与语速] 发声位置｜语速节奏｜口癖。
-K7 [台词重音提词器] 原文逐字（／短停，／／长停）｜重音「词语」｜潜台词。
-K8 [对手戏博弈协议] 应对策略｜底牌目的｜行为红线。
-K9 [行为边界] 硬性禁区｜偏离风险。
-K10 [角色认知边界] 与 T-INFO 对齐。
-IF ROLE_TYPE ≠ LEAD THEN 追加：
-K11 [他也是对的] 底层生存逻辑前提 ｜ 3条自洽理由 ｜ 必拍高光戏。
+K1~K10项体态、视线、发声、台词重音提词器。IF 非LEAD 必带 K11 [他也是对的] 自洽闭环。
 @@END@@`,
 
     P2_OFFSET: `════════════════════════════════════════════════════════════════════════════════
@@ -115,18 +66,9 @@ P2 · 轨道 B：戏外内娱博弈盲盒 (P2-OFFSET)
 ════════════════════════════════════════════════════════════════════════════════
 [INPUT]
 {{P1_OUTPUT}}
-
 [PARAMETERS]
 [PLAYER_SEAT]={{PLAYER_SEAT}}；[PARTNER_ARCHETYPE]={{PARTNER_ARCHETYPE}}；[PHASE]={{PHASE}}
-[RULES] 严禁使用真实艺人或资方姓名。全生成为独立 ENTRY：
-
-@@ENTRY|id=ARCH_<TYPE_ID>|type=OFFSET|keys=画像_<TYPE_ID>|const=0|pos=NEAR_LATEST|depth=3|order=200|cap=600@@
-【演员梯队类型】｜【咖位处境与诉求】｜【团队防爆与防吸血预警】｜【性格与可拍小动作】
-@@END@@
-
-@@ENTRY|id=EVT_<EVENT_ID>|type=EVENT|keys=事件_<EVENT_ID>|const=0|pos=NEAR_LATEST|depth=2|order=300|cap=300@@
-触发节点｜涉及画像｜表面说辞 vs 真实博弈｜应对分支｜后续影响
-@@END@@`,
+生成 3~5条独立 ARCH_ 梯队画像条目与 6~8条 EVT_ 现场突发博弈条目。`,
 
     P3: `════════════════════════════════════════════════════════════════════════════════
 P3 · 拍摄通告与单场边界死锁 (SCENE CONTRACT)
@@ -135,39 +77,19 @@ P3 · 拍摄通告与单场边界死锁 (SCENE CONTRACT)
 {{CANON_TABLE}}
 {{P1_OUTPUT}}
 {{P2_OUTPUT}}
-
 [PARAMETERS]
 [SCENE_NO]={{SCENE_NO}}；[TARGET_LN_START]={{TARGET_LN_START}}；[TARGET_LN_END]={{TARGET_LN_END}}
-
-【输出硬性准则】：
-1. 绝对严禁使用 \`\`\`yaml 或任何代码块！必须直接输出 @@ENTRY。
-2. @@ENTRY 标签必须单行写完，严禁在 keys、pos、cap 之间插入任何换行符！
-
+【输出硬性准则】：绝对严禁使用代码块包裹！标签必须单行写完！
 @@ENTRY|id=SC_{{SCENE_NO}}|type=SCENE|keys=第{{SCENE_NO}}场,场景地点|const=0|pos=NEAR_LATEST|depth=1|order=400|cap=1500@@
-【通告场次头】：集数｜场号｜日/夜戏｜内/外景｜拍摄地点｜在场角色｜道具清单。
-【单场戏剧目标】：核心冲突｜观众获得的新信息。
-【第一层刹车：起止锚点死锁】：
-- START_ANCHOR: [START_LINE] “原句逐字” (ref=LN-nn) ➔ 开机必须从此句起演。
-- END_ANCHOR: [END_LINE] “原句逐字” (ref=LN-nn) ➔ 本场必须停在此句完成的一瞬间！
-- 【硬性停机令】：当 END_LINE 发生后，实拍大模型在该轮输出末尾必须且只能输出一行：
-  【🎬 场次结束，导演喊卡】随后立即执行 TERMINATE 动作！
-- 禁提台词与反转清单 (≥5条)：绝对禁止泄露后续反转！
-【第二层刹车：节拍阶段控制 (BEAT STAGES)】：3~5个节拍 (ENTRY ➔ PROBE ➔ RESPONSE ➔ RESOLUTION)。
-【第三层刹车：原著台词保真提词器】：本场台词逐字对照。
-【片场意外与补拍预警】：NG 风险点｜突发事件。
+通告场次头｜单场冲突｜起止锚点死锁【🎬 场次结束，导演喊卡】｜节拍控制｜台词保真提词器。
 @@END@@
-
 @@ENTRY|id=PTR_CURRENT|type=POINTER|keys=|const=1|pos=NEAR_LATEST|depth=0|order=999|cap=160@@
-CURRENT_SCENE=SC_{{SCENE_NO}}。MODE=SCENE。当前仅本场次激活生效。收到【🎬 场次结束，导演喊卡】后彻底关闭。
+CURRENT_SCENE=SC_{{SCENE_NO}}。MODE=SCENE。
 @@END@@`
   };
 
   const CORE_RT_ENTRY_RAW = `@@ENTRY|id=CORE_RT|type=MASTER|keys=|const=1|pos=SYS_TOP|depth=0|order=1|cap=350@@
-RT-1 命名空间隔离：MODE=SCENE 时角色仅可调用当前场次终点台词前已知的 CANON/ADAPTATION；META 戏外八卦绝对 DENY。
-RT-2 MODE=OFFSET 时可调用 META 及已拍完剧情；未拍场次反转绝对 DENY。
-RT-3 输出第一个字符即为角色的台词或动作，严禁任何开场白、自言自语与演戏外的元解释。
-RT-4 当对话到达当前场次终点锚点时，必须输出【🎬 场次结束，导演喊卡】并强制停止。若被强行追问，仅返回 [HALT: SCENE_CLOSED]。
-RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
+RT-1 命名空间隔离。RT-2 OFFSET模式规则。RT-3 输出首字即角色。RT-4 终点锚喊卡。RT-5 BLOCKLIST。
 @@END@@`;
 
   let promptDict = loadCustomDict();
@@ -192,9 +114,12 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
 
   const saState = {
     currentStep: 'P0', novelText: '', prevCanon: '无',
+    detectedCharacters: [], // 嗅探到的小说角色列表 [{name, count}]
+    myRoleName: '',         // 我主演的角色名
+    partnerRoleName: '',    // NPC 对手戏角色名
     platform: 'AUTO', tier: 'AUTO', origin: 'AUTO', addonTarget: 'AUTO',
     roleId: 'SHENDU', roleName: '沈渡', roleAlias: '沈掌使',
-    playerSeat: '特邀领衔反派/男二', roleType: 'VILLAIN',
+    playerSeat: '女一（一番大女主）', roleType: 'LEAD',
     partnerArchetype: 'AUTO', phase: 'ALL',
     sceneNo: '01', targetLnStart: 'LN-01', targetLnEnd: 'LN-02',
     drafts: { P0: '', P1: '', P2_CHAR: '', P2_OFFSET: '', P3: '' }
@@ -217,6 +142,55 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
 
   const $ = id => document.getElementById(id);
 
+  /* ==========================================================
+     ★ 核心黑科技：纯前端 100% 离线小说角色智能嗅探算法
+     ========================================================== */
+  function sniffCharactersFromNovel(text) {
+    if (!text || text.length < 50) return [];
+
+    const counts = {};
+    const stopWords = new Set([
+      '什么', '怎么', '这个', '那个', '自己', '知道', '觉得', '没有', '不是', '一个',
+      '陛下', '娘娘', '殿下', '公公', '太监', '将军', '大人', '夫人', '姑娘', '小姐',
+      '丫鬟', '侍卫', '侍女', '小厮', '掌柜', '小二', '老者', '女子', '男子', '众人',
+      '皇上', '皇后', '王爷', '世子', '公主', '师父', '徒儿', '父亲', '母亲', '哥哥', '姐姐'
+    ]);
+
+    // 1. 抓取小说对话引导词："..."，某某道 / 某某冷声道 / 某某问：
+    const dialoguePatterns = [
+      /([“「][^”」]{2,80}[”」])\s*([一-龥]{2,4})(?:道|说|问|答|笑|叹|冷笑|怒斥|低语|喝道|回道)/g,
+      /([一-龥]{2,4})(?:道|说|问|答|笑|叹|冷笑|怒斥|低语|喝道|回道)[:：]\s*([“「])/g,
+      /(?:只见|那|见|拉着|扶着|看着|朝着|对着)\s*([一-龥]{2,3})\s*(?:神色|眼神|脸色|微微|拔剑|转身|冷冷)/g
+    ];
+
+    dialoguePatterns.forEach(pattern => {
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        const candidate = (m[2] && m[2].length <= 4 ? m[2] : m[1]).trim();
+        if (candidate.length >= 2 && candidate.length <= 4 && !stopWords.has(candidate)) {
+          // 排除包含动词或代词的杂质
+          if (!/[的可了在是不我有他她它们你去来]/.test(candidate)) {
+            counts[candidate] = (counts[candidate] || 0) + 3;
+          }
+        }
+      }
+    });
+
+    // 2. 统计高频人名候选词的全书出现总词频
+    const candidates = Object.keys(counts).filter(k => counts[k] >= 3);
+    const sorted = candidates.map(name => {
+      // 快速估算全书出现频次
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const allMatches = text.match(new RegExp(escaped, 'g'));
+      const totalCount = allMatches ? allMatches.length : counts[name];
+      return { name, count: totalCount };
+    });
+
+    // 按全书真实出场总频次降序排列，取前 24 个
+    sorted.sort((a, b) => b.count - a.count);
+    return sorted.filter(c => c.count >= 5).slice(0, 24);
+  }
+
   function mapV51PosToKelivo(p) {
     if (!p) return 'AT_DEPTH';
     const s = String(p).toUpperCase();
@@ -225,37 +199,26 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     return 'AT_DEPTH';
   }
 
-  /* ==========================================================
-     核心：超级自愈解析器（终极对抗 AI 换行、缺失 @@END@@、代码块包裹）
-     ========================================================== */
+  /* ---- @@ENTRY 自愈解析器 ---- */
   function parseV51EntriesFromText(rawText) {
     let text = String(rawText || '').replace(/\r\n/g, '\n');
-
-    // 1. 彻底干掉 ```yaml, ``` 等外壳
     text = text.replace(/```[a-z0-9_-]*\n?/gi, '').replace(/```\n?/g, '');
     const safeText = text.replace(/\\@@END@@/g, '__ESC_END__');
-
     const results = [];
 
-    // 2. 超级自愈扫描：只要出现 @@ENTRY，即使中间换行、哪怕结尾没有 @@END@@ 也能精准抓取！
     const entryScanner = /@@ENTRY\|([\s\S]+?)(?:@@|\n\n)([\s\S]*?)(?=@@END@@|@@ENTRY|\[HALT:|$)/g;
     let m;
-
     while ((m = entryScanner.exec(safeText)) !== null) {
-      // 把在 @@ENTRY 内部被折断的换行全部抚平拼接
       const headerRaw = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
       let bodyContent = m[2].replace(/__ESC_END__/g, '@@END@@').trim();
       bodyContent = bodyContent.replace(/@@END@@/g, '').trim();
 
       if (!bodyContent && !headerRaw) continue;
 
-      // 提取参数
       const meta = {};
       headerRaw.split('|').forEach(pair => {
         const i = pair.indexOf('=');
-        if (i > 0) {
-          meta[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
-        }
+        if (i > 0) meta[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
       });
 
       const id = meta.id || ('ENTRY_' + (results.length + 1));
@@ -284,29 +247,17 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       });
     }
 
-    // 3. 兜底保护：如果在 P3 中 AI 只写了 [HALT: P3_SC01_COMPLETE] 但完全没写 @@ENTRY 标签
+    // 兜底保护
     if (!results.length && text.includes('scene_no:') && text.includes('line range:')) {
       results.push({
-        strictValid: false,
-        id: 'SC_01',
-        type: 'SCENE',
-        keys: ['第01场', '通告单'],
-        constant: false,
-        v51Pos: 'NEAR_LATEST',
-        kelivoPos: 'AT_DEPTH',
-        depth: 1,
-        order: 400,
-        cap: 1600,
-        charLen: text.length,
-        overCap: false,
-        content: text
+        strictValid: false, id: 'SC_01', type: 'SCENE', keys: ['第01场', '通告单'],
+        constant: false, v51Pos: 'NEAR_LATEST', kelivoPos: 'AT_DEPTH',
+        depth: 1, order: 400, cap: 1600, charLen: text.length, overCap: false, content: text
       });
     }
-
     return results;
   }
 
-  /* ---- P0 角色/台词提取 ---- */
   function extractCanonEntities() {
     const p0 = saState.drafts.P0 || '', chars = [], lines = [];
     let m;
@@ -323,7 +274,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     return { chars, lines };
   }
 
-  /* ---- Prompt 组装 ---- */
+  /* ---- 组装终极 Prompt ---- */
   function buildAssembledPrompt() {
     const step = saState.currentStep;
     const pCore = promptDict.P_CORE || DEFAULT_PROMPT_DICT_V51.P_CORE;
@@ -331,9 +282,16 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     const p0D = (saState.drafts.P0 || '').trim() || '（尚未填入 P0）';
     const p1D = (saState.drafts.P1 || '').trim() || '（尚未填入 P1）';
     const p2D = [saState.drafts.P2_CHAR, saState.drafts.P2_OFFSET].filter(Boolean).join('\n\n').trim() || '（尚未填入 P2）';
+
+    const focusRolesText = [
+      saState.myRoleName ? `玩家主演角色: ${saState.myRoleName}` : '',
+      saState.partnerRoleName ? `对手戏主要角色: ${saState.partnerRoleName}` : ''
+    ].filter(Boolean).join(' ｜ ') || '原著核心主角群像';
+
     body = body
       .replace(/\{\{novel_text\}\}/g, saState.novelText.trim() || '（请根据原文抽取）')
       .replace(/\{\{prev_canon\}\}/g, saState.prevCanon || '无')
+      .replace(/\{\{focus_roles\}\}/g, focusRolesText)
       .replace(/\{\{CANON_TABLE\}\}/g, p0D)
       .replace(/\{\{P1_OUTPUT\}\}/g, p1D)
       .replace(/\{\{P2_OUTPUT\}\}/g, p2D)
@@ -370,7 +328,6 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     }
   }
 
-  /* ---- 定稿诊断与条目卡片实时刷新 ---- */
   function renderDraftDiagnostics() {
     const raw = $('saDraftEditor')?.value || '';
     const cc = $('saDraftCharCount');
@@ -387,7 +344,6 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       }
     }
 
-    // 实时使用自愈解析器抓取条目
     const entries = parseV51EntriesFromText(raw);
     const cs = $('saCurrentEntryCount');
     if (cs) cs.textContent = String(entries.length);
@@ -413,7 +369,6 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     });
   }
 
-  /* ---- 槽位控制台 ---- */
   function makePillRow(label, subHint, options, currentValue, onPick) {
     const row = document.createElement('div');
     row.className = 'sa-slot-row';
@@ -435,6 +390,9 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     return row;
   }
 
+  /* ==========================================================
+     动态槽位控制台（在此展示嗅探到的角色大徽章卡片）
+     ========================================================== */
   function renderSlotConsole() {
     const box = $('saSlotConsole');
     if (!box) return;
@@ -442,14 +400,73 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     const { chars, lines } = extractCanonEntities();
 
     if (saState.currentStep === 'P0') {
+      // 1. 如果嗅探到了小说人物，在最上方展示醒目的点选卡牌
+      if (saState.detectedCharacters.length > 0) {
+        const sniffPanel = document.createElement('div');
+        sniffPanel.className = 'sa-slot-row';
+        sniffPanel.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:12px;margin-bottom:6px;';
+        sniffPanel.innerHTML = `
+          <div class="sa-slot-label" style="margin-bottom:8px">
+            <span style="color:#18181b;font-weight:800">🔍 算法自动从小说中嗅探到的高频出场人物（点击即可认领角标）：</span>
+            <small style="color:#71717a">共发现 ${saState.detectedCharacters.length} 位有对话的人物</small>
+          </div>
+          <div class="sa-pill-group" id="sniffPills"></div>
+          <div id="sniffSelectionBanner" style="font-size:12px;color:#2e7d32;font-weight:600;margin-top:8px;"></div>
+        `;
+
+        const pBox = sniffPanel.querySelector('#sniffPills');
+        const banner = sniffPanel.querySelector('#sniffSelectionBanner');
+
+        const updateBanner = () => {
+          banner.textContent = `当前设定：${saState.myRoleName ? `【我演：${saState.myRoleName}】` : '（未选我的角色）'} ${saState.partnerRoleName ? ` ｜ 【对手戏角色：${saState.partnerRoleName}】` : ''}`;
+        };
+        updateBanner();
+
+        saState.detectedCharacters.forEach(c => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isMine = saState.myRoleName === c.name;
+          const isPartner = saState.partnerRoleName === c.name;
+          btn.className = 'sa-opt-pill' + (isMine || isPartner ? ' active' : '');
+          btn.innerHTML = `<strong>${c.name}</strong> <small style="opacity:0.7">(${c.count}次)</small>`;
+
+          btn.onclick = () => {
+            const act = prompt(`你希望将小说人物【${c.name}】设为？\n输入 1: 设为「我主演的角色（领衔大女主/一番）」\n输入 2: 设为「对手戏主要角色（如男主/反派）」\n输入 3: 清除选择`, isMine ? '1' : (isPartner ? '2' : '1'));
+            if (act === '1') {
+              saState.myRoleName = c.name;
+              saState.roleName = c.name;
+              saState.roleId = c.name;
+              saState.playerSeat = '女一（一番大女主）';
+              window.toast(`已将【${c.name}】设为你主演的角色！`);
+            } else if (act === '2') {
+              saState.partnerRoleName = c.name;
+              window.toast(`已将【${c.name}】设为对手戏角色！`);
+            } else if (act === '3') {
+              if (isMine) saState.myRoleName = '';
+              if (isPartner) saState.partnerRoleName = '';
+            }
+            persistState();
+            renderAll();
+          };
+          pBox.appendChild(btn);
+        });
+
+        box.appendChild(sniffPanel);
+      }
+
       const row = document.createElement('div');
       row.className = 'sa-slot-row';
-      row.innerHTML = '<div class="sa-slot-label"><span>原著片段输入</span></div>';
+      row.innerHTML = '<div class="sa-slot-label"><span>原著片段文本（可直接点右上角“导入TXT”秒传整本）：</span></div>';
       const ta = document.createElement('textarea');
       ta.className = 'sa-slot-textarea';
-      ta.placeholder = '粘贴原著正文...';
+      ta.placeholder = '上传TXT或在此粘贴原著正文...';
       ta.value = saState.novelText || '';
-      ta.oninput = e => { saState.novelText = e.target.value; persistState(); updatePromptPreview(); };
+      ta.oninput = e => {
+        saState.novelText = e.target.value;
+        saState.detectedCharacters = sniffCharactersFromNovel(e.target.value);
+        persistState();
+        updatePromptPreview();
+      };
       row.appendChild(ta);
       box.appendChild(row);
     } else if (saState.currentStep === 'P1') {
@@ -462,7 +479,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       if (chars.length) {
         box.appendChild(makePillRow('快速选角', '', chars.map(c => ({ label: `${c.ref} · ${c.name}`, val: c.pinyin, raw: c })), saState.roleId, (val, opt) => { saState.roleId = opt.raw.pinyin; saState.roleName = opt.raw.name; saState.roleAlias = opt.raw.alias || opt.raw.name; persistState(); }));
       }
-      box.appendChild(makePillRow('番位 [PLAYER_SEAT]', '', [{ label: '男一', val: '男一' }, { label: '女一', val: '女一' }, { label: '反派/男二', val: '特邀反派/男二' }, { label: '✦ AUTO', val: 'AUTO' }], saState.playerSeat, val => { saState.playerSeat = val; persistState(); }));
+      box.appendChild(makePillRow('番位 [PLAYER_SEAT]', '', [{ label: '女一（一番大女主）', val: '女一（一番大女主）' }, { label: '男一（一番大男主）', val: '男一（一番大男主）' }, { label: '特邀反派/男二', val: '特邀反派/男二' }, { label: '✦ AUTO', val: 'AUTO' }], saState.playerSeat, val => { saState.playerSeat = val; persistState(); }));
       box.appendChild(makePillRow('角色类型 [ROLE_TYPE]', '', [{ label: 'LEAD', val: 'LEAD' }, { label: 'VILLAIN', val: 'VILLAIN' }, { label: 'SUPPORT', val: 'SUPPORT' }], saState.roleType, val => { saState.roleType = val; persistState(); }));
     } else if (saState.currentStep === 'P2_OFFSET') {
       box.appendChild(makePillRow('梯队盲盒 [PARTNER]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: '95花+叔圈戏骨', val: '95花+叔圈戏骨' }, { label: '文艺小生+国民青衣', val: '文艺小生+国民青衣' }], saState.partnerArchetype, val => { saState.partnerArchetype = val; persistState(); }));
@@ -483,7 +500,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     if (includeCoreRt) parsed.unshift(...parseV51EntriesFromText(CORE_RT_ENTRY_RAW));
 
     if (!parsed.length) {
-      window.toast('未检测到有效条目，请确保文本中包含规范内容');
+      window.toast('未检测到有效条目，请确保输入中包含规范内容');
       return 0;
     }
 
@@ -623,7 +640,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     window.toast(`已填入 [${saState.currentStep}] 演示`);
   });
 
-  // 读取原著 TXT
+  // 读取原著 TXT 文件（带自动嗅探人名）
   $('saTxtFilePicker')?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -632,9 +649,12 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     reader.onload = (event) => {
       const content = event.target?.result || '';
       saState.novelText = content;
-      persistState();
+
+      // ★ 核心：读入瞬间自动全书嗅探高频人物
+      saState.detectedCharacters = sniffCharactersFromNovel(content);
 
       saState.currentStep = 'P0';
+      persistState();
       renderAll();
 
       const projInput = $('saProjectName');
@@ -642,7 +662,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
         projInput.value = `《${file.name.replace(/\.txt$/i, '')}》剧组世界书`;
       }
 
-      window.toast(`✓ 成功读取《${file.name}》（共 ${content.length} 字），已填入 P0！`);
+      window.toast(`✓ 成功读取《${file.name}》（共 ${content.length} 字），已嗅探到 ${saState.detectedCharacters.length} 位核心人物！`);
       e.target.value = '';
     };
     reader.onerror = () => window.toast('读取文件失败');
@@ -662,6 +682,9 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
   $('saResetAllDraftsBtn')?.addEventListener('click', () => {
     if (!confirm('清空全部定稿？')) return;
     saState.drafts = { P0: '', P1: '', P2_CHAR: '', P2_OFFSET: '', P3: '' };
+    saState.detectedCharacters = [];
+    saState.myRoleName = '';
+    saState.partnerRoleName = '';
     persistState();
     renderAll();
     window.toast('已清空');
