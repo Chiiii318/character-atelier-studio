@@ -89,7 +89,7 @@
           </button>
           <label class="btn btn-soft file-trigger" id="newImportAction" for="filePicker" role="button" tabindex="0">
             <svg class="ui-icon"><use href="#i-upload"></use></svg>
-            <span>导入卡片 (PNG/XML)</span>
+            <span>导入卡片 (PNG/XML/JSON)</span>
           </label>
         </div>
 
@@ -99,8 +99,8 @@
         <aside class="character-library-rail" id="libraryRail">
           <div class="brand"><span class="brand-icon">✦</span><span>CHARACTER ATELIER</span></div>
           <div class="side-tools">
-            <div class="muted" style="font-size:12px;padding:4px 2px">支持导入标准 PNG 角色卡及 Mufy XML 角色卡</div>
-            <input accept="image/png,.png,.xml,text/xml,application/xml" class="native-file-picker" id="filePicker" aria-label="选择角色卡文件" multiple type="file"/>
+            <div class="muted" style="font-size:12px;padding:4px 2px">支持导入 PNG 角色卡、Mufy XML 及 JSON 角色卡</div>
+            <input accept="image/png,.png,.xml,text/xml,application/xml,.json,application/json" class="native-file-picker" id="filePicker" aria-label="选择角色卡文件" multiple type="file"/>
             <input aria-label="搜索角色卡" class="search" id="searchInput" placeholder="搜索角色名、作者、标签…" type="search"/>
             <button type="button" class="btn btn-soft btn-small" id="favoriteOnlyBtn" aria-pressed="false">★ 仅看收藏</button>
             <div class="filters">
@@ -131,8 +131,8 @@
           <div class="empty hidden" id="emptyTip">
             <div class="empty-icon">▧</div>
             <strong style="color:var(--ink);font-size:16px">暂无选中的角色卡</strong>
-            <p style="font-size:12px">导入 PNG 角色卡，或从列表选择已有卡片。</p>
-            <label class="btn btn-primary file-trigger" id="emptyImport" for="filePicker" role="button" tabindex="0">选择 PNG 文件</label>
+            <p style="font-size:12px">导入 PNG / XML / JSON 角色卡，或从列表选择已有卡片。</p>
+            <label class="btn btn-primary file-trigger" id="emptyImport" for="filePicker" role="button" tabindex="0">选择卡片文件</label>
           </div>
         </div>
       </div>
