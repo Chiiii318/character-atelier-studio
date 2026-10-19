@@ -495,12 +495,10 @@ async function parseCardJSONContent(text, filename) {
       const content = ent.content || '';
       const keys = Array.isArray(ent.key) ? ent.key : (Array.isArray(ent.keys) ? ent.keys : [comment]);
 
-      // 智能识别：如果是“性格锚定”，提出来放进角色性格面板
-      if (!extractedPersonality && (comment.includes('性格') || comment.includes('设定'))) {
+      // 通用识别：智能提取包含“性格/人设/设定/档案/简介/描述”等关键字的条目正文
+      const isPersonalityKey = /性格|人设|设定|档案|简介|描述/i.test(comment);
+      if (!extractedPersonality && isPersonalityKey && content.trim()) {
         extractedPersonality = content;
-      }
-      if (!extractedDesc && comment.includes('性格锚定')) {
-        extractedDesc = content.slice(0, 120) + '...';
       }
 
       entries.push({
@@ -517,16 +515,21 @@ async function parseCardJSONContent(text, filename) {
       });
     });
 
+    // 如果没有自带简介，自动用提取到的性格设定前100字作为卡片摘要
+    if (!extractedDesc && extractedPersonality) {
+      extractedDesc = extractedPersonality.replace(/[\r\n\s]+/g, ' ').slice(0, 100) + '...';
+    }
+
     const cardData = {
       name: charName,
-      description: extractedDesc || '世界书设定角色',
+      description: extractedDesc || '世界书架构角色',
       personality: extractedPersonality,
       scenario: '',
       first_mes: '',
       mes_example: '',
-      creator_notes: '',
+      creator_notes: '从独立世界书/Lorebook自动转换',
       system_prompt: '',
-      tags: ['世界书设定', '生生不已'],
+      tags: ['世界书设定'],
       alternate_greetings: [],
       character_book: { entries },
       extensions: {
@@ -534,8 +537,19 @@ async function parseCardJSONContent(text, filename) {
       }
     };
 
-    // 自动为盛不已生成首字“盛”的清爽头像
-    const avatarChar = charName.includes('生生不已') ? '盛' : charName.charAt(0);
+    // 通用首字头像：清理特殊符号（如【】、^v^、标点），若有点分结构（如 前缀.角色名）优先提取角色名首字
+    let avatarChar = '卡';
+    let targetName = charName;
+    if (charName.includes('.')) {
+      const parts = charName.split('.').filter(Boolean);
+      if (parts.length > 1) targetName = parts[parts.length - 1];
+    }
+    const cleanChars = targetName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '');
+    if (cleanChars) {
+      avatarChar = cleanChars.charAt(0);
+    } else if (charName.trim()) {
+      avatarChar = charName.trim().charAt(0);
+    }
     const blob = await resolveMufyAvatarBlob('', avatarChar);
 
     return { cardData, blob };
