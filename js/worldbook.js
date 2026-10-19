@@ -600,7 +600,9 @@ export async function importWorldBookJSON(file) {
     } else if (json.type === 'lorebook' && json.data?.entries) {
       if (json.data.name) bookName = json.data.name; rawEntries = json.data.entries;
     } else if (json.entries) {
-      if (json.name) bookName = json.name; rawEntries = json.entries;
+      if (json.originalData?.name) bookName = json.originalData.name;
+      else if (json.name) bookName = json.name;
+      rawEntries = json.entries;
     } else if (json.character_book || json.data?.character_book) {
       const cb = json.character_book || json.data.character_book;
       if (cb.name) bookName = cb.name; rawEntries = cb.entries || [];
