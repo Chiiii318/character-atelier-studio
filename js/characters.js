@@ -299,7 +299,159 @@ export async function toggleFavorite(id) {
   } catch (e) { c.favorite = !c.favorite; notify('收藏状态保存失败：' + (e?.message || String(e))); }
 }
 
-/* ---- 导入角色卡（PNG + XML 双轨） ---- */
+/* ---- JSON 角色卡解析适配器（支持 Sully 卡片、Tavern V2、通用标准） ---- */
+
+async function parseCardJSONContent(text, filename) {
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (err) {
+    throw new Error('JSON 解析失败，请确认文件格式完整');
+  }
+
+  // 1. Sully 格式角色卡（如周淳业卡片：包含 type: 'sully_character_card' 或 systemPrompt / mountedWorldbooks）
+  if (json.type === 'sully_character_card' || json.systemPrompt || Array.isArray(json.mountedWorldbooks)) {
+    const charName = String(json.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
+
+    // 解析挂载世界书为标准 character_book.entries
+    const entries = [];
+    if (Array.isArray(json.mountedWorldbooks)) {
+      json.mountedWorldbooks.forEach((wb, idx) => {
+        if (!wb) return;
+        const rawContent = String(wb.content || '');
+        // 尝试解析包含在 content 里的嵌入式 JSON entries（如核心锚定）
+        const jsonMatch = rawContent.match(/\{[\s\S]*"entries"\s*:\s*\[[\s\S]*\][\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const innerParsed = JSON.parse(jsonMatch[0]);
+            if (Array.isArray(innerParsed.entries)) {
+              innerParsed.entries.forEach((innerEntry, iIdx) => {
+                entries.push({
+                  id: idx * 100 + iIdx + 1,
+                  keys: Array.isArray(innerEntry.keys) ? innerEntry.keys : (innerEntry.keys ? [innerEntry.keys] : []),
+                  secondary_keys: [],
+                  comment: `${wb.title || '世界书条目'} - ${innerEntry.name || `条目 ${iIdx + 1}`}`,
+                  content: innerEntry.content || '',
+                  constant: true,
+                  selective: false,
+                  insertion_order: innerEntry.insertion_order || (idx + 1),
+                  enabled: true,
+                  position: wb.position || 'after_impression'
+                });
+              });
+              return;
+            }
+          } catch (_) { /* 保持降级 */ }
+        }
+
+        // 普通文本世界书条目（如系统提示词、后置指令）
+        entries.push({
+          id: idx + 1,
+          keys: [wb.title || charName],
+          secondary_keys: [],
+          comment: wb.title || `挂载世界书 #${idx + 1}`,
+          content: rawContent,
+          constant: true,
+          selective: false,
+          insertion_order: idx + 1,
+          enabled: true,
+          position: wb.position || 'after_impression'
+        });
+      });
+    }
+
+    const tags = [];
+    if (json.cityOverride) tags.push(String(json.cityOverride));
+    if (json.type) tags.push(String(json.type).replace('_', ' '));
+
+    const cardData = {
+      name: charName,
+      description: json.description || '',
+      personality: '',
+      scenario: '',
+      first_mes: '',
+      mes_example: '',
+      creator_notes: '',
+      system_prompt: json.systemPrompt || '',
+      tags: tags,
+      alternate_greetings: [],
+      character_book: entries.length ? { entries } : null,
+      extensions: {
+        sully_context_limit: json.contextLimit,
+        sully_city_override: json.cityOverride,
+        sully_soft_devotion_chat_mode: json.softDevotionChatMode,
+        mounted_worldbooks_raw: json.mountedWorldbooks || []
+      }
+    };
+
+    // 头像转换：将 base64 转换成 Blob
+    let blob = null;
+    if (typeof json.avatar === 'string' && json.avatar.trim()) {
+      try {
+        const rawAvatar = json.avatar.trim();
+        let mimeType = 'image/jpeg';
+        const typeMatch = rawAvatar.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,/);
+        if (typeMatch) mimeType = typeMatch[1];
+        const cleanBase64 = rawAvatar.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+        blob = base64ToBlob(cleanBase64, mimeType);
+      } catch (e) {
+        console.warn('Sully 头像 base64 解码失败，生成默认占位头像', e);
+      }
+    }
+    if (!blob) {
+      blob = await resolveMufyAvatarBlob('', charName);
+    }
+
+    return { cardData, blob };
+  }
+
+  // 2. Tavern V2 标准角色卡（带有 spec: 'chara_card_v2'）
+  if (json.spec === 'chara_card_v2' && json.data) {
+    const cardData = json.data;
+    const charName = String(cardData.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
+    let blob = null;
+    if (typeof json.avatar === 'string' && json.avatar.trim()) {
+      try {
+        const cleanBase64 = json.avatar.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+        blob = base64ToBlob(cleanBase64, 'image/png');
+      } catch (_) {}
+    }
+    if (!blob) blob = await resolveMufyAvatarBlob('', charName);
+    return { cardData, blob };
+  }
+
+  // 3. Tavern V1 或通用平铺角色卡
+  if (json.name || json.description || json.first_mes || json.system_prompt) {
+    const charName = String(json.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
+    const cardData = {
+      name: charName,
+      description: json.description || '',
+      personality: json.personality || '',
+      scenario: json.scenario || '',
+      first_mes: json.first_mes || '',
+      mes_example: json.mes_example || '',
+      creator_notes: json.creator_notes || '',
+      system_prompt: json.system_prompt || '',
+      tags: Array.isArray(json.tags) ? json.tags : [],
+      alternate_greetings: Array.isArray(json.alternate_greetings) ? json.alternate_greetings : [],
+      character_book: json.character_book || null,
+      extensions: json.extensions || {}
+    };
+    let blob = null;
+    if (typeof json.avatar === 'string' && json.avatar.trim()) {
+      try {
+        const cleanBase64 = json.avatar.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+        blob = base64ToBlob(cleanBase64, 'image/png');
+      } catch (_) {}
+    }
+    if (!blob) blob = await resolveMufyAvatarBlob('', charName);
+    return { cardData, blob };
+  }
+
+  throw new Error('未识别的角色卡 JSON 格式');
+}
+
+/* ---- 导入角色卡（PNG + XML + JSON 三轨支持） ---- */
 
 export async function importPNGs(files) {
   if (!files?.length) return;
@@ -309,12 +461,18 @@ export async function importPNGs(files) {
   for (const f of files) {
     const isPng = /\.png$/i.test(f.name) || f.type === 'image/png';
     const isXml = /\.xml$/i.test(f.name) || f.type === 'text/xml' || f.type === 'application/xml';
+    const isJson = /\.json$/i.test(f.name) || f.type === 'application/json';
 
-    if (!isPng && !isXml) { errors.push(f.name + '：不支持的文件格式'); continue; }
+    if (!isPng && !isXml && !isJson) { errors.push(f.name + '：不支持的文件格式'); continue; }
 
     try {
       let data, blob;
-      if (isXml) {
+      if (isJson) {
+        const text = await f.text();
+        const parsed = await parseCardJSONContent(text, f.name);
+        data = parsed.cardData;
+        blob = parsed.blob;
+      } else if (isXml) {
         const text = await f.text();
         const parsed = parseMufyXMLContent(text);
         data = parsed.cardData;
