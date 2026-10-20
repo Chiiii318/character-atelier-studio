@@ -26,12 +26,23 @@ export function parseKeywordsList(raw, isRegex = false) {
   if (typeof raw !== 'string') return [];
   const trimmed = raw.trim();
   if (!trimmed) return [];
-  const sanitized = sanitizeKeyword(trimmed);
-  if (isRegex || sanitized.includes('|')) {
-    return sanitized.split(/[\n,，]/).map(s => sanitizeKeyword(s).trim()).filter(Boolean);
+
+  // 1. 匹配 /pattern/flags
+  const slashMatch = trimmed.match(/^\/(.*?)\/([a-z]*)$/i);
+  if (slashMatch) {
+    const body = slashMatch[1].trim();
+    return body ? [body] : [];
   }
-  return sanitized.split(/[\n,，]/).map(s => sanitizeKeyword(s).trim()).filter(Boolean);
+
+  // 2. 开正则或包含竖线 '|'：保留竖线作为正则表达式整体，仅按换行与逗号拆分
+  if (isRegex || trimmed.includes('|')) {
+    return trimmed.split(/[\r\n,，]/).map(s => s.trim()).filter(Boolean);
+  }
+
+  // 3. 不开正则时的普通关键词：支持中英文逗号、顿号、换行自动切分成多个独立词
+  return trimmed.split(/[\r\n,，、]/).map(s => s.trim()).filter(Boolean);
 }
+
 
 export function normalizePosition(pos) {
   const p = String(pos || '').toUpperCase();
@@ -158,6 +169,9 @@ function closePeekMenu() {
   peekCard = null;
 }
 
+// 全局记录用户勾选准备导出的条目 ID
+if (!state.selectedWbEntryIds) state.selectedWbEntryIds = new Set();
+
 export function renderWorldBookEntries() {
   const book = getCurrentBook();
   const container = $('wbEntriesContainer'); if (!container) return;
@@ -185,80 +199,105 @@ export function renderWorldBookEntries() {
   const st = $('wbStats'); if (st) st.textContent = `共 ${entriesList.length} 条目（匹配 ${filtered.length}）`;
 
   if (!filtered.length) {
-    const empty = makeEl('div', 'empty'); empty.style.minHeight = '220px';
-    empty.append(makeEl('div', 'empty-icon', '✦'), makeEl('strong', '', '暂无符合条件的条目'), makeEl('p', 'muted', '点击「智能批量解析录入」或「新建条目」添加设定。'));
+    const empty = makeEl('div', 'empty'); empty.style.minHeight = '180px';
+    empty.append(makeEl('div', 'empty-icon', '✦'), makeEl('strong', '', '暂无符合条件的条目'), makeEl('p', 'muted', '点击上方「智能批量解析」或「新建条目」添加设定。'));
     container.append(empty); return;
   }
 
-  const groupedMap = new Map();
-  filtered.forEach((ent, idx) => {
-    const gName = (ent.group && String(ent.group).trim()) || '默认分组';
-    if (!groupedMap.has(gName)) groupedMap.set(gName, []);
-    groupedMap.get(gName).push({ ent, idx });
-  });
+  // 1. 批量操作工具条（全选 + 导出选中）
+  const batchBar = makeEl('div', '');
+  batchBar.style.cssText = 'background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:12px;';
+  
+  const allFilteredChecked = filtered.length > 0 && filtered.every(e => state.selectedWbEntryIds.has(e.id));
+  
+  batchBar.innerHTML = `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;color:var(--ink)">
+      <input type="checkbox" id="wbSelectAllCheck" style="accent-color:var(--ink);width:15px;height:15px;cursor:pointer" ${allFilteredChecked ? 'checked' : ''}/>
+      <span>全选当前结果</span>
+    </label>
+    <button type="button" class="btn btn-small" id="wbExportSelectedBtn" style="background:var(--sage-soft);color:var(--sage);border:1px solid var(--sage-border);font-weight:700">
+      导出选中条目 (<span id="wbSelectedCountTag">${state.selectedWbEntryIds.size}</span>)
+    </button>
+  `;
 
-  groupedMap.forEach((items, groupName) => {
-    const groupSec = makeEl('div', 'wb-group-section');
-    const groupHead = makeEl('div', 'wb-group-head');
-    const groupTokens = items.reduce((sum, item) => sum + estimateTokens(item.ent.content), 0);
-    groupHead.innerHTML = `<div class="wb-group-title"><svg class="ui-icon"><use href="#i-folder"></use></svg><span>${groupName}</span><span class="detail-count">${items.length} 个条目</span></div><div style="display:flex;align-items:center;gap:10px">${renderTokenBadge(groupTokens)}<svg class="ui-icon" style="transition:transform .2s"><use href="#i-chevron"></use></svg></div>`;
-    const groupBody = makeEl('div', 'wb-group-body');
-    groupHead.onclick = () => { const isHidden = groupBody.classList.toggle('hidden'); const chev = groupHead.querySelector('.ui-icon:last-child'); if (chev) chev.style.transform = isHidden ? 'rotate(90deg)' : 'none'; };
-
-    items.forEach(({ ent, idx }) => {
-      const realIdx = Array.isArray(book.entries) ? book.entries.findIndex(x => (x.id && ent.id && x.id === ent.id) || (x.name === ent.name && x.content === ent.content)) : idx;
-      const card = makeEl('details', 'wb-entry-card');
-      const head = makeEl('summary', 'wb-entry-head');
-      const main = makeEl('div', 'wb-entry-main');
-      main.append(makeEl('div', 'wb-entry-title', ent.name || ent.comment || `条目 ${idx + 1}`));
-
-      const tags = makeEl('div', 'wb-entry-tags');
-      const kwList = parseKeywordsList(ent.keywords || ent.key || [], ent.useRegex !== false);
-      if (kwList.length) { kwList.slice(0, 5).forEach(kw => { if (kw) tags.append(makeEl('span', 'wb-key-badge', kw)); }); if (kwList.length > 5) tags.append(makeEl('span', 'wb-key-badge', `+${kwList.length - 5}`)); }
-      tags.append(makeEl('span', 'wb-param-badge' + (ent.constantActive || ent.constant ? ' active' : ''), (ent.constantActive || ent.constant) ? '常驻激活' : '关键词触发'));
-      tags.append(makeEl('span', 'wb-param-badge', `优先级: ${ent.priority ?? ent.order ?? 100}`));
-      tags.append(makeEl('span', 'wb-param-badge', `位置: ${getPositionDisplay(ent.position)}`));
-      const tokenSpan = document.createElement('span'); tokenSpan.innerHTML = renderTokenBadge(estimateTokens(ent.content));
-      tags.append(tokenSpan.firstElementChild || tokenSpan);
-      main.append(tags); head.append(main);
-
-      const body = makeEl('div', 'wb-entry-body');
-      const bodyInner = makeEl('div', 'wb-entry-body-inner');
-      bodyInner.append(makeEl('div', 'wb-entry-content-box', ent.content || '（无正文描述）'));
-      body.append(bodyInner); card.replaceChildren(head, body);
-
-      const actions = makeEl('div', 'wb-entry-actions');
-      const copyBtn = makeEl('button', 'btn btn-quiet', ''); copyBtn.type = 'button';
-      copyBtn.innerHTML = '<svg class="ui-icon"><use href="#i-copy"></use></svg><span>复制正文</span>';
-      copyBtn.onclick = async e => { e.stopPropagation(); await copyText(ent.content || ''); notify('已复制'); };
-      const editBtn = makeEl('button', 'btn btn-soft', ''); editBtn.type = 'button';
-      editBtn.innerHTML = '<svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>编辑</span>';
-      editBtn.onclick = e => { e.stopPropagation(); openEditEntryModal(realIdx >= 0 ? realIdx : idx, ent); };
-      const delBtn = makeEl('button', 'btn btn-danger', ''); delBtn.type = 'button'; delBtn.title = '删除条目';
-      delBtn.innerHTML = '<svg class="ui-icon"><use href="#i-trash"></use></svg>';
-      delBtn.onclick = async e => {
-        e.stopPropagation();
-        if (confirm(`确定删除条目「${ent.name || '未命名'}」？`)) {
-          if (Array.isArray(book.entries)) book.entries.splice(realIdx >= 0 ? realIdx : idx, 1);
-          else delete book.entries[ent.id || idx];
-          book.updatedAt = Date.now(); await saveWorldBook(book);
-          renderWorldBookEntries(); updateWorldBookSelector(); notify('已删除条目');
-        }
-      };
-      actions.append(copyBtn, editBtn, delBtn);
-
-      const wrapBox = makeEl('div', 'wb-entry-wrap-box');
-      wrapBox.setAttribute('draggable', 'true');
-      wrapBox.dataset.id = ent.id || ('wb_id_' + idx);
-      wrapBox.append(card, actions);
-      bindCardLongPress(wrapBox, ent, realIdx >= 0 ? realIdx : idx);
-      groupBody.append(wrapBox);
+  batchBar.querySelector('#wbSelectAllCheck').onchange = e => {
+    const checked = e.target.checked;
+    filtered.forEach(ent => {
+      if (checked) state.selectedWbEntryIds.add(ent.id);
+      else state.selectedWbEntryIds.delete(ent.id);
     });
+    renderWorldBookEntries();
+  };
 
-    groupSec.append(groupHead, groupBody);
-    container.append(groupSec);
+  batchBar.querySelector('#wbExportSelectedBtn').onclick = () => {
+    exportSelectedWorldBookEntries();
+  };
+
+  container.append(batchBar);
+
+  // 2. 扁平极简单行条目列表（彻底移除多余嵌套分组！）
+  const listWrap = makeEl('div', '');
+  listWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  filtered.forEach((ent, idx) => {
+    const realIdx = Array.isArray(book.entries) ? book.entries.findIndex(x => x.id === ent.id) : idx;
+    const isConstant = !!(ent.constantActive || ent.constant);
+    const isEnabled = ent.enabled !== false && !ent.disable;
+    const isChecked = state.selectedWbEntryIds.has(ent.id);
+
+    const row = makeEl('div', 'wb-entry-flat-row');
+    row.style.cssText = `background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;opacity:${isEnabled ? '1' : '0.55'};transition:all .15s ease;user-select:none;`;
+
+    row.innerHTML = `
+      <input type="checkbox" class="wb-item-check" style="width:16px;height:16px;accent-color:var(--ink);cursor:pointer;flex-shrink:0" ${isChecked ? 'checked' : ''}/>
+      <div class="wb-item-title-box" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;cursor:pointer">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ent.name || ent.comment || `条目 ${idx + 1}`}</span>
+        ${isConstant ? `<span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:var(--sage-soft);color:var(--sage);border:1px solid var(--sage-border);flex-shrink:0;font-weight:700">常驻</span>` : ''}
+      </div>
+      <label class="klv-switch" title="启用/停用条目" style="margin-left:auto;flex-shrink:0">
+        <input type="checkbox" class="wb-item-switch" ${isEnabled ? 'checked' : ''}/>
+        <span class="klv-slider"></span>
+      </label>
+    `;
+
+    // 勾选事件
+    const chkBox = row.querySelector('.wb-item-check');
+    chkBox.onclick = e => e.stopPropagation();
+    chkBox.onchange = e => {
+      if (e.target.checked) state.selectedWbEntryIds.add(ent.id);
+      else state.selectedWbEntryIds.delete(ent.id);
+      batchBar.querySelector('#wbSelectedCountTag').textContent = state.selectedWbEntryIds.size;
+      const allChecked = filtered.every(item => state.selectedWbEntryIds.has(item.id));
+      batchBar.querySelector('#wbSelectAllCheck').checked = allChecked;
+    };
+
+    // 点击标题进入编辑弹窗
+    row.querySelector('.wb-item-title-box').onclick = () => {
+      openEditEntryModal(realIdx >= 0 ? realIdx : idx, ent);
+    };
+
+    // 外置快速开关即时切换
+    const sw = row.querySelector('.wb-item-switch');
+    sw.onclick = e => e.stopPropagation();
+    sw.onchange = async e => {
+      const enabled = e.target.checked;
+      ent.enabled = enabled;
+      ent.disable = !enabled;
+      if (Array.isArray(book.entries) && realIdx >= 0) {
+        book.entries[realIdx].enabled = enabled;
+        book.entries[realIdx].disable = !enabled;
+      }
+      book.updatedAt = Date.now();
+      await saveWorldBook(book);
+      row.style.opacity = enabled ? '1' : '0.55';
+    };
+
+    listWrap.append(row);
   });
+
+  container.append(listWrap);
 }
+
 
 /* ================================================================
    底部选项弹窗选择器
@@ -283,123 +322,262 @@ function openBottomSheetPicker(title, options, currentVal, onSelect) {
    ================================================================ */
 
 function openEditEntryModal(entryIndex, ent) {
+function openEditEntryModal(entryIndex, ent) {
   const isNew = entryIndex === null || entryIndex === undefined;
   const data = ent ? JSON.parse(JSON.stringify(ent)) : {
-    id: 'wb_' + Date.now().toString(36), name: '', enabled: true, priority: 70,
+    id: 'wb-entry-' + Date.now().toString(36), name: '', enabled: true, priority: 70,
     position: 'AFTER_SYSTEM_PROMPT', role: 'USER', content: '', injectDepth: 4,
     keywords: [], useRegex: false, caseSensitive: false, scanDepth: 4,
     constantActive: false, sticky: 0, cooldown: 0, delay: 0
   };
 
   let currentKeywords = parseKeywordsList(data.keywords || data.key || []);
-  let currentPos = normalizePosition(data.position);
-  let currentRole = normalizeRole(data.role);
-  const posLabels = { BEFORE_SYSTEM_PROMPT: '系统提示前', AFTER_SYSTEM_PROMPT: '系统提示后', TOP_OF_CHAT: '对话顶部', BOTTOM_OF_CHAT: '对话底部', AT_DEPTH: '指定深度' };
+  let currentPos = normalizeKelivoPosition(data.position);
+  let currentRole = normalizeKelivoRole(data.role);
+
+  const posLabels = {
+    BEFORE_SYSTEM_PROMPT: '系统提示前',
+    AFTER_SYSTEM_PROMPT: '系统提示后',
+    TOP_OF_CHAT: '对话顶部',
+    BOTTOM_OF_CHAT: '对话底部',
+    AT_DEPTH: '指定深度'
+  };
   const roleLabels = { USER: '用户', ASSISTANT: '助手' };
 
   emit('open-modal', { title: '编辑条目', builder: () => {
     const wrap = makeEl('div', 'klv-modal-container');
+    wrap.style.cssText = 'background:#f2f3f7;width:100%;max-width:480px;height:92dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;position:relative;overflow:hidden;margin:0 auto;';
+
     wrap.innerHTML = `
-<div class="klv-modal-header"><div class="klv-drag-handle"></div><div class="klv-modal-title">编辑条目</div></div>
-<div class="klv-modal-body">
-  <div class="klv-card">
-    <div class="klv-row"><span class="klv-label">条目名称</span><input type="text" class="klv-input-pill" id="klvName" value="${escAttr(data.name || data.comment || '')}" placeholder="例如：背景设定"></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">所属分组</span><input type="text" class="klv-input-pill" id="klvGroup" value="${escAttr(data.group || '')}" placeholder="例如：人物/阵营"></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">启用条目</span><input type="checkbox" class="klv-switch" id="klvEnabled" ${data.enabled !== false && !data.disable ? 'checked' : ''}></div>
-  </div>
-  <div class="klv-card"><span class="klv-label">内容</span><textarea class="klv-textarea" id="klvContent" placeholder="输入条目正文...">${escHtml(data.content || '')}</textarea></div>
-  <div class="klv-card">
-    <div class="klv-row"><div><div class="klv-label">常驻激活</div><div class="klv-desc">无需匹配也会注入</div></div><input type="checkbox" class="klv-switch" id="klvConstant" ${data.constantActive || data.constant ? 'checked' : ''}></div>
-    <div class="klv-row-stacked" style="border-top:1px solid #f2f3f5;padding-top:10px">
-      <div class="klv-label">关键词</div>
-      <div class="klv-add-kw-box"><input type="text" class="klv-input-pill align-left" id="klvKwInput" placeholder="输入关键词"><button type="button" class="klv-add-btn" id="klvAddKwBtn">＋</button></div>
-      <div class="klv-tag-list" id="klvKwTagList"></div>
-    </div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">使用正则</span><input type="checkbox" class="klv-switch" id="klvUseRegex" ${data.useRegex ? 'checked' : ''}></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">区分大小写</span><input type="checkbox" class="klv-switch" id="klvCaseSensitive" ${data.caseSensitive ? 'checked' : ''}></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">扫描深度</span><input type="number" class="klv-input-pill small" id="klvScanDepth" value="${data.scanDepth ?? data.scan_depth ?? 4}"></div>
-  </div>
-  <div class="klv-card">
-    <div class="klv-row"><span class="klv-label">注入位置</span><button type="button" class="klv-select-btn" id="klvPosBtn">${posLabels[currentPos]}</button></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">注入角色</span><button type="button" class="klv-select-btn" id="klvRoleBtn">${roleLabels[currentRole]}</button></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><div><div class="klv-label">注入深度</div></div><input type="number" class="klv-input-pill small" id="klvInjectDepth" value="${data.injectDepth ?? data.depth ?? 4}"></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">优先级</span><input type="number" class="klv-input-pill small" id="klvPriority" value="${data.priority ?? data.order ?? 70}"></div>
-  </div>
-  <div class="klv-card">
-    <div class="klv-row"><span class="klv-label">粘滞</span><input type="number" class="klv-input-pill small" id="klvSticky" value="${data.sticky ?? 0}"></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">冷却</span><input type="number" class="klv-input-pill small" id="klvCooldown" value="${data.cooldown ?? 0}"></div>
-    <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">延迟</span><input type="number" class="klv-input-pill small" id="klvDelay" value="${data.delay ?? 0}"></div>
-  </div>
-</div>
-<div class="klv-modal-footer"><button type="button" class="klv-btn-cancel" id="klvCancelBtn">取消</button><button type="button" class="klv-btn-save" id="klvSaveBtn">保存</button></div>`;
+      <div style="padding:12px 16px 8px;text-align:center;flex-shrink:0;background:#f2f3f7">
+        <div style="width:36px;height:4px;background:#d0d3d8;border-radius:2px;margin:0 auto 10px"></div>
+        <div style="font-size:15px;font-weight:700;color:#1f2329">${isNew ? '新建条目' : '编辑条目'}</div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:10px 14px 80px;display:flex;flex-direction:column;gap:12px">
+        <!-- 卡片 1: 条目名称与启用 -->
+        <div style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">条目名称</span>
+            <input type="text" id="klvName" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px 12px;font-size:13.5px;color:#1f2329;outline:none;flex:1;max-width:240px" value="${escAttr(data.name || data.comment || '')}" placeholder="输入条目名称"/>
+          </div>
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">启用条目</span>
+            <label class="klv-switch">
+              <input type="checkbox" id="klvEnabled" ${data.enabled !== false && !data.disable ? 'checked' : ''}/>
+              <span class="klv-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 卡片 2: 内容 -->
+        <div style="background:#fff;border-radius:14px;padding:12px 14px">
+          <span style="font-size:14px;color:#1f2329;font-weight:500">内容</span>
+          <textarea id="klvContent" style="width:100%;min-height:130px;background:#f2f3f5;border:none;border-radius:10px;padding:10px 12px;font-size:13px;color:#1f2329;line-height:1.5;font-family:inherit;resize:vertical;outline:none;margin-top:6px" placeholder="输入条目正文...">${escHtml(data.content || '')}</textarea>
+        </div>
+
+        <!-- 卡片 3: 常驻激活与关键词 -->
+        <div style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:14px;color:#1f2329;font-weight:500">常驻激活</div>
+              <div style="font-size:11.5px;color:#8f959e;margin-top:2px">无需匹配也会注入</div>
+            </div>
+            <label class="klv-switch">
+              <input type="checkbox" id="klvConstant" ${data.constantActive || data.constant ? 'checked' : ''}/>
+              <span class="klv-slider"></span>
+            </label>
+          </div>
+
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">关键词</span>
+            <div id="klvKwChipsBox" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:20px"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+              <input type="text" id="klvKwInput" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px 12px;font-size:13px;color:#1f2329;outline:none;flex:1" placeholder="输入关键词"/>
+              <button type="button" id="klvAddKwBtn" style="width:34px;height:32px;background:#f2f3f5;border:none;border-radius:8px;font-size:16px;font-weight:700;color:#8f959e;cursor:pointer">＋</button>
+            </div>
+            <div style="font-size:11.5px;color:#8f959e">输入关键词后点 + 添加。不开正则时支持用逗号隔开批量添加。</div>
+          </div>
+
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">使用正则</span>
+            <label class="klv-switch">
+              <input type="checkbox" id="klvUseRegex" ${data.useRegex !== false ? 'checked' : ''}/>
+              <span class="klv-slider"></span>
+            </label>
+          </div>
+
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">区分大小写</span>
+            <label class="klv-switch">
+              <input type="checkbox" id="klvCaseSensitive" ${data.caseSensitive ? 'checked' : ''}/>
+              <span class="klv-slider"></span>
+            </label>
+          </div>
+
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">扫描深度</span>
+            <input type="number" id="klvScanDepth" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.scanDepth ?? data.scan_depth ?? 4}"/>
+          </div>
+        </div>
+
+        <!-- 卡片 4: 调度规则 -->
+        <div style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;color:#1f2329;font-weight:500">粘滞（消息数）</span>
+              <input type="number" id="klvSticky" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.sticky ?? 0}"/>
+            </div>
+            <div style="font-size:11.5px;color:#8f959e;margin-top:2px">触发后在后续 N 条消息中保持激活，重复命中不延长。0 表示关闭。</div>
+          </div>
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;color:#1f2329;font-weight:500">冷却（消息数）</span>
+              <input type="number" id="klvCooldown" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.cooldown ?? 0}"/>
+            </div>
+            <div style="font-size:11.5px;color:#8f959e;margin-top:2px">触发后（或粘滞结束后）N 条消息内不再触发。0 表示关闭。</div>
+          </div>
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;color:#1f2329;font-weight:500">延迟（消息数）</span>
+              <input type="number" id="klvDelay" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.delay ?? 0}"/>
+            </div>
+            <div style="font-size:11.5px;color:#8f959e;margin-top:2px">对话至少有 N 条消息时才允许触发。按单条消息计数，不是对话轮数。0 表示关闭。</div>
+          </div>
+        </div>
+
+        <!-- 卡片 5: 注入位置、角色与优先级 -->
+        <div style="background:#fff;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" id="klvPosRow">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">注入位置</span>
+            <div style="display:flex;align-items:center;gap:4px;font-size:13.5px;color:#8f959e">
+              <span id="klvPosText">${posLabels[currentPos]}</span>
+              <span style="font-family:monospace">></span>
+            </div>
+          </div>
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" id="klvRoleRow">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">注入角色</span>
+            <div style="display:flex;align-items:center;gap:4px;font-size:13.5px;color:#8f959e">
+              <span id="klvRoleText">${roleLabels[currentRole]}</span>
+              <span style="font-family:monospace">></span>
+            </div>
+          </div>
+          <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;color:#1f2329;font-weight:500">优先级</span>
+            <input type="number" id="klvPriority" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.priority ?? data.order ?? 70}"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部吸底操作栏 -->
+      <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;padding:12px 16px;border-top:1px solid #ebeef5;display:flex;gap:12px">
+        <button type="button" id="klvCancelBtn" style="flex:1;height:42px;border-radius:10px;font-size:14.5px;font-weight:600;border:1px solid #dcdfe6;background:#fff;color:#1f2329;cursor:pointer">取消</button>
+        <button type="button" id="klvSaveBtn" style="flex:1;height:42px;border-radius:10px;font-size:14.5px;font-weight:600;border:none;background:#3a4b7c;color:#fff;cursor:pointer">保存</button>
+      </div>
+    `;
 
     setTimeout(() => {
-      const tagListBox = wrap.querySelector('#klvKwTagList');
+      const chipsBox = wrap.querySelector('#klvKwChipsBox');
       const kwInput = wrap.querySelector('#klvKwInput');
+      const chkUseRegex = wrap.querySelector('#klvUseRegex');
 
-      function renderTags() {
-        tagListBox.replaceChildren();
+      function renderChips() {
+        chipsBox.replaceChildren();
         currentKeywords.forEach((kw, i) => {
-          const item = makeEl('span', 'klv-tag-item', kw);
-          const del = makeEl('span', 'klv-tag-del', '×');
-          del.onclick = () => { currentKeywords.splice(i, 1); renderTags(); };
-          item.append(del); tagListBox.append(item);
+          const chip = document.createElement('div');
+          chip.style.cssText = 'background:rgba(58,75,124,0.1);border:0.6px solid rgba(58,75,124,0.25);border-radius:999px;padding:3px 8px 3px 10px;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#2c3e66;max-width:100%;';
+          chip.innerHTML = `
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(kw)}</span>
+            <span style="cursor:pointer;color:#8f959e;font-size:13px;font-weight:700;line-height:1">×</span>
+          `;
+          chip.querySelector('span:last-child').onclick = () => {
+            currentKeywords.splice(i, 1);
+            renderChips();
+          };
+          chipsBox.appendChild(chip);
         });
       }
-      renderTags();
+      renderChips();
 
       function addKeyword() {
-        const val = kwInput.value.trim(); if (!val) return;
-        parseKeywordsList(val).forEach(k => { if (!currentKeywords.includes(k)) currentKeywords.push(k); });
-        kwInput.value = ''; renderTags();
+        const val = kwInput.value.trim();
+        if (!val) return;
+        const newWords = parseKeywordsList(val, chkUseRegex.checked);
+        newWords.forEach(w => {
+          if (!currentKeywords.includes(w)) currentKeywords.push(w);
+        });
+        kwInput.value = '';
+        renderChips();
       }
+
       wrap.querySelector('#klvAddKwBtn').onclick = addKeyword;
       kwInput.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } };
 
-      wrap.querySelector('#klvPosBtn').onclick = () => {
-        openBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => { currentPos = val; wrap.querySelector('#klvPosBtn').textContent = label; });
+      // ActionSheet 注入位置选择器
+      wrap.querySelector('#klvPosRow').onclick = () => {
+        openKelivoBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => {
+          currentPos = val;
+          wrap.querySelector('#klvPosText').textContent = label;
+        });
       };
-      wrap.querySelector('#klvRoleBtn').onclick = () => {
-        openBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => { currentRole = val; wrap.querySelector('#klvRoleBtn').textContent = label; });
+
+      // ActionSheet 注入角色选择器
+      wrap.querySelector('#klvRoleRow').onclick = () => {
+        openKelivoBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => {
+          currentRole = val;
+          wrap.querySelector('#klvRoleText').textContent = label;
+        });
       };
+
       wrap.querySelector('#klvCancelBtn').onclick = () => emit('close-modal');
+
       wrap.querySelector('#klvSaveBtn').onclick = async () => {
-        const book = getCurrentBook(); if (!book) return;
-        const finalItem = {
-          id: data.id || ('wb_' + Date.now().toString(36)),
-          group: wrap.querySelector('#klvGroup')?.value.trim() || '默认分组',
+        const book = getCurrentBook();
+        if (!book) return;
+
+        const updatedEntry = {
+          ...data,
           name: wrap.querySelector('#klvName').value.trim() || '未命名条目',
           comment: wrap.querySelector('#klvName').value.trim() || '未命名条目',
+          content: wrap.querySelector('#klvContent').value,
           enabled: wrap.querySelector('#klvEnabled').checked,
           disable: !wrap.querySelector('#klvEnabled').checked,
-          priority: parseInt(wrap.querySelector('#klvPriority').value, 10) || 70,
-          order: parseInt(wrap.querySelector('#klvPriority').value, 10) || 70,
-          position: currentPos, role: currentRole,
-          content: wrap.querySelector('#klvContent').value.trim(),
-          injectDepth: parseInt(wrap.querySelector('#klvInjectDepth').value, 10) || 4,
-          depth: parseInt(wrap.querySelector('#klvInjectDepth').value, 10) || 4,
-          keywords: currentKeywords.length ? currentKeywords : [wrap.querySelector('#klvName').value.trim()],
-          key: currentKeywords.length ? currentKeywords : [wrap.querySelector('#klvName').value.trim()],
+          constantActive: wrap.querySelector('#klvConstant').checked,
+          constant: wrap.querySelector('#klvConstant').checked,
           useRegex: wrap.querySelector('#klvUseRegex').checked,
           caseSensitive: wrap.querySelector('#klvCaseSensitive').checked,
           scanDepth: parseInt(wrap.querySelector('#klvScanDepth').value, 10) || 4,
           scan_depth: parseInt(wrap.querySelector('#klvScanDepth').value, 10) || 4,
-          constantActive: wrap.querySelector('#klvConstant').checked,
-          constant: wrap.querySelector('#klvConstant').checked,
           sticky: parseInt(wrap.querySelector('#klvSticky').value, 10) || 0,
           cooldown: parseInt(wrap.querySelector('#klvCooldown').value, 10) || 0,
-          delay: parseInt(wrap.querySelector('#klvDelay').value, 10) || 0
+          delay: parseInt(wrap.querySelector('#klvDelay').value, 10) || 0,
+          position: currentPos,
+          role: currentRole,
+          priority: parseInt(wrap.querySelector('#klvPriority').value, 10) || 70,
+          order: parseInt(wrap.querySelector('#klvPriority').value, 10) || 70,
+          injectDepth: data.injectDepth || 4,
+          depth: data.injectDepth || 4,
+          keywords: currentKeywords,
+          key: currentKeywords
         };
+
         if (!Array.isArray(book.entries)) book.entries = getNormalizedEntriesArray(book);
-        if (isNew) book.entries.push(finalItem); else book.entries[entryIndex] = finalItem;
-        book.updatedAt = Date.now(); await saveWorldBook(book);
-        emit('close-modal'); renderWorldBookEntries(); updateWorldBookSelector();
-        notify('已保存条目设置');
+        if (isNew) book.entries.push(updatedEntry);
+        else book.entries[entryIndex] = updatedEntry;
+
+        book.updatedAt = Date.now();
+        await saveWorldBook(book);
+        emit('close-modal');
+        renderWorldBookEntries();
+        updateWorldBookSelector();
+        notify('已按规范保存条目');
       };
     }, 0);
+
     return wrap;
   }});
 }
+
 
 /* ================================================================
    Smart Parser
@@ -572,27 +750,18 @@ export function openKelivoSandboxModal() {
    导入 / 导出 纯净原生规范世界书 JSON (1:1 严格对齐)
    ================================================================ */
 
-export function exportCurrentWorldBookJSON() {
-  const book = getCurrentBook(); 
-  if (!book) { 
-    notify('没有可导出的世界书'); 
-    return; 
-  }
-
-  const entriesArray = getNormalizedEntriesArray(book);
-  
-  // 严格按客户端实机规范产出纯数组，绝无多余外层干扰
-  const exportEntries = entriesArray.map((ent, idx) => {
-    // 关键词处理
+/* 通用打包数据结构 */
+function buildStandardExportPayload(book, entriesList) {
+  const exportEntries = entriesList.map((ent, idx) => {
     let kwList = [];
     if (Array.isArray(ent.keywords) && ent.keywords.length) {
       kwList = ent.keywords;
     } else if (Array.isArray(ent.key) && ent.key.length) {
       kwList = ent.key;
     } else if (typeof ent.keywords === 'string' && ent.keywords.trim()) {
-      kwList = ent.keywords.split(/[\n,，]/).map(s => s.trim()).filter(Boolean);
+      kwList = parseKeywordsList(ent.keywords, ent.useRegex !== false);
     } else if (typeof ent.key === 'string' && ent.key.trim()) {
-      kwList = ent.key.split(/[\n,，]/).map(s => s.trim()).filter(Boolean);
+      kwList = parseKeywordsList(ent.key, ent.useRegex !== false);
     }
 
     const isConstant = !!(ent.constantActive ?? ent.constant ?? false);
@@ -621,8 +790,7 @@ export function exportCurrentWorldBookJSON() {
     };
   });
 
-  // 1:1 结构：严格按照实体原机导出的数据结构
-  const exportPayload = {
+  return {
     version: 1,
     type: "lorebook",
     data: {
@@ -633,10 +801,44 @@ export function exportCurrentWorldBookJSON() {
       entries: exportEntries
     }
   };
+}
+
+/* 导出全本世界书 */
+export function exportCurrentWorldBookJSON() {
+  const book = getCurrentBook(); 
+  if (!book) { 
+    notify('没有可导出的世界书'); 
+    return; 
+  }
+
+  const entriesArray = getNormalizedEntriesArray(book);
+  const exportPayload = buildStandardExportPayload(book, entriesArray);
 
   downloadJSON(exportPayload, safeName(book.name) + '.json');
-  notify(`✓ 导出成功！`);
+  notify(`已导出《${book.name}》`);
 }
+
+/* 仅导出当前已勾选的条目 */
+export function exportSelectedWorldBookEntries() {
+  const book = getCurrentBook();
+  if (!book) {
+    notify('没有可导出的世界书');
+    return;
+  }
+
+  const entriesArray = getNormalizedEntriesArray(book);
+  const selectedEntries = entriesArray.filter(ent => state.selectedWbEntryIds?.has(ent.id));
+
+  if (!selectedEntries.length) {
+    notify('请先勾选需要导出的条目');
+    return;
+  }
+
+  const exportPayload = buildStandardExportPayload(book, selectedEntries);
+  downloadJSON(exportPayload, `${safeName(book.name)}-选中${selectedEntries.length}条.json`);
+  notify(`已导出选中的 ${selectedEntries.length} 条世界书`);
+}
+
 
 export async function importWorldBookJSON(file) {
   try {
@@ -778,11 +980,6 @@ export function initWorldBook() {
   $('wbExportJsonBtn')?.addEventListener('click', exportCurrentWorldBookJSON);
   $('wbJsonPicker')?.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) importWorldBookJSON(f); });
   $('wbBookSelect')?.addEventListener('change', e => { state.currentBookId = e.target.value; renderWorldBookEntries(); });
-
-  $('wbNewGroupBtn')?.addEventListener('click', () => {
-    const gName = window.prompt('新分组名称：'); if (!gName?.trim()) return;
-    openEditEntryModal(null, { group: gName.trim(), name: '', content: '' });
-  });
 
   $('wbNewBookBtn')?.addEventListener('click', async () => {
     const name = prompt('新世界书名称：', '新世界书'); if (!name?.trim()) return;
