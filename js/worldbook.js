@@ -573,14 +573,85 @@ export function openKelivoSandboxModal() {
    ================================================================ */
 
 export function exportCurrentWorldBookJSON() {
-  const book = getCurrentBook(); if (!book) { notify('没有可导出的世界书'); return; }
+  const book = getCurrentBook(); 
+  if (!book) { notify('没有可导出的世界书'); return; }
+
   const entriesArray = getNormalizedEntriesArray(book);
-  const formatted = entriesArray.map((ent, idx) => {
-    const kwList = parseKeywordsList(ent.keywords || ent.key || ent.name || []);
-    return { id: ent.id || ('wb_entry_' + idx), name: ent.name || ent.comment || `条目 ${idx + 1}`, comment: ent.name || ent.comment || '', enabled: ent.enabled !== false && !ent.disable, priority: ent.priority ?? ent.order ?? 100, order: ent.priority ?? ent.order ?? 100, position: normalizeKelivoPosition(ent.position), role: normalizeKelivoRole(ent.role), content: ent.content || '', injectDepth: ent.injectDepth ?? ent.depth ?? 4, depth: ent.injectDepth ?? ent.depth ?? 4, keywords: kwList, key: kwList, useRegex: ent.useRegex !== false, caseSensitive: !!ent.caseSensitive, scanDepth: ent.scanDepth ?? ent.scan_depth ?? 3, constantActive: !!(ent.constantActive || ent.constant), constant: !!(ent.constantActive || ent.constant), sticky: ent.sticky ?? 0, cooldown: ent.cooldown ?? 0, delay: ent.delay ?? 0 };
+  
+  // 1. 生成 Kelivo & 酒馆通用的标准字典对象 (以 uid 作为 key)
+  const entriesDict = {};
+  // 2. 生成通用数组格式
+  const entriesList = [];
+
+  entriesArray.forEach((ent, idx) => {
+    const kwList = parseKeywordsList(ent.keywords || ent.key || ent.keys || ent.name || []);
+    const isConstant = !!(ent.constantActive || ent.constant);
+    const isEnabled = ent.enabled !== false && !ent.disable;
+    const prio = ent.priority ?? ent.order ?? 100;
+    const depthVal = ent.injectDepth ?? ent.depth ?? 4;
+    const scanDepthVal = ent.scanDepth ?? ent.scan_depth ?? 3;
+    const posStr = normalizeKelivoPosition(ent.position);
+
+    // 标准条目结构
+    const stdEntry = {
+      uid: idx,
+      id: ent.id || ('wb_entry_' + idx),
+      key: kwList,
+      keysecondary: ent.secondary_keys || ent.keysecondary || [],
+      comment: ent.name || ent.comment || `条目 ${idx + 1}`,
+      name: ent.name || ent.comment || `条目 ${idx + 1}`,
+      content: ent.content || '',
+      constant: isConstant,
+      constantActive: isConstant,
+      vectorized: false,
+      selective: !!ent.selective,
+      selectiveLogic: 0,
+      addMemo: true,
+      order: prio,
+      priority: prio,
+      position: posStr,
+      role: normalizeKelivoRole(ent.role),
+      disable: !isEnabled,
+      enabled: isEnabled,
+      excludeRecursion: false,
+      preventRecursion: false,
+      delayUntilRecursion: false,
+      scanDepth: scanDepthVal,
+      scan_depth: scanDepthVal,
+      depth: depthVal,
+      injectDepth: depthVal,
+      caseSensitive: !!ent.caseSensitive,
+      useRegex: ent.useRegex !== false,
+      sticky: ent.sticky ?? 0,
+      cooldown: ent.cooldown ?? 0,
+      delay: ent.delay ?? 0,
+      group: ent.group || '默认分组'
+    };
+
+    entriesDict[String(idx)] = stdEntry;
+    entriesList.push(stdEntry);
   });
-  downloadJSON({ version: 1, type: 'lorebook', name: book.name || 'Kelivo世界书', entries: formatted, data: { id: book.id, name: book.name, entries: formatted } }, safeName(book.name) + '.json');
-  notify(`已导出 ${book.name}`);
+
+  // 构造顶层标准数据：同时满足 entries 为字典、数组，以及 originalData 识别
+  const exportPayload = {
+    name: book.name || '世界书设定',
+    description: book.description || 'Kelivo 世界书导出',
+    originalData: {
+      name: book.name || '世界书设定',
+      description: book.description || 'Kelivo 世界书导出',
+      entries: entriesDict
+    },
+    entries: entriesDict,       // 供 Kelivo / SillyTavern 标准解析器直接读取字典
+    entries_list: entriesList,  // 备用数组
+    data: {
+      id: book.id,
+      name: book.name,
+      entries: entriesList
+    }
+  };
+
+  downloadJSON(exportPayload, safeName(book.name) + '.json');
+  notify(`✓ 已按 Kelivo 标准格式导出《${book.name}》！`);
 }
 
 export async function importWorldBookJSON(file) {
