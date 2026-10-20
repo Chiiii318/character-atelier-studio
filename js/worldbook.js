@@ -580,7 +580,7 @@ function openEditEntryModal(entryIndex, ent) {
     return wrap;
   }});
 }
-
+}
 
 /* ================================================================
    Smart Parser
