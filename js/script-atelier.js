@@ -387,10 +387,10 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       roles.forEach(r => {
         const cfg = casting[r.id];
         if (cfg && (cfg.actor || cfg.req || cfg.isPlayer || (cfg.archetype && cfg.archetype !== '默认'))) {
-          // 真实读取：若勾选了我演，优先取用户填写的真实艺名
-          const isPlayer = !!cfg.isPlayer;
-          const roleStatus = isPlayer ? '【玩家唯一领衔主演席位】' : '【用户钦定已定演员】';
-          const realActor = cfg.actor ? cfg.actor : (isPlayer ? '玩家本人' : '未定');
+                   const isPlayer = !!cfg.isPlayer;
+          const roleStatus = isPlayer ? '【玩家第一视角领衔主演（全剧唯一）】' : '【用户钦定已定演员】';
+          // 绝对禁止出现“玩家本人”这种字眼，必须使用明确的演员姓名！
+          const realActor = cfg.actor ? cfg.actor : (isPlayer ? (saState.playerActorName || '林栩燃') : '未指名具体演员');
           const eco = (cfg.archetype && cfg.archetype !== '默认') ? cfg.archetype : '遵循原著真实质感';
           const req = cfg.req ? cfg.req : '无（完全忠实原著）';
 
@@ -710,13 +710,17 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
         const id = saState.activeRoleIdForEdit;
         if (!id) return;
 
-        const isPlayer = chkIsPlayer.checked;
-        const actor = inpActorName.value.trim();
+              const isPlayer = chkIsPlayer.checked;
+        let actor = inpActorName.value.trim();
         const archetype = selArchetype.value;
         const req = inpCustomReq.value.trim();
 
-        // 若勾选了“我演”，先将其他已勾选角色重置
+        // 若勾选了“我演”，如果没手填名字，自动继承全局艺名（林栩燃），并且同步到全局状态
         if (isPlayer) {
+          if (!actor) actor = saState.playerActorName || '林栩燃';
+          saState.playerRoleChId = id;
+          saState.playerRoleName = (roles.find(r => r.id === id) || {}).name || '';
+          saState.playerActorName = actor;
           Object.keys(casting).forEach(k => {
             if (casting[k]) casting[k].isPlayer = false;
           });
