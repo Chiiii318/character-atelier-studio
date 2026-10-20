@@ -100,20 +100,16 @@ S3 · 卡司席位认领与定制执行指令 (CASTING SPEC)
 - 剧版改编方案与关系网:
 {{S2_OUTPUT}}
 
-[USER CASTING ASSIGNMENT / 席位认领数据]
-- 主演席位 [PLAYER_ROLE]: {{PLAYER_ROLE_NAME}} (原著角色: {{PLAYER_ROLE_CH_ID}})
-  * 玩家戏外演员身份: {{PLAYER_ACTOR_NAME}}
-  * 番位定位: {{PLAYER_SEAT}}
-  * 主演个性化微调诉求: {{PLAYER_CUSTOM_REQ}}
+[USER CASTING ASSIGNMENT / 核心卡司定制清单]
+{{CASTING_CUSTOM_LIST}}
 
-- 对手戏席位 [PARTNER_ROLE]: {{PARTNER_ROLE_NAME}} (原著角色: {{PARTNER_ROLE_CH_ID}})
-  * 对手戏外演员身份: {{PARTNER_ACTOR_NAME}}
-  * 对手演员咖位生态画像: {{PARTNER_ARCHETYPE}}
-  * 对手个性化微调诉求: {{PARTNER_CUSTOM_REQ}}
+[DEFAULT ROLES / 未指定演员的原著角色池]
+未在上述清单特别指定的原著角色，严格按原著设定与性格推演；戏外演员生态由大模型自动生成内娱盲盒，严禁节外生枝。
 
 [TASK / 机器执行准则]
-1. 若定制诉求为“无”，严格忠实于原著性格体态特征，严禁节外生枝。
-2. 若用户有填写定制诉求，将其作为最高优先级设计输入，融入角色专属小传。`,
+1. 对上述用户特别指定的角色，将其填写的演员画像与微调诉求作为最高优先级设计输入。
+2. 若指定角色由玩家亲自扮演（标记为“玩家主演”），第一人称代入“你/我”。
+3. 产出全剧卡司阵容定稿与对手戏博弈设计。`,
 
     S4_CHAR_OFFSET: `════════════════════════════════════════════════════════════════════════════════
 S4 · 双轨小传与内娱生态盲盒编译 (CHAR & OFFSET COMPILATION)
@@ -377,20 +373,33 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
         .replace(/\{\{PLATFORM\}\}/g, saState.platform)
         .replace(/\{\{ORIGIN\}\}/g, saState.origin)
         .replace(/\{\{ADDON_TARGET\}\}/g, saState.addonTarget);
-    } else if (step === 'S3') {
+       } else if (step === 'S3') {
       body = promptDict.S3_CASTING || DEFAULT_PROMPT_DICT.S3_CASTING;
+
+      // 动态遍历你在卡司台指派的所有角色
+      const roles = saState.parsedRoster || [];
+      const casting = saState.customCasting || {};
+      const customLines = [];
+
+      roles.forEach(r => {
+        const cfg = casting[r.id];
+        if (cfg && (cfg.actor || cfg.req || cfg.isPlayer || (cfg.archetype && cfg.archetype !== '默认'))) {
+          const roleIdentity = cfg.isPlayer ? '【玩家本人亲自领衔主演（第一人称代入“你/我”）】' : '特邀/指定演员加盟';
+          const actorName = cfg.actor ? cfg.actor : (cfg.isPlayer ? '玩家本人' : 'AI生成盲盒');
+          const eco = (cfg.archetype && cfg.archetype !== '默认') ? cfg.archetype : '遵循原著真实质感';
+          const req = cfg.req ? cfg.req : '无（完全忠实原著）';
+
+          customLines.push(`- 角色席位 [${r.id} ${r.name}]:\n  * 演职身份: ${roleIdentity}\n  * 戏外扮演者: ${actorName}\n  * 演员梯队生态: ${eco}\n  * 人设微调诉求: ${req}`);
+        }
+      });
+
+      const assignmentText = customLines.length 
+        ? customLines.join('\n\n')
+        : '（暂无手动指定演员，全部角色根据原著由 AI 自动推演合理盲盒卡司）';
+
       body = body
         .replace(/\{\{S2_OUTPUT\}\}/g, s2Draft)
-        .replace(/\{\{PLAYER_ROLE_CH_ID\}\}/g, saState.playerRoleChId)
-        .replace(/\{\{PLAYER_ROLE_NAME\}\}/g, saState.playerRoleName || '原著第一主角')
-        .replace(/\{\{PLAYER_ACTOR_NAME\}\}/g, saState.playerActorName.trim() || '玩家本人（代入称呼“你”）')
-        .replace(/\{\{PLAYER_SEAT\}\}/g, saState.playerSeat)
-        .replace(/\{\{PLAYER_CUSTOM_REQ\}\}/g, saState.playerCustomReq.trim() || '无（完全忠实原著）')
-        .replace(/\{\{PARTNER_ROLE_CH_ID\}\}/g, saState.partnerRoleChId)
-        .replace(/\{\{PARTNER_ROLE_NAME\}\}/g, saState.partnerRoleName || '原著主要对手角')
-        .replace(/\{\{PARTNER_ACTOR_NAME\}\}/g, saState.partnerActorName.trim() || 'AI生成内娱虚构盲盒')
-        .replace(/\{\{PARTNER_ARCHETYPE\}\}/g, saState.partnerArchetype)
-        .replace(/\{\{PARTNER_CUSTOM_REQ\}\}/g, saState.partnerCustomReq.trim() || '无（完全忠实原著）');
+        .replace(/\{\{CASTING_CUSTOM_LIST\}\}/g, assignmentText);
     } else if (step === 'S4') {
       body = promptDict.S4_CHAR_OFFSET || DEFAULT_PROMPT_DICT.S4_CHAR_OFFSET;
       body = body
