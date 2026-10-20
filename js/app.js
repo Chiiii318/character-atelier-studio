@@ -438,31 +438,7 @@ document.addEventListener('click', e => {
    ================================================================ */
 
 async function boot() {
-  setupLibraryToolbar();
-  bindGlobalEvents();
-  initWorldBook();
-
-  try {
-    await openDatabase();
-    await loadCards();
-    await loadWorldBooks();
-  } catch (e) {
-    showNotice('本地数据库无法打开：' + e.message);
-  }
-
-  // 剧本工坊延迟初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initScriptAtelier);
-  } else {
-    initScriptAtelier();
-  }
-
-  // 初始化网易云播放器
-  initNetease();
-}
-
-boot();async function boot() {
-  // 1. 最高优先级：先绑定全局所有按钮和导航点击事件！确保全站无论何时都能点动！
+  // 1. 最高优先级：先绑定全局所有按钮和导航点击事件！
   try {
     bindGlobalEvents();
   } catch (err) {
@@ -508,4 +484,3 @@ boot();async function boot() {
 }
 
 boot();
-
