@@ -1,5 +1,5 @@
 /* ================================================================
-   script-atelier.js — 剧本改编工坊 v7.0 终极合体版
+   script-atelier.js — 剧本改编工坊 v7.0 终极合体版（纯通用零硬编码）
    ================================================================ */
 
 export function initScriptAtelier() {
@@ -676,7 +676,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       code: 'S4',
       label: '全剧分集详纲',
       title: 'S4 · 全剧逐集剧本详纲 (每集强制 ≥500字 · 智能等宽药丸分包)',
-      desc: '自动读取 S2 核定总集数，智能分包输出（每6集一包或全量直出），融合主线与蝴蝶效应加戏，严格闭环回流锁。',
+      desc: '基于 S3 人物关系网络与动作语言指纹展开分集调度，按批次生成并自动无缝拼接全季详纲。',
       nextBtn: '确认 S4 分集详纲 & 进入 S5 实拍通告单 →'
     },
     S5: {
@@ -710,6 +710,9 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     s3TargetRoles: 'ALL',
     s4EpisodeRange: '',
     targetEpisodeScene: '第1集第1场',
+    s4Batches: [],
+    s4CurrentBatchIdx: 0,
+    s4TotalEps: 0,
     drafts: { S1: '', S2: '', S3: '', S4: '', S5: '' }
   };
 
@@ -721,6 +724,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       if (p.drafts) saState.drafts = { ...saState.drafts, ...p.drafts };
       if (!Array.isArray(saState.chunks)) saState.chunks = [];
       if (!saState.customCasting || typeof saState.customCasting !== 'object') saState.customCasting = {};
+      if (!Array.isArray(saState.s4Batches)) saState.s4Batches = [];
     }
   } catch (_) {}
 
@@ -976,7 +980,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
       let playerAutoWish = '';
-      let stageName = saState.playerStageName.trim() || '林栩燃';
+      let stageName = saState.playerStageName.trim() || '玩家本人';
       const otherLines = [];
 
       roles.forEach(r => {
@@ -1088,7 +1092,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
   }
 
   /* ================================================================
-     PART 5 · 五阶段交互控制台渲染（S1分卷 + S2全题材 + S3建档清单 + S4药丸分包）
+     PART 5 · 五阶段交互控制台渲染（纯通用 · 零硬编码）
      ================================================================ */
   function renderSlotConsole() {
     const box = $('saSlotConsole');
@@ -1276,7 +1280,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S2 控制台 (全题材排播 + 自由OST + 纯卡司网格) ====================
+    // ==================== S2 控制台 (纯通用全题材排播 + 自由OST + 纯卡司网格) ====================
     else if (step === 'S2') {
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
@@ -1285,7 +1289,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       s2Wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
       s2Wrap.innerHTML = `
-        <!-- 卡片 1: 平台排播渠道 + 商业定级 + 集数 -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
             <strong style="font-size:13.5px;color:#18181b">播出平台排播渠道与播前商业定级</strong>
@@ -1297,14 +1300,14 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             <div style="font-size:11.5px;font-weight:700;color:#52525b">首播平台与排播渠道 [PLATFORM]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saPlatformPills">
               <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI自主研判最契合排播渠道)</button>
-              <button type="button" class="sa-p-btn" data-val="双平台跨端联播 (爱奇艺 + 腾讯视频拼盘，《逐玉》同款)">双平台跨端联播 (爱奇艺 + 腾讯视频)</button>
-              <button type="button" class="sa-p-btn" data-val="台网联播·上星黄金档 (CCTV-8 / 一线卫视 + 网络平台同步)">台网双播·上星黄金档 (CCTV/卫视 + 平台)</button>
+              <button type="button" class="sa-p-btn" data-val="双平台跨端联播 (爱奇艺 + 腾讯视频拼盘)">双平台跨端联播 (爱奇艺 + 腾讯视频)</button>
+              <button type="button" class="sa-p-btn" data-val="台网双播·上星黄金档 (CCTV/一线卫视 + 平台同步)">台网双播·上星黄金档 (CCTV/卫视 + 平台)</button>
               <button type="button" class="sa-p-btn" data-val="爱奇艺 全网独播">爱奇艺 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="腾讯视频 全网独播">腾讯视频 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="优酷 全网独播">优酷 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="芒果TV 全网独播">芒果TV 全网独播</button>
             </div>
-            <input type="text" id="saIptCustomPlatform" placeholder="选填：若有更具体排播/剧场诉求可在此补充（如：腾讯X剧场、爱奇艺迷雾剧场、三平台联播等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:11.5px;outline:none;background:#fafafa"/>
+            <input type="text" id="saIptCustomPlatform" placeholder="选填：若有更具体排播/剧场诉求可在此补充（如：腾讯X剧场、爱奇艺迷雾剧场、爱奇艺恋恋剧场等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:11.5px;outline:none;background:#fafafa"/>
           </div>
 
           <!-- 商业定级 -->
@@ -1326,17 +1329,17 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
               <button type="button" class="sa-p-btn" data-val="12">12集 (精品短剧)</button>
               <button type="button" class="sa-p-btn" data-val="16">16集 (标准短剧)</button>
               <button type="button" class="sa-p-btn" data-val="24">24集 (常规长剧)</button>
-              <button type="button" class="sa-p-btn" data-val="36">36~40集 (大体量古偶/年代)</button>
+              <button type="button" class="sa-p-btn" data-val="36">36~40集 (大体量长剧)</button>
               <input type="text" id="saIptCustomEp" placeholder="自定义集数" style="width:80px;height:28px;border:1px solid #e4e4e7;border-radius:6px;padding:0 8px;font-size:11px;outline:none;text-align:center"/>
             </div>
           </div>
         </div>
 
-        <!-- 卡片 2: 音乐 OST + 视听美学 (自带双 AUTO) -->
+        <!-- 卡片 2: 音乐 OST + 视听美学 (全题材自由芯片 + AUTO) -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
             <strong style="font-size:13.5px;color:#18181b">音乐资产 (OST) 与主创视听审美</strong>
-            <div style="font-size:11px;color:#71717a;margin-top:2px">通配仙侠/古偶/现偶/都市/悬疑/年代 · 默认 AUTO 由 AI 自行定制全套视听乐器与镜头</div>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">通配仙侠/古偶/现偶/都市/悬疑/年代 · 默认 AUTO 由 AI 自行定制全套视听与乐器编制</div>
           </div>
 
           <!-- OST 规格 -->
@@ -1344,9 +1347,9 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             <div style="font-size:11.5px;font-weight:700;color:#52525b">歌曲资产规格 [OST STRATEGY]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saOstPills">
               <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI根据题材与预算裁决)</button>
-              <button type="button" class="sa-p-btn" data-val="全量定制分层拼盘大户 (顶级特邀OP + 多位唱将插曲)">全量定制分层拼盘大户 (古偶/爱情大剧强推)</button>
-              <button type="button" class="sa-p-btn" data-val="克制人声纯配乐流 (仅OP/ED两首，正片靠Score驱动)">克制人声纯配乐流 (仅OP/ED两首，正片靠Score)</button>
-              <button type="button" class="sa-p-btn" data-val="单集片尾独立版权选曲拼盘 (《漫长的季节》模式)">单集片尾独立版权选曲拼盘 (《漫长的季节》模式)</button>
+              <button type="button" class="sa-p-btn" data-val="全量定制分层拼盘大户 (顶级特邀OP + 多位唱将插曲)">全量定制分层拼盘大户 (大体量剧作强推)</button>
+              <button type="button" class="sa-p-btn" data-val="克制人声纯配乐流 (仅OP/ED两首，正片由氛围Score驱动)">克制人声纯配乐流 (仅OP/ED两首，正片靠Score)</button>
+              <button type="button" class="sa-p-btn" data-val="单集片尾独立版权选曲拼盘">单集片尾独立版权选曲拼盘 (精品选曲模式)</button>
             </div>
           </div>
 
@@ -1363,7 +1366,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
               <button type="button" class="sa-chip-btn" data-val="电影级年代交响叙事">管弦交响叙事</button>
               <button type="button" class="sa-chip-btn" data-val="极端克制无BGM · 纯现场ASMR声场">无BGM纯现场声</button>
             </div>
-            <input type="text" id="saIptMusicVibe" placeholder="当前为 AUTO（可点击上方灵感芯片或在此手写定制：如周深空灵高音、大提琴独奏等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+            <input type="text" id="saIptMusicVibe" placeholder="当前为 AUTO（可点击上方灵感芯片或在此手写定制：如空灵高音、大提琴独奏等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
           </div>
 
           <!-- 视听美学 -->
@@ -1376,14 +1379,14 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
               <button type="button" class="sa-chip-btn" data-val="手持呼吸跟拍 + 纪实压迫追踪感">手持呼吸压迫感</button>
               <button type="button" class="sa-chip-btn" data-val="东方古典雅致构图 + 水墨留白意境">东方古典意境</button>
               <button type="button" class="sa-chip-btn" data-val="先锋对称几何构图 + 色彩编码隐喻">先锋对称隐喻</button>
-              <button type="button" class="sa-chip-btn" data-val="高饱和华丽仙侠视效 + 大场面调度">华丽仙侠视效</button>
-              <button type="button" class="sa-chip-btn" data-val="韩式精致打光特写 + 高质感服化道">韩式精致打光</button>
+              <button type="button" class="sa-chip-btn" data-val="高饱和华丽视效 + 大场面调度">华丽视效大调度</button>
+              <button type="button" class="sa-chip-btn" data-val="韩式精致打光特写 + 高质感服化道">精致打光特写</button>
             </div>
-            <input type="text" id="saIptAestheticVibe" placeholder="当前为 AUTO（可点击上方芯片或在此手写导演偏好：如刁亦男潮湿黑夜、日式微风清爽等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+            <input type="text" id="saIptAestheticVibe" placeholder="当前为 AUTO（可点击上方芯片或在此手写导演偏好：如潮湿黑夜、日式微风清爽等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
           </div>
         </div>
 
-        <!-- 卡片 3: 卡司网格 (全站唯一选角入口，干净到底) -->
+        <!-- 卡片 3: 卡司网格 (全站唯一选角入口，纯粹到底) -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline">
             <div>
@@ -1512,7 +1515,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           }
         });
 
-        // 音乐灵感芯片
         const iptMusic = s2Wrap.querySelector('#saIptMusicVibe');
         const btnMusicAuto = s2Wrap.querySelector('#btnMusicAuto');
 
@@ -1552,7 +1554,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           updatePromptPreview();
         });
 
-        // 视听美学灵感芯片
         const iptAesthetic = s2Wrap.querySelector('#saIptAestheticVibe');
         const btnAestheticAuto = s2Wrap.querySelector('#btnAestheticAuto');
 
@@ -1860,9 +1861,12 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-      // ==================== S4 控制台 (智能分批独立回填 + 自动无缝拼接) ====================
+    // ==================== S4 控制台 (纯通用动态关系拓扑图 + 等宽分包) ====================
     else if (step === 'S4') {
       const s2Draft = (saState.drafts.S2 || '').trim();
+      const s3Draft = (saState.drafts.S3 || '').trim();
+      const roles = saState.parsedRoster || [];
+      const casting = saState.customCasting || {};
 
       // 提取总集数
       function detectFinalEpisodes() {
@@ -1879,7 +1883,66 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       const totalEps = detectFinalEpisodes();
       saState.episodeCount = String(totalEps);
 
-      // 初始化 S4 批次存储容器（若无）
+      // 解析 S3 中的 RELATION_MATRIX（纯通用动态解析，0 硬编码！）
+      function parseRelationMatrix(text) {
+        const rels = [];
+        if (!text) return rels;
+        const blockMatch = text.match(/<<<RELATION_MATRIX_BEGIN>>>([\s\S]*?)<<<RELATION_MATRIX_END>>>/);
+        const src = blockMatch ? blockMatch[1] : text;
+
+        const chunks = src.split(/(?=\[REL\])/).filter(b => b.includes('[REL]'));
+        chunks.forEach(b => {
+          const id = (b.match(/id=([^|]+)/) || [])[1]?.trim();
+          const a = (b.match(/a=([^|]+)/) || [])[1]?.trim();
+          const bRole = (b.match(/b=([^|]+)/) || [])[1]?.trim();
+          const type = (b.match(/type=([^\n]+)/) || [])[1]?.trim();
+          const surface = (b.match(/\[SURFACE\][^\n]*?[：:]([^\n]+)/) || [])[1]?.trim();
+          const core = (b.match(/\[CORE\][^\n]*?[：:]([^\n]+)/) || [])[1]?.trim();
+          if (id && a && bRole) {
+            rels.push({ id, a, b: bRole, type: type || '博弈推拉', surface: surface || '', core: core || '' });
+          }
+        });
+        return rels;
+      }
+
+      const dynamicRels = parseRelationMatrix(s3Draft);
+
+      // 动态提取图谱涉及的人物节点（纯通用！）
+      const graphNodesMap = new Map();
+      if (dynamicRels.length) {
+        dynamicRels.forEach(r => {
+          [r.a, r.b].forEach(nameStr => {
+            if (!graphNodesMap.has(nameStr)) {
+              graphNodesMap.set(nameStr, { name: nameStr });
+            }
+          });
+        });
+      } else if (roles.length) {
+        // 兜底：从 S1 抽取的角色名单中动态取前 5 位，绝不写死任何人名！
+        roles.slice(0, 5).forEach(r => {
+          const tag = r.id === saState.playerRoleChId ? '玩家领衔' : (casting[r.id]?.actor ? `${casting[r.id].actor} 饰` : '原著角色');
+          graphNodesMap.set(`${r.id} ${r.name}`, { name: `${r.id} ${r.name}`, tag });
+        });
+      }
+
+      const graphNodes = Array.from(graphNodesMap.values()).slice(0, 6);
+
+      // 动态计算节点 SVG 坐标（纯数学圆周拓扑排布，自适应 2~6 个节点！）
+      const svgW = 700, svgH = 240;
+      const cx = 350, cy = 120, rx = 230, ry = 75;
+      graphNodes.forEach((node, i) => {
+        if (graphNodes.length === 1) {
+          node.x = cx - 60; node.y = cy - 24;
+        } else if (graphNodes.length === 2) {
+          node.x = i === 0 ? 180 : 420; node.y = cy - 24;
+        } else {
+          const angle = (i / graphNodes.length) * 2 * Math.PI - Math.PI / 2;
+          node.x = Math.round(cx + rx * Math.cos(angle) - 60);
+          node.y = Math.round(cy + ry * Math.sin(angle) - 22);
+        }
+      });
+
+      // 初始化 S4 批次存储容器
       if (!Array.isArray(saState.s4Batches) || saState.s4Batches.length === 0 || saState.s4TotalEps !== totalEps) {
         saState.s4TotalEps = totalEps;
         const bSize = totalEps <= 12 ? 6 : (totalEps <= 24 ? 6 : 8);
@@ -1902,66 +1965,103 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       const curBatch = saState.s4Batches[curBatchIdx];
 
       const s4Box = document.createElement('div');
-      s4Box.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;';
+      s4Box.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;';
 
       const doneBatchCount = saState.s4Batches.filter(b => (b.content || '').trim().length > 100).length;
 
       s4Box.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #e4e4e7;padding-bottom:10px">
-          <div>
-            <strong style="font-size:13.5px;color:#18181b">分集详纲分批生成管线</strong>
-            <div style="font-size:11px;color:#71717a;margin-top:2px">
-              已读取 S2 核定总集数：<strong style="color:#18181b">${totalEps} 集</strong> ｜ 系统已自动切分为 <strong>${saState.s4Batches.length}</strong> 个批次（已完成 ${doneBatchCount}/${saState.s4Batches.length}）
-            </div>
+        <!-- 1. 全景人物关系作战图谱 (纯原生动态 SVG，0 硬编码！) -->
+        <div style="border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;background:#fafafa">
+          <div style="padding:8px 12px;background:#f4f4f5;border-bottom:1px solid #e4e4e7;display:flex;justify-content:space-between;align-items:center;font-size:11.5px">
+            <strong style="color:#18181b">全景人物关系网与戏剧张力地图 (S3 关系矩阵已挂载 · 纯动态拓扑)</strong>
+            <span style="font-size:10.5px;color:#71717a">点击节点或连线查看博弈焦点</span>
           </div>
-          <span style="font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--sage-soft);color:var(--sage);font-weight:700">
-            单集强制 ≥500字详纲
-          </span>
+
+          <div style="width:100%;height:240px;background:#fff;position:relative">
+            <svg viewBox="0 0 700 240" style="width:100%;height:100%">
+              <!-- 动态连线渲染 -->
+              ${dynamicRels.slice(0, 6).map((r, idx) => {
+                const nodeA = graphNodes.find(n => n.name.includes(r.a) || r.a.includes(n.name));
+                const nodeB = graphNodes.find(n => n.name.includes(r.b) || r.b.includes(n.name));
+                if (nodeA && nodeB) {
+                  const x1 = nodeA.x + 60, y1 = nodeA.y + 22, x2 = nodeB.x + 60, y2 = nodeB.y + 22;
+                  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 4;
+                  return `
+                    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${idx % 2 === 0 ? '#b45309' : '#668271'}" stroke-width="1.8"/>
+                    <text x="${mx}" y="${my}" font-size="9" fill="${idx % 2 === 0 ? '#b45309' : '#668271'}" text-anchor="middle">${r.type}</text>
+                  `;
+                }
+                return '';
+              }).join('')}
+
+              <!-- 动态节点渲染（根据实际角色动态生成，绝无写死人名！） -->
+              ${graphNodes.map((n, i) => {
+                const isPlayer = n.name.includes(saState.playerRoleName || '___');
+                const isCustom = !isPlayer && Object.values(casting).some(c => c.actor && n.name.includes(c.actor));
+                return `
+                  <g class="s4-dyn-node" data-name="${escAttr(n.name)}" style="cursor:pointer">
+                    <rect x="${n.x}" y="${n.y}" width="125" height="44" rx="8" fill="${isPlayer ? '#f4f4f5' : (isCustom ? '#edf3ef' : '#ffffff')}" stroke="${isPlayer ? '#18181b' : (isCustom ? '#668271' : '#e4e4e7')}" stroke-width="${isPlayer || isCustom ? '2' : '1.2'}"/>
+                    <text x="${n.x + 12}" y="${n.y + 19}" font-size="11.5" font-weight="700" fill="#18181b">${escHtml(n.name)}</text>
+                    <text x="${n.x + 12}" y="${n.y + 34}" font-size="9" fill="${isPlayer ? '#71717a' : (isCustom ? '#668271' : '#a1a1aa')}">${isPlayer ? '玩家主视角' : (n.tag || '原著角色')}</text>
+                  </g>
+                `;
+              }).join('')}
+            </svg>
+          </div>
+
+          <div id="s4RelDetailBar" style="padding:8px 12px;background:#f8f9fa;border-top:1px solid #e4e4e7;font-size:11.5px;color:#52525b">
+            <strong id="s4RelRoleTitle" style="color:#18181b">点击上方节点</strong>：
+            <span id="s4RelRoleDesc">已自动根据当前作品挂载的关系网络展开分集调度与潜台词因果。</span>
+          </div>
         </div>
 
-        <!-- 批次胶囊按钮组 -->
-        <div>
-          <div style="font-size:11.5px;font-weight:700;color:#52525b;margin-bottom:6px">选择当前编辑批次：</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px" id="s4BatchButtonGroup"></div>
-        </div>
-
-        <!-- 当前批次专属控制面板 -->
-        <div style="background:#f8f9fa;border:1px solid #e4e4e7;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-            <div>
-              <strong style="font-size:12.5px;color:#18181b">当前激活：第 ${curBatch.batchNo} 批（${curBatch.rangeName}）</strong>
-              <span style="font-size:11px;color:#71717a;margin-left:6px">包含 ${curBatch.end - curBatch.start + 1} 集 ｜ 预计需写 ≥${(curBatch.end - curBatch.start + 1) * 500} 字</span>
-            </div>
-            <button type="button" id="btnCopyS4CurBatch" class="btn btn-primary btn-small" style="background:#18181b;color:#fff;border-radius:6px;padding:5px 12px;font-weight:700;cursor:pointer">
-              一键复制第 ${curBatch.batchNo} 批 (${curBatch.rangeName}) 指令发给 AI
-            </button>
+        <!-- 2. 分集详纲智能分批管线 -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:13px;font-weight:750;color:#18181b">分集详纲分批推进管线</span>
+            <span style="font-size:11px;color:#71717a">核定总集数：共 ${totalEps} 集 ｜ 已完成 ${doneBatchCount}/${saState.s4Batches.length} 批</span>
           </div>
 
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <label style="font-size:11.5px;font-weight:700;color:#18181b">
-                本批（${curBatch.rangeName}）详纲回填框：
-              </label>
-              <small style="font-size:11px;color:#71717a">已填 ${(curBatch.content || '').length} 字</small>
-            </div>
-            <textarea id="taS4BatchContent" placeholder="将 AI 生成的第 ${curBatch.batchNo} 批（${curBatch.rangeName}）分集详纲粘贴在此处..." style="width:100%;min-height:160px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;font-family:inherit;outline:none">${curBatch.content || ''}</textarea>
-          </div>
+          <!-- 等宽规整胶囊池 (像 S1 一样自动流式排列) -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center" id="s4BatchButtonGroup"></div>
 
-          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:2px">
-            ${curBatch.batchNo < saState.s4Batches.length ? `
-              <button type="button" id="btnS4SaveNextBatch" class="btn btn-soft btn-small" style="font-weight:700;cursor:pointer">
-                保存本批，并切换到第 ${curBatch.batchNo + 1} 批 →
+          <!-- 当前批次专属回填卡片 -->
+          <div style="background:#f8f9fa;border:1px solid #e4e4e7;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div>
+                <strong style="font-size:12.5px;color:#18181b">当前编辑：第 ${curBatch.batchNo} 批（${curBatch.rangeName}）</strong>
+                <span style="font-size:11px;color:#71717a;margin-left:6px">单集需≥500字 ｜ 预计需写 ≥${(curBatch.end - curBatch.start + 1) * 500} 字</span>
+              </div>
+              <button type="button" id="btnCopyS4CurBatch" class="btn btn-primary btn-small" style="background:#18181b;color:#fff;border-radius:6px;padding:5px 12px;font-weight:700;cursor:pointer">
+                复制第 ${curBatch.batchNo} 批 (${curBatch.rangeName}) 指令发给 AI
               </button>
-            ` : `
-              <span style="font-size:11px;color:#668271;font-weight:700;align-self:center">全部批次已就绪，系统将自动汇总完整全季详纲！</span>
-            `}
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <label style="font-size:11.5px;font-weight:700;color:#18181b">
+                  本批详纲回填框（系统自动在后台无缝拼接全季）：
+                </label>
+                <small style="color:#71717a;font-size:11px">已填 ${(curBatch.content || '').length} 字</small>
+              </div>
+              <textarea id="taS4BatchContent" placeholder="将 AI 生成的第 ${curBatch.batchNo} 批（${curBatch.rangeName}）分集详纲粘贴在此处..." style="width:100%;min-height:160px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;font-family:inherit;outline:none">${curBatch.content || ''}</textarea>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:2px">
+              ${curBatch.batchNo < saState.s4Batches.length ? `
+                <button type="button" id="btnS4SaveNextBatch" class="btn btn-soft btn-small" style="font-weight:700;cursor:pointer">
+                  保存本批，并切换到第 ${curBatch.batchNo + 1} 批 →
+                </button>
+              ` : `
+                <span style="font-size:11px;color:#668271;font-weight:700;align-self:center">全部批次已就绪，系统已自动合成全剧分集大纲！</span>
+              `}
+            </div>
           </div>
         </div>
       `;
 
       box.appendChild(s4Box);
 
-      // 实时将所有分批内容自动拼接到全局大定稿中，绝不丢失任何一集！
       function autoMergeS4Batches() {
         const merged = saState.s4Batches
           .map(b => (b.content || '').trim())
@@ -1995,13 +2095,25 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           });
         }
 
-        // 输入监听
+        // SVG 节点点击交互
+        s4Box.querySelectorAll('.s4-dyn-node').forEach(node => {
+          node.onclick = () => {
+            const nName = node.dataset.name;
+            const related = dynamicRels.filter(r => r.a.includes(nName) || r.b.includes(nName));
+            s4Box.querySelector('#s4RelRoleTitle').textContent = nName;
+            if (related.length) {
+              s4Box.querySelector('#s4RelRoleDesc').textContent = related.map(r => `与 [${r.a.includes(nName) ? r.b : r.a}] 核心博弈：${r.core || r.type}`).join(' ｜ ');
+            } else {
+              s4Box.querySelector('#s4RelRoleDesc').textContent = '原著关键支点人物，已载入本批分集详纲剧情调度。';
+            }
+          };
+        });
+
         s4Box.querySelector('#taS4BatchContent')?.addEventListener('input', e => {
           curBatch.content = e.target.value;
           autoMergeS4Batches();
         });
 
-        // 复制当前批次 Prompt
         s4Box.querySelector('#btnCopyS4CurBatch')?.addEventListener('click', () => {
           saState.s4EpisodeRange = curBatch.rangeName;
           persistState();
@@ -2009,7 +2121,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           $('saCopyPromptBtn')?.click();
         });
 
-        // 切换下一批
         s4Box.querySelector('#btnS4SaveNextBatch')?.addEventListener('click', () => {
           if (saState.s4CurrentBatchIdx < saState.s4Batches.length - 1) {
             saState.s4CurrentBatchIdx++;
@@ -2142,8 +2253,10 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     const draftSection = document.querySelector('.sa-draft-section');
     const bottomActionBar = document.querySelector('.sa-action-bar');
     const isS1_1A = saState.currentStep === 'S1' && saState.s1SubMode === '1A';
-    if (draftSection) draftSection.style.display = isS1_1A ? 'none' : 'block';
-    if (bottomActionBar) bottomActionBar.style.display = isS1_1A ? 'none' : 'flex';
+    const isS4 = saState.currentStep === 'S4';
+    const hideBottomDraft = isS1_1A || isS4;
+    if (draftSection) draftSection.style.display = hideBottomDraft ? 'none' : 'block';
+    if (bottomActionBar) bottomActionBar.style.display = hideBottomDraft ? 'none' : 'flex';
 
     if (saState.drafts.S1) {
       saState.parsedRoster = extractRolesFromS1(saState.drafts.S1);
