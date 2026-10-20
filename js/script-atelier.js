@@ -1597,15 +1597,252 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
     // S3 控制台
     else if (step === 'S3') {
-      const row = document.createElement('div');
-      row.className = 'sa-slot-row';
-      row.innerHTML = `
-        <div class="sa-slot-label"><span>本批生成的目标角色 [TARGET_ROLES]（填 ALL 生成全部主役与重要配角；若角色众多可填角色名分批生成，确保每人≥1000字不缩水）</span></div>
-        <input type="text" id="inpS3TargetRoles" value="${saState.s3TargetRoles}" placeholder="ALL（或填写：男女主姓名 / 第2批高光配角姓名）" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+      const s2Draft = (saState.drafts.S2 || '').trim();
+      const roles = saState.parsedRoster || [];
+      const casting = saState.customCasting || {};
+
+      // 解析 S2 输出中的 BIO_PRIORITY_ROSTER（若有）
+      function parseBioRoster(text) {
+        const roster = { t1: [], t2: [], t3: [], missed: null };
+        if (!text) return roster;
+
+        const blockMatch = text.match(/<<<BIO_PRIORITY_ROSTER_BEGIN>>>([\s\S]*?)<<<BIO_PRIORITY_ROSTER_END>>>/);
+        const source = blockMatch ? blockMatch[1] : text;
+
+        // 提取第一梯队
+        const t1Block = source.match(/\[TIER_1_BEGIN\]([\s\S]*?)\[TIER_1_END\]/);
+        if (t1Block) {
+          const lines = t1Block[1].split('\n').filter(l => l.includes('[CHAR]'));
+          lines.forEach(l => {
+            const name = (l.match(/name=([^|]+)/) || [])[1]?.trim();
+            const sourceInfo = (l.match(/source=([^|]+)/) || [])[1]?.trim() || '锁定必写';
+            const actor = (l.match(/actor=([^|]+)/) || [])[1]?.trim() || '';
+            if (name) roster.t1.push({ name, source: sourceInfo, actor });
+          });
+        }
+
+        // 提取第二梯队
+        const t2Block = source.match(/\[TIER_2_BEGIN\]([\s\S]*?)\[TIER_2_END\]/);
+        if (t2Block) {
+          const chars = t2Block[1].split(/(?=\[CHAR\])/).filter(b => b.includes('[CHAR]'));
+          chars.forEach(b => {
+            const name = (b.match(/name=([^|]+)/) || [])[1]?.trim();
+            const tag = (b.match(/tag=([^|]+)/) || [])[1]?.trim() || '高光推荐';
+            const qualify = (b.match(/qualify=([^|]+)/) || [])[1]?.trim() || '';
+            const basis = (b.match(/\[BASIS\]\s*立传依据[：:]([^\n]+)/) || [])[1]?.trim() || '';
+            const delTest = (b.match(/\[DELETE_TEST\]\s*删除测试[：:]([^\n]+)/) || [])[1]?.trim() || '';
+            if (name) roster.t2.push({ name, tag, qualify, basis, delTest });
+          });
+        }
+
+        // 提取第三梯队
+        const t3Block = source.match(/\[TIER_3_BEGIN\]([\s\S]*?)\[TIER_3_END\]/);
+        if (t3Block) {
+          const lines = t3Block[1].split('\n').filter(l => l.includes('[CHAR]'));
+          lines.forEach(l => {
+            const name = (l.match(/name=([^|]+)/) || [])[1]?.trim();
+            const func = (l.match(/func=([^|]+)/) || [])[1]?.trim() || '';
+            const sketch = (l.match(/sketch=([^|]+)/) || [])[1]?.trim() || '';
+            if (name) roster.t3.push({ name, func, sketch });
+          });
+          const missedMatch = t3Block[1].match(/\[MISSED\]\s*name=([^|]+)\|reason=([^\n]+)/);
+          if (missedMatch) {
+            roster.missed = { name: missedMatch[1].trim(), reason: missedMatch[2].trim() };
+          }
+        }
+
+        return roster;
+      }
+
+      const rosterData = parseBioRoster(s2Draft);
+
+      // 若 S2 定稿中没解析出，走兜底（从 customCasting 与 S1 名册提取）
+      if (!rosterData.t1.length) {
+        roles.forEach(r => {
+          const cfg = casting[r.id];
+          if (cfg && cfg.isPlayer) {
+            rosterData.t1.push({ name: r.name, source: '玩家领衔', actor: cfg.actor || saState.playerStageName || '玩家本人' });
+          } else if (cfg && cfg.actor) {
+            rosterData.t1.push({ name: r.name, source: '用户钦定', actor: cfg.actor });
+          }
+        });
+      }
+
+      const s3Box = document.createElement('div');
+      s3Box.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;';
+
+      s3Box.innerHTML = `
+        <div style="border-bottom:1px solid #e4e4e7;padding-bottom:10px">
+          <strong style="font-size:13.5px;color:#18181b">本批建档角色清单 [TARGET_ROLES]</strong>
+          <div style="font-size:11px;color:#71717a;margin-top:2px">
+            已定阵容自动锁定必写 (≥1000字) · 其余配角由 AI 策划依据原著内核研判推荐 (600~900字)
+          </div>
+        </div>
+
+        <!-- 1. 第一梯队：锁定必写区 -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11.5px;font-weight:700;color:#18181b">① 用户已定主创阵容（锁定必写 · 强制 ≥1000字深度小传）</span>
+            <span style="font-size:10.5px;color:#668271;font-weight:600">已锁定 ${rosterData.t1.length} 人</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px" id="s3T1Grid">
+            ${rosterData.t1.length ? rosterData.t1.map(c => `
+              <div style="background:#fafafa;border:1.5px solid ${c.source.includes('玩家') ? '#18181b' : '#668271'};border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:10px;font-weight:700;color:#71717a">${c.source}</span>
+                  <span style="font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c.source.includes('玩家') ? '#18181b' : '#668271'};color:#fff">锁定必写</span>
+                </div>
+                <div style="font-size:13.5px;font-weight:750;color:#18181b">${c.name}</div>
+                <div style="font-size:11px;color:${c.source.includes('玩家') ? '#71717a' : '#668271'}">${c.actor ? `${c.actor} 饰` : ''}</div>
+              </div>
+            `).join('') : '<div style="font-size:11.5px;color:#71717a;padding:8px">暂无锁定角色，建议先在 S2 中指定角色或勾选由我饰演。</div>'}
+          </div>
+        </div>
+
+        <!-- 2. 第二梯队：AI 策划推荐高光席位 -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11.5px;font-weight:700;color:#18181b">② AI 文学策划研判高光席位（建议勾选 · 600~900字小传）</span>
+            <span style="font-size:10.5px;color:#71717a">按需勾选，未勾选不消耗篇幅</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px" id="s3T2List">
+            ${rosterData.t2.length ? rosterData.t2.map((c, i) => `
+              <div class="s3-rec-row" data-name="${c.name}" style="background:#fff;border:1px solid #18181b;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:10px;cursor:pointer">
+                <input type="checkbox" class="s3-rec-chk" checked style="width:16px;height:16px;accent-color:#18181b;cursor:pointer"/>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <strong style="font-size:13px;color:#18181b">${c.name}</strong>
+                    <span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:#f4f4f5;color:#71717a;font-weight:600">${c.tag || '高光推荐'}</span>
+                    ${c.qualify ? `<span style="font-size:9.5px;color:#668271">命中资格 [${c.qualify}]</span>` : ''}
+                  </div>
+                  <div style="font-size:11px;color:#71717a;line-height:1.4">${c.basis || c.delTest || '原著核心反转承载与人物弧光支点。'}</div>
+                </div>
+              </div>
+            `).join('') : `
+              <div style="background:#f8f9fa;border:1px dashed #e4e4e7;border-radius:9px;padding:12px;font-size:11.5px;color:#71717a">
+                提示：完成 S2 并将生成结果（含 §05 BIO_PRIORITY_ROSTER）粘贴至 S2 定稿框后，此处将自动呈现 AI 研判的高光配角推荐及依据。
+              </div>
+            `}
+          </div>
+        </div>
+
+        <!-- 3. 第三梯队：功能班底（折叠收纳） -->
+        <details style="background:#fafafa;border:1px solid #e4e4e7;border-radius:9px;padding:10px 12px;font-size:11.5px">
+          <summary style="cursor:pointer;font-weight:700;color:#71717a;display:flex;justify-content:space-between">
+            <span>③ 其余功能班底与边缘角色（${rosterData.t3.length ? `共 ${rosterData.t3.length} 人` : '点击展开'}）</span>
+            <span style="font-size:10px">点击展开 ▾</span>
+          </summary>
+          <div style="font-size:11px;color:#71717a;margin:6px 0">此梯队角色在全剧中主要承担环境与事件功能；如特别想为某人单独写长小传，可点击点亮：</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px" id="s3T3Chips">
+            ${rosterData.t3.length ? rosterData.t3.map(c => `
+              <span class="s3-minor-chip" data-name="${c.name}" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid #e4e4e7;background:#fff;color:#52525b;cursor:pointer">
+                + ${c.name} ${c.func ? `(${c.func})` : ''}
+              </span>
+            `).join('') : '<span style="color:#a1a1aa">暂无记录</span>'}
+          </div>
+          ${rosterData.missed ? `
+            <div style="margin-top:8px;padding-top:6px;border-top:1px dashed #e4e4e7;font-size:10.5px;color:#a1a1aa">
+              遗珠复核：${rosterData.missed.name} 未入选原因：${rosterData.missed.reason}
+            </div>
+          ` : ''}
+        </details>
+
+        <!-- 4. 底部动态派发名单（彻底消灭纯 ALL！） -->
+        <div style="background:#f4f4f5;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-size:12px;color:#18181b">当前本批拟生成小传名单：</span>
+            <strong id="s3CurrentNamesDisplay" style="color:#668271;font-size:12px">--</strong>
+          </div>
+          <button type="button" id="btnS3Reset" style="border:none;background:transparent;color:#71717a;font-size:11px;cursor:pointer;text-decoration:underline">重新计算名单</button>
+        </div>
       `;
-      box.appendChild(row);
+
+      box.appendChild(s3Box);
+
+      // 计算并更新真正发给 AI 的 TARGET_ROLES 参数
+      function updateTargetRolesState() {
+        const selectedNames = [];
+
+        // 1. 必写区全部强制计入
+        rosterData.t1.forEach(c => {
+          if (!selectedNames.includes(c.name)) selectedNames.push(c.name);
+        });
+
+        // 2. 勾选的第二梯队计入
+        s3Box.querySelectorAll('.s3-rec-row').forEach(row => {
+          const chk = row.querySelector('.s3-rec-chk');
+          const name = row.dataset.name;
+          if (chk && chk.checked && name && !selectedNames.includes(name)) {
+            selectedNames.push(name);
+          }
+        });
+
+        // 3. 点亮激活的第三梯队计入
+        s3Box.querySelectorAll('.s3-minor-chip.active').forEach(chip => {
+          const name = chip.dataset.name;
+          if (name && !selectedNames.includes(name)) {
+            selectedNames.push(name);
+          }
+        });
+
+        const targetStr = selectedNames.length ? selectedNames.join(', ') : 'ALL';
+        saState.s3TargetRoles = targetStr;
+        persistState();
+        updatePromptPreview();
+
+        const displayEl = s3Box.querySelector('#s3CurrentNamesDisplay');
+        if (displayEl) {
+          displayEl.textContent = `${selectedNames.length} 位角色（${selectedNames.join('、')}）`;
+        }
+      }
+
       setTimeout(() => {
-        $('inpS3TargetRoles')?.addEventListener('input', e => { saState.s3TargetRoles = e.target.value; persistState(); updatePromptPreview(); });
+        // 第二梯队整行点击切换
+        s3Box.querySelectorAll('.s3-rec-row').forEach(row => {
+          row.onclick = () => {
+            const chk = row.querySelector('.s3-rec-chk');
+            if (chk) {
+              chk.checked = !chk.checked;
+              row.style.background = chk.checked ? '#fafafa' : '#fff';
+              row.style.borderColor = chk.checked ? '#18181b' : '#e4e4e7';
+              updateTargetRolesState();
+            }
+          };
+          const chk = row.querySelector('.s3-rec-chk');
+          if (chk) {
+            chk.onclick = e => e.stopPropagation();
+            chk.onchange = () => {
+              row.style.background = chk.checked ? '#fafafa' : '#fff';
+              row.style.borderColor = chk.checked ? '#18181b' : '#e4e4e7';
+              updateTargetRolesState();
+            };
+          }
+        });
+
+        // 第三梯队点击点亮/取消
+        s3Box.querySelectorAll('.s3-minor-chip').forEach(chip => {
+          chip.onclick = () => {
+            const isActive = chip.classList.toggle('active');
+            chip.style.background = isActive ? '#18181b' : '#fff';
+            chip.style.color = isActive ? '#fff' : '#52525b';
+            chip.style.borderColor = isActive ? '#18181b' : '#e4e4e7';
+            updateTargetRolesState();
+          };
+        });
+
+        s3Box.querySelector('#btnS3Reset').onclick = () => {
+          s3Box.querySelectorAll('.s3-rec-chk').forEach(c => { c.checked = true; });
+          s3Box.querySelectorAll('.s3-rec-row').forEach(r => { r.style.background = '#fafafa'; r.style.borderColor = '#18181b'; });
+          s3Box.querySelectorAll('.s3-minor-chip').forEach(c => {
+            c.classList.remove('active');
+            c.style.background = '#fff';
+            c.style.color = '#52525b';
+            c.style.borderColor = '#e4e4e7';
+          });
+          updateTargetRolesState();
+        };
+
+        updateTargetRolesState();
       }, 0);
     }
 
