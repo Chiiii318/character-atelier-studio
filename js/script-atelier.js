@@ -240,29 +240,59 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
 
   const $ = id => document.getElementById(id);
 
-  /* ---- 纯净角色名单解析器（从 S1 表格中提取真实人名） ---- */
+  /* ---- 纯净角色名单解析器（同时兼容 Markdown 竖线表格与纯空格排版） ---- */
   function extractRolesFromS1(text) {
     if (!text) return [];
     const roles = [];
     const lines = text.split('\n');
+
     lines.forEach(line => {
-      const parts = line.split('|').map(s => s.trim()).filter(Boolean);
-      // 匹配 | CH-01 | 姓名 | 拼音 | ...
-      if (parts.length >= 3 && /^CH-\d+/i.test(parts[0])) {
-        const id = parts[0];
-        const name = parts[1].replace(/[*`_]/g, '').trim();
-        const pinyin = parts[2].replace(/[*`_]/g, '').toUpperCase().trim();
-        if (name && name !== '角色原名' && !roles.some(r => r.name === name)) {
-          roles.push({
-            id,
-            name,
-            pinyin: pinyin || ('ROLE_' + roles.length),
-            identity: parts[4] || parts[3] || '原著角色',
-            relation: parts[parts.length - 1] || ''
-          });
+      const trimmed = line.trim();
+      if (!trimmed || !/^CH-\d+/i.test(trimmed.replace(/^\|?\s*/, ''))) return;
+
+      let id = '', name = '', pinyin = '', identity = '';
+
+      if (trimmed.includes('|')) {
+        // 格式 A：标准 Markdown 竖线表格
+        const parts = trimmed.split('|').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 3 && /^CH-\d+/i.test(parts[0])) {
+          id = parts[0].toUpperCase();
+          name = parts[1].replace(/[*`_]/g, '').trim();
+          pinyin = parts[2].replace(/[*`_\s]/g, '').toUpperCase().trim();
+          identity = parts[4] || parts[3] || '原著角色';
+        }
+      } else {
+        // 格式 B：纯空格/制表符分隔排版
+        const tokens = trimmed.split(/\s+/).filter(Boolean);
+        if (tokens.length >= 2 && /^CH-\d+/i.test(tokens[0])) {
+          id = tokens[0].toUpperCase();
+          name = tokens[1].replace(/[*`_]/g, '').trim();
+          if (tokens[2] && /^[A-Za-z]+$/.test(tokens[2])) {
+            if (tokens[3] && /^[A-Za-z]+$/.test(tokens[3])) {
+              pinyin = (tokens[2] + tokens[3]).toUpperCase();
+              identity = tokens[5] || tokens[4] || '原著角色';
+            } else {
+              pinyin = tokens[2].toUpperCase();
+              identity = tokens[4] || tokens[3] || '原著角色';
+            }
+          } else {
+            pinyin = 'ROLE_' + id.replace(/[^0-9]/g, '');
+            identity = tokens[2] || '原著角色';
+          }
         }
       }
+
+      if (id && name && name !== '角色原名' && !roles.some(r => r.name === name)) {
+        roles.push({
+          id,
+          name,
+          pinyin: pinyin || ('ROLE_' + roles.length),
+          identity: identity.slice(0, 30),
+          relation: ''
+        });
+      }
     });
+
     return roles;
   }
 
@@ -442,6 +472,28 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     });
   }
 
+  /* ---- 辅助组件：选项胶囊组生成器 ---- */
+  function makePillRow(label, subHint, options, currentValue, onPick) {
+    const row = document.createElement('div');
+    row.className = 'sa-slot-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'sa-slot-label';
+    lbl.innerHTML = `<span>${label}</span><small>${subHint || ''}</small>`;
+    const group = document.createElement('div');
+    group.className = 'sa-pill-group';
+    options.forEach(opt => {
+      const val = typeof opt === 'string' ? opt : opt.val, text = typeof opt === 'string' ? opt : opt.label;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sa-opt-pill' + (val.startsWith('AUTO') ? ' auto-pill' : '') + (currentValue === val ? ' active' : '');
+      btn.textContent = text;
+      btn.onclick = () => { onPick(val, opt); renderAll(); };
+      group.appendChild(btn);
+    });
+    row.append(lbl, group);
+    return row;
+  }
+
   /* ---- 渲染动态控制台 ---- */
   function renderSlotConsole() {
     const box = $('saSlotConsole');
@@ -484,7 +536,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       box.appendChild(makePillRow('商业定级 [TIER]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: 'S+ 顶配（扛招商）', val: 'S+' }, { label: 'S 级质感', val: 'S' }, { label: 'A+ 概念黑马', val: 'A+' }], saState.tier, val => { saState.tier = val; persistState(); }));
     }
 
-    // S3: 核心卡司认领与定制台
+    // S3: 核心卡司认领与定制台（一键轻量化点击）
     else if (step === 'S3') {
       const roles = saState.parsedRoster;
 
@@ -492,26 +544,29 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       castingDesk.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
       castingDesk.innerHTML = `
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:12px">
-          <div style="font-size:12px;font-weight:750;color:#18181b;margin-bottom:8px">
-            从 S1 抽取的角色名册中，快速点选认领席位：
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong style="font-size:12.5px;color:#18181b">
+              从 S1 原著角色名册中，一键指派认领席位：
+            </strong>
+            <small style="color:#71717a;font-size:11px">已识别出 ${roles.length} 位角色</small>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px" id="s3RoleChips"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="s3RoleChips"></div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
-          <!-- 我主演的角色席位 -->
+          <!-- 席位①：我主演的角色 -->
           <div style="background:#fff;border:1.5px solid #18181b;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f4f4f5;padding-bottom:6px">
               <strong style="font-size:13px;color:#18181b">① 我主演的角色席位 (Player)</strong>
-              <span style="font-size:10px;background:#18181b;color:#fff;padding:2px 6px;border-radius:4px" id="s3MyBadge">已选: ${saState.playerRoleName || '未选'}</span>
+              <span style="font-size:11px;background:#18181b;color:#fff;padding:2px 8px;border-radius:4px" id="s3MyBadge">${saState.playerRoleName ? `已绑定: ${saState.playerRoleName}` : '待指派'}</span>
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:#71717a">戏内角色原名</label>
-              <input type="text" class="input-box" id="inpS3MyRole" value="${saState.playerRoleName}" placeholder="如 许莞莞" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
+              <input type="text" class="input-box" id="inpS3MyRole" value="${saState.playerRoleName}" placeholder="点选上方角色快速填入" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">我的戏外艺名/称呼 <small style="color:#a1a1aa">(留空则默认称“你/我”)</small></label>
-              <input type="text" class="input-box" id="inpS3MyActor" value="${saState.playerActorName}" placeholder="留空则不设现实真名" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
+              <label style="font-size:11px;font-weight:700;color:#71717a">我的戏外艺名/称呼 <small style="color:#a1a1aa">(留空则称呼“你”)</small></label>
+              <input type="text" class="input-box" id="inpS3MyActor" value="${saState.playerActorName}" placeholder="留空则不设真实姓名" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:#71717a">番位设定</label>
@@ -523,27 +578,27 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
               </select>
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">我的微调诉求 <small style="color:#a1a1aa">(【有需求就写，没有就留空】)</small></label>
-              <textarea id="txtS3MyReq" placeholder="留空则完全遵循原著。有想法可写：如“增强反击锋芒，台词节奏更冷冽”" style="width:100%;min-height:64px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.playerCustomReq}</textarea>
+              <label style="font-size:11px;font-weight:700;color:#71717a">个性微调诉求 <small style="color:#a1a1aa">(有想法就写，没有留空)</small></label>
+              <textarea id="txtS3MyReq" placeholder="例如：性格更冷静克制，台词节奏更锋利..." style="width:100%;min-height:64px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.playerCustomReq}</textarea>
             </div>
           </div>
 
-          <!-- 对手戏角色席位 -->
+          <!-- 席位②：对手戏角色 -->
           <div style="background:#fffcf6;border:1.5px solid #d97706;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fef3c7;padding-bottom:6px">
               <strong style="font-size:13px;color:#b45309">② 对手戏角色席位 (Partner)</strong>
-              <span style="font-size:10px;background:#fef3c7;color:#b45309;padding:2px 6px;border-radius:4px" id="s3PartnerBadge">已选: ${saState.partnerRoleName || '未选'}</span>
+              <span style="font-size:11px;background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:4px" id="s3PartnerBadge">${saState.partnerRoleName ? `已绑定: ${saState.partnerRoleName}` : '待指派'}</span>
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:#71717a">对手戏内角色名</label>
-              <input type="text" class="input-box" id="inpS3PartnerRole" value="${saState.partnerRoleName}" placeholder="如 纪寒灯" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:13px">
+              <input type="text" class="input-box" id="inpS3PartnerRole" value="${saState.partnerRoleName}" placeholder="点选上方角色快速填入" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:13px">
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">戏外扮演者演员 <small style="color:#a1a1aa">(留空则由AI生成盲盒)</small></label>
+              <label style="font-size:11px;font-weight:700;color:#71717a">戏外扮演演员 <small style="color:#a1a1aa">(留空则AI生成盲盒)</small></label>
               <input type="text" class="input-box" id="inpS3PartnerActor" value="${saState.partnerActorName}" placeholder="如 沈昱北 / 张凌赫" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:13px">
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">对手演员生态</label>
+              <label style="font-size:11px;font-weight:700;color:#71717a">对手演员咖位生态</label>
               <select id="selS3PartnerArch" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:12px">
                 <option value="上升期质感小生（极看重原声台词与高光）">上升期质感小生（极看重原声台词与高光）</option>
                 <option value="叔圈电影咖戏骨（气场强，讲究实感）">叔圈电影咖戏骨（气场强，讲究实感）</option>
@@ -551,8 +606,8 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
               </select>
             </div>
             <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">对他的微调诉求 <small style="color:#a1a1aa">(【有需求就写，没有就留空】)</small></label>
-              <textarea id="txtS3PartnerReq" placeholder="留空则完全遵循原著。有想法可写：如“强化口嫌体正直与暗恋细节，眼神闪避频率提高”" style="width:100%;min-height:64px;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.partnerCustomReq}</textarea>
+              <label style="font-size:11px;font-weight:700;color:#71717a">对他的微调诉求 <small style="color:#a1a1aa">(有想法就写，没有留空)</small></label>
+              <textarea id="txtS3PartnerReq" placeholder="例如：强化暗恋细节，眼神回避频率提高..." style="width:100%;min-height:64px;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.partnerCustomReq}</textarea>
             </div>
           </div>
         </div>
@@ -560,43 +615,69 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
 
       box.appendChild(castingDesk);
 
-      // 填充点选芯片
+      // 渲染无感直选卡片
       const chipsBox = castingDesk.querySelector('#s3RoleChips');
       if (roles.length) {
         roles.forEach(r => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'sa-opt-pill' + (saState.playerRoleName === r.name ? ' active' : '');
-          btn.textContent = `${r.id} ${r.name}`;
-          btn.onclick = () => {
-            const act = prompt(`你希望将原著角色【${r.name}】分配给？\n输入 1: 设为「我主演的角色 (席位①)」\n输入 2: 设为「对手戏角色 (席位②)」\n输入 3: 清除选择`, '1');
-            if (act === '1') {
+          const isPlayer = saState.playerRoleName === r.name;
+          const isPartner = saState.partnerRoleName === r.name;
+
+          const chip = document.createElement('div');
+          chip.style.cssText = `display:inline-flex;align-items:center;background:${isPlayer ? '#18181b' : (isPartner ? '#d97706' : '#f4f4f5')};color:${(isPlayer || isPartner) ? '#fff' : '#18181b'};border-radius:8px;padding:4px 8px;gap:6px;font-size:12px;border:1px solid ${isPlayer ? '#18181b' : (isPartner ? '#d97706' : '#e4e4e7')};`;
+
+          chip.innerHTML = `
+            <strong>${r.id} ${r.name}</strong>
+            <button type="button" class="btn-assign-player" style="border:0;background:${isPlayer ? '#fff' : 'rgba(0,0,0,0.06)'};color:${isPlayer ? '#18181b' : 'inherit'};font-size:10px;padding:2px 5px;border-radius:4px;cursor:pointer;font-weight:700">${isPlayer ? '✓ 我演' : '演主角'}</button>
+            <button type="button" class="btn-assign-partner" style="border:0;background:${isPartner ? '#fff' : 'rgba(0,0,0,0.06)'};color:${isPartner ? '#b45309' : 'inherit'};font-size:10px;padding:2px 5px;border-radius:4px;cursor:pointer;font-weight:700">${isPartner ? '✓ 对手' : '演对手'}</button>
+          `;
+
+          // 一键指派我演
+          chip.querySelector('.btn-assign-player').onclick = e => {
+            e.stopPropagation();
+            if (saState.playerRoleName === r.name) {
+              saState.playerRoleName = '';
+              saState.playerRoleChId = '';
+            } else {
               saState.playerRoleChId = r.id;
               saState.playerRoleName = r.name;
               saState.playerRolePinyin = r.pinyin;
-            } else if (act === '2') {
-              saState.partnerRoleChId = r.id;
-              saState.partnerRoleName = r.name;
-              saState.partnerRolePinyin = r.pinyin;
+              if (saState.partnerRoleName === r.name) saState.partnerRoleName = '';
             }
             persistState();
             renderAll();
           };
-          chipsBox.appendChild(btn);
+
+          // 一键指派对手演
+          chip.querySelector('.btn-assign-partner').onclick = e => {
+            e.stopPropagation();
+            if (saState.partnerRoleName === r.name) {
+              saState.partnerRoleName = '';
+              saState.partnerRoleChId = '';
+            } else {
+              saState.partnerRoleChId = r.id;
+              saState.partnerRoleName = r.name;
+              saState.partnerRolePinyin = r.pinyin;
+              if (saState.playerRoleName === r.name) saState.playerRoleName = '';
+            }
+            persistState();
+            renderAll();
+          };
+
+          chipsBox.appendChild(chip);
         });
       } else {
-        chipsBox.innerHTML = '<span style="font-size:11px;color:#a1a1aa">完成 S1 并贴入名册后，此处将自动生成原著角色点选芯片。</span>';
+        chipsBox.innerHTML = '<span style="font-size:11px;color:#a1a1aa">在 S1 定稿框填入角色名单后，此处将自动生成原著角色指派按钮。</span>';
       }
 
-      // 实时同步输入框事件
+      // 输入框双向同步
       setTimeout(() => {
-        $('inpS3MyRole')?.addEventListener('input', e => { saState.playerRoleName = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpS3MyActor')?.addEventListener('input', e => { saState.playerActorName = e.target.value; persistState(); updatePromptPreview(); });
+        $('inpS3MyRole')?.addEventListener('input', e => { saState.playerRoleName = e.target.value.trim(); persistState(); updatePromptPreview(); });
+        $('inpS3MyActor')?.addEventListener('input', e => { saState.playerActorName = e.target.value.trim(); persistState(); updatePromptPreview(); });
         $('selS3MySeat')?.addEventListener('change', e => { saState.playerSeat = e.target.value; persistState(); updatePromptPreview(); });
         $('txtS3MyReq')?.addEventListener('input', e => { saState.playerCustomReq = e.target.value; persistState(); updatePromptPreview(); });
 
-        $('inpS3PartnerRole')?.addEventListener('input', e => { saState.partnerRoleName = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpS3PartnerActor')?.addEventListener('input', e => { saState.partnerActorName = e.target.value; persistState(); updatePromptPreview(); });
+        $('inpS3PartnerRole')?.addEventListener('input', e => { saState.partnerRoleName = e.target.value.trim(); persistState(); updatePromptPreview(); });
+        $('inpS3PartnerActor')?.addEventListener('input', e => { saState.partnerActorName = e.target.value.trim(); persistState(); updatePromptPreview(); });
         $('selS3PartnerArch')?.addEventListener('change', e => { saState.partnerArchetype = e.target.value; persistState(); updatePromptPreview(); });
         $('txtS3PartnerReq')?.addEventListener('input', e => { saState.partnerCustomReq = e.target.value; persistState(); updatePromptPreview(); });
       }, 0);
@@ -640,27 +721,6 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
         $('inpS5LnEnd')?.addEventListener('input', e => { saState.targetLnEnd = e.target.value.trim(); persistState(); updatePromptPreview(); });
       }, 0);
     }
-  }
-
-  function makePillRow(label, subHint, options, currentValue, onPick) {
-    const row = document.createElement('div');
-    row.className = 'sa-slot-row';
-    const lbl = document.createElement('div');
-    lbl.className = 'sa-slot-label';
-    lbl.innerHTML = `<span>${label}</span><small>${subHint || ''}</small>`;
-    const group = document.createElement('div');
-    group.className = 'sa-pill-group';
-    options.forEach(opt => {
-      const val = typeof opt === 'string' ? opt : opt.val, text = typeof opt === 'string' ? opt : opt.label;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'sa-opt-pill' + (val.startsWith('AUTO') ? ' auto-pill' : '') + (currentValue === val ? ' active' : '');
-      btn.textContent = text;
-      btn.onclick = () => { onPick(val, opt); renderAll(); };
-      group.appendChild(btn);
-    });
-    row.append(lbl, group);
-    return row;
   }
 
   /* ---- 世界书编译写入 ---- */
@@ -877,30 +937,57 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
     window.toast('已清空');
   });
 
-  $('saCompileCurrentBtn')?.addEventListener('click', () => compileEntriesToWorldBook(saState.drafts[saState.currentStep] || '', false));
+  // 编译当前步骤入库（S1 若不是 @@ENTRY，则自动包装为全剧角色总名册条目）
+  $('saCompileCurrentBtn')?.addEventListener('click', () => {
+    const step = saState.currentStep;
+    let content = (saState.drafts[step] || '').trim();
+
+    if (!content) {
+      window.toast('当前定稿为空，无法编译入库');
+      return;
+    }
+
+    if (step === 'S1' && !content.includes('@@ENTRY|')) {
+      content = `@@ENTRY|id=ROSTER_CANON|type=MASTER|keys=角色谱,原著人物,人物设定|const=1|pos=SYS_TOP|depth=0|order=5|cap=2000@@\n${content}\n@@END@@`;
+    }
+
+    compileEntriesToWorldBook(content, false);
+  });
 
   $('saConfirmNextBtn')?.addEventListener('click', async () => {
     const raw = $('saDraftEditor')?.value || '';
+    if (!raw.trim()) {
+      window.toast('请先在上方定稿框粘贴本步推演结果');
+      return;
+    }
+
     saState.drafts[saState.currentStep] = raw;
 
     if (saState.currentStep === 'S1') {
       saState.parsedRoster = extractRolesFromS1(raw);
     }
 
-    // 若本步包含 @@ENTRY，顺带编译入库
-    const cur = parseV51EntriesFromText(raw);
-    if (cur.length > 0) await compileEntriesToWorldBook(raw, false);
+    // 若包含可入库的 @@ENTRY 条目，自动静默同步至世界书
+    if (raw.includes('@@ENTRY|')) {
+      await compileEntriesToWorldBook(raw, false);
+    } else if (saState.currentStep === 'S1') {
+      const wrappedS1 = `@@ENTRY|id=ROSTER_CANON|type=MASTER|keys=角色谱,原著人物,人物设定|const=1|pos=SYS_TOP|depth=0|order=5|cap=2000@@\n${raw}\n@@END@@`;
+      await compileEntriesToWorldBook(wrappedS1, false);
+    }
 
-    const idx = STEP_ORDER.indexOf(saState.currentStep);
-    if (idx < STEP_ORDER.length - 1) {
-      saState.currentStep = STEP_ORDER[idx + 1];
+    const curIdx = STEP_ORDER.indexOf(saState.currentStep);
+    if (curIdx < STEP_ORDER.length - 1) {
+      saState.currentStep = STEP_ORDER[curIdx + 1];
       persistState();
       renderAll();
-      window.toast(`✓ 进入 [${STEP_META[saState.currentStep].label}]`);
+      window.toast(`✓ 已锁定并进入 [${STEP_META[saState.currentStep].label}]！`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      await compileEntriesToWorldBook(Object.values(saState.drafts).join('\n\n'), true);
+      persistState();
+      window.toast('🎉 全流程 5 阶段已全部完成并编译入库！');
     }
   });
 
+  // 初始化首次渲染
   renderAll();
 }
