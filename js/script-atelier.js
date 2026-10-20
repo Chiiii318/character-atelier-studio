@@ -17,7 +17,7 @@ export function initScriptAtelier() {
   const STORAGE_KEY_STATE = 'CA_SCRIPT_ATELIER_V70_STATE';
 
   /* ================================================================
-     PART 1 · v7.0 终极完全体 System Prompt 母本（零硬编码、纯变量驱动）
+     PART 1 · v7.0 终极完全体 System Prompt 母本（纯净无内嵌反引号）
      ================================================================ */
   const DEFAULT_PROMPT_DICT = {
     GLOBAL_CONSTITUTION: `══════════════════════════════════════════════════════════════════════════════
@@ -142,15 +142,15 @@ export function initScriptAtelier() {
 - **双人推拉与镜头张力算子（§G7 CHEMISTRY_LENS）**：0～5 级张力读数 + 试探/翻转点 + 视线、呼吸拍数、手部道具交互与重音字调度。
 
 ### 四、草蛇灰线：伏笔、意象与道具账本（≥150 字）
-逐项登记：`【TH-nn 或 PROP-nn｜名称｜首次出现章｜本卷变化｜当前状态｜证据等级｜关联人物/秘密｜影视化镜头呈现建议】`
+逐项登记：【TH-nn 或 PROP-nn｜名称｜首次出现章｜本卷变化｜当前状态｜证据等级｜关联人物/秘密｜影视化镜头呈现建议】
 
 ### 五、关系动力学与秘密债务矩阵（≥100 字）
-1. **有向关系变化**：`REL-nn｜角色A ➔ 角色B｜变化前 ➔ 变化后｜触发事件（章号）`
-2. **秘密知情账本**：`SEC-nn｜秘密内容｜知情者｜误判者｜不知情者｜揭露状态`
-3. **承诺与伤害债务**：`DEBT-nn｜债权方 ➔ 债务方｜内容与代价｜当前状态`
+1. **有向关系变化**：REL-nn｜角色A ➔ 角色B｜变化前 ➔ 变化后｜触发事件（章号）
+2. **秘密知情账本**：SEC-nn｜秘密内容｜知情者｜误判者｜不知情者｜揭露状态
+3. **承诺与伤害债务**：DEBT-nn｜债权方 ➔ 债务方｜内容与代价｜当前状态
 
 ### 六、STATE_HANDOFF 跨卷交接压缩包（≤500 字，供下一卷作为前置输入）
-请将该部分包裹在 `===HANDOFF_BEGIN===` 与 `===HANDOFF_END===` 之间，严格按槽位浓缩（严禁丢失未结 ID）：
+请将该部分包裹在 ===HANDOFF_BEGIN=== 与 ===HANDOFF_END=== 之间，严格按槽位浓缩（严禁丢失未结 ID）：
 ===HANDOFF_BEGIN===
 1. 时空与主线局势终点：
 2. 角色状态差分（仅写本卷变化）：
@@ -174,7 +174,7 @@ export function initScriptAtelier() {
 </ALL_PARTS_ANALYSIS>
 
 【执行铁律】
-1. 若输入为空，输出 `HALT:E01`。
+1. 若输入为空，输出 [HALT:E01 | 必需输入变量为空]。
 2. 严禁遗漏任何在分卷中出现过的高光配角、重要男二、宿敌或关键反派。
 3. **硬性字数下限**：正文有效中文汉字 **不少于 2200 字**。
 
@@ -191,12 +191,12 @@ export function initScriptAtelier() {
 
 ### 二、三层全角色图谱与灵魂内核深挖（≥1200 字）
 - **第一层 LEAD（领衔核心组）**：全书叙事第一驱动力、主弧光核心主角（1～3 人）。
-- **第二层 SUPPORT & CATALYST（高光配角与催化剂群）**：高魅力男二、宿敌、悲剧反派、白月光/朱砂痣、关键对照镜（**严禁降格为功能人！**）。
+- **第二层 SUPPORT & CATALYST（高光配角与催化剂群）**：高魅力男二、宿敌、悲剧反派、白月光/朱砂痣、关键对照镜（严禁降格为功能人！）。
 - **第三层 ORBIT & MINOR（身边班底与功能人物）**：提供社会环境、日常交互或情报传递的角色。
 
 #### 2.1 第一层 & 第二层角色深度灵魂档案（领衔每人 ≥300 字，高光配角每人 ≥200 字）
 对第一层与第二层的每位角色逐一建档（首行严格使用标准竖线表格头供系统抓取角色名册）：
-`| CH-01 | 角色原名 | PINYIN | 角色别称 | 原著表面身份 | 核心牵绊对象 |`
+| CH-01 | 角色原名 | PINYIN | 角色别称 | 原著表面身份 | 核心牵绊对象 |
 随后展开该角色的深度剖析：
 - **灵魂一句话定义（≤40 字）**
 - **原生创伤与终极执念**
@@ -209,10 +209,10 @@ export function initScriptAtelier() {
 
 #### 2.2 第三层：功能班底速查表
 以标准 Markdown 竖线表格输出：
-`| 编号 | 角色原名 | 拼音标识 | 隶属班底/关系锚点 | 核心戏剧功能与不可替代点 | 可合并空间 |`
+| 编号 | 角色原名 | 拼音标识 | 隶属班底/关系锚点 | 核心戏剧功能与不可替代点 | 可合并空间 |
 
 ### 三、全景关系动力学与秘密债务总账（≥300 字）
-1. **核心关系对博弈拆解（不少于 6 对）**：`REL-nn｜[角色A] ⇄ [角色B]｜张力类型｜表层关系 vs 底层拉扯｜关键转折节点｜当前权力差与信息差`
+1. **核心关系对博弈拆解（不少于 6 对）**：REL-nn｜[角色A] ⇄ [角色B]｜张力类型｜表层关系 vs 底层拉扯｜关键转折节点｜当前权力差与信息差
 2. **全书秘密揭露时序表（SEC-nn）**：秘密内容 ➔ 始作俑者 ➔ 中途猜到者 ➔ 最后知晓者 ➔ 揭露后果。
 3. **未清偿道德与情感债务（DEBT-nn）**：承诺/伤害内容、责任归属、终局状态。
 
@@ -243,13 +243,13 @@ export function initScriptAtelier() {
 
 【选角裁决与立项铁律】
 1. **玩家参演意愿裁决（最高优先级）**：
-   - 若 `{{PLAYER_WISH}}` 明确指定了角色名/编号，100% 无条件锁定！
-   - 若 `{{PLAYER_WISH}}` 仅写了定位偏好（如“我演男主 / 女主 / 最带感的反派男二”），按「愿望贴合度、戏剧份量、人物魅力、弧光强度、RP可操作空间」对候选角色评分，列出前 3 候选并默认锁定最高分者。
-   - 玩家戏外艺名锁定为 `{{PLAYER_STAGE_NAME}}`。**全剧有且仅有一个角色标记为 `[PLAYER_CONTROL]`，严禁将其他任何角色标为玩家！**
-2. **其他演员心愿单解析（`{{OTHER_ACTOR_WISH}}`）**：
-   - 凡明确指定“演员A ➔ 饰演某具体角色”，演职状态标为 `【已定·用户钦定】`，直接填入该演员姓名！
-   - 凡指定“演员B ➔ 饰演女主/男二/宿敌/重要配角”，由你根据人物灵魂内核将其精准匹配给最契合的角色，标为 `【已定·AI配型兑现】`，直接填入该演员姓名！
-   - 其余所有未指定的角色：演职状态统一标为 `【AI拟邀方向】`，严禁擅自点名三次元真实在世艺人，必须为其生成「精准的内娱演员梯队画像 + 虚构代号/戏路标签 + 戏外片场策略」，供实机 RP 动态调用！
+   - 若 {{PLAYER_WISH}} 明确指定了角色名/编号，100% 无条件锁定！
+   - 若 {{PLAYER_WISH}} 仅写了定位偏好（如“我演男主 / 女主 / 最带感的反派男二”），按「愿望贴合度、戏剧份量、人物魅力、弧光强度、RP可操作空间」对候选角色评分，列出前 3 候选并默认锁定最高分者。
+   - 玩家戏外艺名锁定为 {{PLAYER_STAGE_NAME}}。全剧有且仅有一个角色标记为 [PLAYER_CONTROL]，严禁将其他任何角色标为玩家！
+2. **其他演员心愿单解析（{{OTHER_ACTOR_WISH}}）**：
+   - 凡明确指定“演员A ➔ 饰演某具体角色”，演职状态标为【已定·用户钦定】，直接填入该演员姓名！
+   - 凡指定“演员B ➔ 饰演女主/男二/宿敌/重要配角”，由你根据人物灵魂内核将其精准匹配给最契合的角色，标为【已定·AI配型兑现】，直接填入该演员姓名！
+   - 其余所有未指定的角色：演职状态统一标为【AI拟邀方向】，严禁擅自点名三次元真实在世艺人，必须为其生成「精准的内娱演员梯队画像 + 虚构代号/戏路标签 + 戏外片场策略」，供实机 RP 动态调用！
 
 【固定输出结构】
 
@@ -268,12 +268,12 @@ PLAYER_ROLE_MATCH: <玩家选角匹配依据说明>
 
 ### 二、戏剧灵魂：戏眼、主题升华、视觉隐喻与合规借代（≥600 字）
 1. **全剧戏眼（CORE_HOOK）**：一句话核心矛盾核 + 200 字阐释。
-2. **主题升华位移 `[ADAPTED]`**：从原著表层故事拔高或深挖到了什么人性切面？
+2. **主题升华位移 [ADAPTED]**：从原著表层故事拔高或深挖到了什么人性切面？
 3. **三大核心视觉隐喻符号（VISUAL_MOTIFS）**：设计 2～3 个贯穿符号，写明：物理形态与出处 ➔ 初现/中段异化/终局三阶段含义 ➔ 固定镜头与声音语法（关联 PROP/TH-ID）。
-4. **审查雷区与高张力镜头借代方案（COMPLIANCE_SUBSTITUTION）**：结合 `{{PLATFORM}}` 与 `{{TIER}}`，给出机制等价、张力不减反增的电影级视听借代方案（严禁用“删减弱化”敷衍）。
+4. **审查雷区与高张力镜头借代方案（COMPLIANCE_SUBSTITUTION）**：结合 {{PLATFORM}} 与 {{TIER}}，给出机制等价、张力不减反增的电影级视听借代方案（严禁用“删减弱化”敷衍）。
 
 ### 三、配角高光扩容与蝴蝶效应推演链（≥600 字）
-围绕 `{{ADDON_TARGET}}`（若为 AUTO 则自动挑选 2～3 位内核极佳的高光男二/反派/配角）展开结构性加戏：
+围绕 {{ADDON_TARGET}}（若为 AUTO 则自动挑选 2～3 位内核极佳的高光男二/反派/配角）展开结构性加戏：
 1. **原著压缩处与扩容戏剧收益**。
 2. **新增重头戏设计 [ADDED:A-nn]**：每人不少于 3 场重头戏（写明对手、冲突、潜台词、§G4 物理支点与场末代价）。
 3. **蝴蝶效应连锁反应链（BUTTERFLY_CHAIN）**：身边班底联动 ➔ 主线事件提前（ACCEL）/延后（DELAY）/触发者易主 ➔ 悬疑误导。
@@ -281,11 +281,11 @@ PLAYER_ROLE_MATCH: <玩家选角匹配依据说明>
 
 ### 四、全剧卡司最终定盘表与片场化学反应盲盒（≥600 字）
 1. **全剧角色卡司配置总表（涵盖 S1 全部主要角色）**
-   `| 角色编号 | 戏内角色名 | 剧版番位与层级 | 演职状态 (玩家领衔/已定/AI拟邀) | 演员姓名或拟邀梯队画像 | 戏外咖位与公众人设 | 选角咬合依据与戏内外张力点 |`
+   | 角色编号 | 戏内角色名 | 剧版番位与层级 | 演职状态 (玩家领衔/已定/AI拟邀) | 演员姓名或拟邀梯队画像 | 戏外咖位与公众人设 | 选角咬合依据与戏内外张力点 |
 2. **重点卡司片场生态档案（META_ECOLOGY）**
-   针对玩家、核心对手与重要配角，记录：片场走戏风格（体验派/方法派/天赋型）、团队番位与防爆/营业策略、与玩家的片场关系基调（玩家角色给 2～3 个 `[PLAYER_OPEN]` 可选处境标签，不写死玩家私人过往）。
+   针对玩家、核心对手与重要配角，记录：片场走戏风格（体验派/方法派/天赋型）、团队番位与防爆/营业策略、与玩家的片场关系基调（玩家角色给 2～3 个 [PLAYER_OPEN] 可选处境标签，不写死玩家私人过往）。
 3. **片场化学反应盲盒库（ECOLOGY_DECK，不少于 6 个事件）**
-   覆盖剧本围读、走戏试探、NG 生理越界、候场/保姆车暗流、代拍路透舆情等。每项写明：`[事件ID｜触发条件｜可观察证据｜至少两种私下解释｜风险等级｜PLAYER_AGENCY 玩家介入口]`。
+   覆盖剧本围读、走戏试探、NG 生理越界、候场/保姆车暗流、代拍路透舆情等。每项写明：[事件ID｜触发条件｜可观察证据｜至少两种私下解释｜风险等级｜PLAYER_AGENCY 玩家介入口]。
 
 ### 五、世界书核心总纲直出条目（供系统一键入库，严禁用代码块包裹）
 @@ENTRY|id=MASTER_PLAN|type=MASTER|keys=剧组总纲,立项,导演风格,戏眼,隐喻|const=1|pos=SYS_TOP|depth=0|order=10|cap=800@@
@@ -321,11 +321,11 @@ PLAYER_ROLE_MATCH: <玩家选角匹配依据说明>
 <TARGET_ROLES>{{TARGET_ROLES}}</TARGET_ROLES>
 
 【执行与批次防缩水铁律（BATCH_LOCK）】
-1. 若 `{{TARGET_ROLES}}` 为空或 `ALL`，覆盖 S2 卡司表全部领衔主役（甲类）与全部高光配角/男二/关键反派（乙类）；若指定了具体角色名，则优先针对指定角色生成完整小传。
+1. 若 {{TARGET_ROLES}} 为空或 ALL，覆盖 S2 卡司表全部领衔主役（甲类）与全部高光配角/男二/关键反派（乙类）；若指定了具体角色名，则优先针对指定角色生成完整小传。
 2. **硬性字数铁律**：
    - **甲类（男女主及核心领衔主役）：每人正文强制不少于 1000 个中文汉字！**
    - **乙类（重要男二、宿敌、关键反派、高光催化剂）：每人正文强制 600～900 个中文汉字！**
-   - 若单次回复放不下所有人，MUST 缩小本批角色数量以死保单人字数与颗粒度，并在末尾输出 `[BATCH_CONTINUE: 已完成=...｜剩余角色=...]`，严禁把任何人缩写成摘要！
+   - 若单次回复放不下所有人，MUST 缩小本批角色数量以死保单人字数与颗粒度，并在末尾输出 [BATCH_CONTINUE: 已完成=...｜剩余角色=...]，严禁把任何人缩写成摘要！
 
 【固定输出结构】
 
@@ -337,7 +337,7 @@ BATCH_MANIFEST: 当前批次范围={{TARGET_ROLES}}｜单人字数与五件套�
 （每位甲类主役严格展开以下 8 个槽位，单人总字数 ≥1000 字）
 
 1. **精神内核与创伤动力学（≥180 字）**：原生烙印（附原著依据）、终极执念、维持心理平衡的“核心谎言”、自我辩护逻辑（§G6）。
-2. **MASK_MODEL：伪装层、真实层与三大破防泄漏点（≥200 字）**：外在社会面具 ➔ 底层真实欲望 ➔ 3 个具体破防场景（含原著名场面与 S2 `[ADDED]` 场面），详述刺激源、生理泄漏与失控后的狼狈补救。
+2. **MASK_MODEL：伪装层、真实层与三大破防泄漏点（≥200 字）**：外在社会面具 ➔ 底层真实欲望 ➔ 3 个具体破防场景（含原著名场面与 S2 [ADDED] 场面），详述刺激源、生理泄漏与失控后的狼狈补救。
 3. **三阶段戏剧弧光演变（≥120 字）**：前期建制 ➔ 中期认知崩塌 ➔ 终局清算与永久代价。
 4. **电影级物理表演锚点五件套（§G4 核心实操区，≥220 字）**：
    量身定制 5 组极具个人辨识度、绝不与他人雷同的动作指令（触发条件 ➔ 身体动作 ➔ 潜台词）：
@@ -351,10 +351,10 @@ BATCH_MANIFEST: 当前批次范围={{TARGET_ROLES}}｜单人字数与五件套�
    - 词汇域与称呼变化体系（公开场合 vs 私下失控时的称呼）；
    - 防御/攻击/撒谎/示弱时的专属话术结构（严禁 AI 翻译腔与自我剖白）；
    - 低频高辨识度口癖（最多 2 个）。
-6. **双人对手戏张力与镜头算子（§G7，≥100 字）**：与至少 2 位核心对手同框时的空间侵略/退让习惯、高低位压制手段及 `CHEMISTRY_LENS` 张力特征。
-7. **原声台词提词器（≥80 字）**：3 句原著逐字台词（或标 `[ADDED]` 的剧版高光台词），附重音字、停顿拍数、潜台词与同步动作。
+6. **双人对手戏张力与镜头算子（§G7，≥100 字）**：与至少 2 位核心对手同框时的空间侵略/退让习惯、高低位压制手段及 CHEMISTRY_LENS 张力特征。
+7. **原声台词提词器（≥80 字）**：3 句原著逐字台词（或标 [ADDED] 的剧版高光台词），附重音字、停顿拍数、潜台词与同步动作。
 8. **戏内 ⇄ 戏外片场反差锚点（META_SWITCH，≥100 字）**：
-   - 【🎬 Action 一秒入戏】的身体切入姿态 vs 【🎬 Cut 瞬间回魂】后的第一个生理动作、说话腔调反差及与对手演员的片场相处边界（若为 `[PLAYER_CONTROL]` 角色，仅提供环境切口，不替玩家做决定）。
+   - 【🎬 Action 一秒入戏】的身体切入姿态 vs 【🎬 Cut 瞬间回魂】后的第一个生理动作、说话腔调反差及与对手演员的片场相处边界（若为 [PLAYER_CONTROL] 角色，仅提供环境切口，不替玩家做决定）。
 
 ---
 ### 【BIO｜<角色原名>｜乙类·高光配角与催化剂｜饰演者：<演员姓名/拟邀画像>】
@@ -396,15 +396,15 @@ BATCH_MANIFEST: 当前批次范围={{TARGET_ROLES}}｜单人字数与五件套�
 【执行与防缩水铁律（BATCH_LOCK）】
 1. **严禁合并集数、严禁跳集、严禁写“略/同上”！**
 2. **单集字数硬下限**：**每一集正文有效中文汉字强制不少于 500 字！每集至少规划 4 个核心场次！**
-3. 若指定了 `{{EPISODE_RANGE}}`（如 `1-6`），则本批专注输出该范围内的集数，确保每集达到 500～800 字高密度详纲，并在末尾标注 `[BATCH_CONTINUE: 下一批集数范围]`。
-4. 必须在终局前 2 集完整兑现 S2 的 `REVERSION_LOCK`（结局回流约束锁）。
+3. 若指定了 {{EPISODE_RANGE}}（如 1-6），则本批专注输出该范围内的集数，确保每集达到 500～800 字高密度详纲，并在末尾标注 [BATCH_CONTINUE: 下一批集数范围]。
+4. 必须在终局前 2 集完整兑现 S2 的 REVERSION_LOCK（结局回流约束锁）。
 
 【固定输出结构】
 
 ## [S4-EPISODE_OUTLINE] 总集数：{{EPISODE_COUNT}} 集｜当前输出范围：{{EPISODE_RANGE}}
 
 ### 一、全季戏剧温度与节奏总表（每集一行）
-`| 集数 | 本集片名 | 对应原著卷/章 | 核心戏剧任务 | 情绪温度(1-10) | 核心隐喻物状态 | 集末钩子类型 | 推进账本ID |`
+| 集数 | 本集片名 | 对应原著卷/章 | 核心戏剧任务 | 情绪温度(1-10) | 核心隐喻物状态 | 集末钩子类型 | 推进账本ID |
 
 ### 二、逐集剧本详纲（每集独立成块，每集强制 ≥500 字）
 
@@ -414,22 +414,24 @@ BATCH_MANIFEST: 当前批次范围={{TARGET_ROLES}}｜单人字数与五件套�
 - 阐明片名双重含义、本集不可逆的关系位移、观众与角色的信息差。
 
 **【2｜关键场次与起承转合详述（不少于 4 个核心场次）】**
-- 逐场写明：`[场号 SC-<集>-<场>｜日/夜｜内/外｜具体场景｜在场角色]`
-- 玩家唯一领衔：[PLAYER_ROLE] 由 [PLAYER_STAGE_NAME] 饰演 [PLAYER_CONTROL]。
+- 逐场写明：[场号 SC-<集>-<场>｜日/夜｜内/外｜具体场景｜在场角色]
+- 标注：[原著对位：第X章] 或 [ADDED:A-nn 蝴蝶效应加戏] 或 [CHANGED:A-nn 剧版改写]。
 - 详述每场的起因、角色可选项与实际选择、场中权力转折、场末后果及道具/伤病/秘密状态传递。
 
 **【3｜核心对手戏张力与 CHEMISTRY_LENS 拆解（§G4 & §G7）】**
 - 挑出本集最炸裂的 1～2 组核心对手戏，写出：
   - 权力推拉与潜台词反制；
   - 初始距离 ➔ 峰值距离 ➔ 落点距离、视线落点、呼吸停顿、专属代偿动作与重音字；
-  - `CHEMISTRY_LENS` 张力读数（0～5 级）及镜头证据。
+  - CHEMISTRY_LENS 张力读数（0～5 级）及镜头证据。
 
 **【4｜视觉隐喻符号、声音调度与语言指纹检查】**
-- 指明本集调用的视觉隐喻符号状态、机位光线与配乐/静默处理；指出本集核心台词如何体现角色的 `DIALOGUE_FINGERPRINT`。
+- 指明本集调用的视觉隐喻符号状态、机位光线与配乐/静默处理；指出本集核心台词如何体现角色的 DIALOGUE_FINGERPRINT。
 
 **【5｜集末悬念钩子（CLIFFHANGER）与选择后果分支】**
 - 定格画面或最后一句台词 ➔ 下一集驱动力；
-- 对涉及 `[PLAYER_CONTROL]` 的关键节点，列出至少 2 条合乎人物逻辑的后果路径（`CHOICE_CONSEQUENCE`），不替玩家预选；核对 `REVERSION_LOCK` 回流进度。
+- 对涉及 [PLAYER_CONTROL] 的关键节点，列出至少 2 条合乎人物逻辑的后果路径（CHOICE_CONSEQUENCE），不替玩家预选；核对 REVERSION_LOCK 回流进度。
+
+[SELF_CHECK] 槽位完整=是 | 违禁词命中=0 | 原文摘录零篡改=是 | 物理支点落地=是 | 账本ID连续=是 | 字数达标=是`,
 
     S5_SCENE: `══════════════════════════════════════════════════════════════════════════════
 模块 5｜S5 · 单场实拍通告单与边界死锁（SCENE CONTRACT & CUT LOCK）
@@ -577,30 +579,24 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
   const saState = {
     currentStep: 'S1',
-    // S1 分卷与精读状态
-    s1SubMode: '1A', // '1A' (分卷精读) | '1B' (全书底账汇总)
+    s1SubMode: '1A',
     novelText: '',
-    chunks: [], // [{ partNo, title, chapterRange, charCount, text, analysis, handoff }]
+    chunks: [],
     currentChunkIdx: 0,
-    targetChunkSize: 28000, // 默认每卷约 2.8 万字（按完整章节边界浮动）
+    targetChunkSize: 28000,
     parsedRoster: [],
-    // S2 立项与参演心愿单状态
-    playerWish: '', // 例："我饰演纪寒灯" 或 "我演男一 / 最具张力的反派"
-    playerStageName: '', // 玩家戏外艺名
-    otherActorWish: '', // 其他演员定制心愿单（多行自由填写或点选生成）
+    playerWish: '',
+    playerStageName: '',
+    otherActorWish: '',
     episodeCount: '12',
     platform: '主流视频平台S+悬疑剧场',
     tier: 'S+ 顶配精品剧集',
     addonTarget: 'AUTO',
     customCasting: {},
     activeRoleIdForEdit: null,
-    // S3 分批角色控制
     s3TargetRoles: 'ALL',
-    // S4 分批集数控制
     s4EpisodeRange: '全部集数 (若超过8集建议填 1-6 分批生成)',
-    // S5 目标集场
     targetEpisodeScene: '第1集第1场',
-    // 各阶段最终定稿存储
     drafts: { S1: '', S2: '', S3: '', S4: '', S5: '' }
   };
 
@@ -622,26 +618,24 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
   const $ = id => document.getElementById(id);
 
   /* ================================================================
-     PART 3 · 智能按章切分引擎（严格识别章节标题，绝不断在半章！）
+     PART 3 · 智能按章切分引擎
      ================================================================ */
   function splitNovelIntoChaptersAndChunks(fullText, targetSize = 28000) {
     const text = String(fullText || '').replace(/\r\n/g, '\n').trim();
     if (!text) return [];
 
-    // 匹配常见中文/英文小说章节标题行（独立成行）
     const chapterRegex = /(?:^|\n)[ \t　]*(?:第[零一二三四五六七八九十百千万0-9]+[章回节卷幕]|Chapter\s+\d+|CHAPTER\s+\d+|\d{1,3}[\.、\s]\s*[^\n]{1,35}|【第[零一二三四五六七八九十百千万0-9]+章[^\n]*)[ \t　]*[^\n]*/g;
 
     const matches = [];
     let m;
     while ((m = chapterRegex.exec(text)) !== null) {
-      const startIdx = m.index === 0 ? 0 : m.index + 1; // 跳过前导 \n
+      const startIdx = m.index === 0 ? 0 : m.index + 1;
       const titleLine = m[0].trim().slice(0, 40);
       matches.push({ index: startIdx, title: titleLine });
     }
 
     const rawChapters = [];
     if (matches.length >= 2) {
-      // 若前言/楔子存在
       if (matches[0].index > 200) {
         rawChapters.push({
           title: '楔子/开篇',
@@ -657,7 +651,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         }
       }
     } else {
-      // 若无明显章节号，按双换行大段落安全切分（绝不切在句子中间）
       const paras = text.split(/\n{2,}/);
       let buf = '';
       let pCount = 1;
@@ -673,14 +666,12 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       if (buf.trim()) rawChapters.push({ title: `段落单元 ${pCount}`, content: buf.trim() });
     }
 
-    // 将完整章节打包为分卷（Chunks），确保每一卷都在完整章节末尾收口
     const chunks = [];
     let currentChapters = [];
     let currentLen = 0;
 
     rawChapters.forEach((ch, idx) => {
       const chLen = ch.content.length;
-      // 如果加上这一章会明显超出目标字数，且当前分卷已有至少1章，则先封卷
       if (currentChapters.length > 0 && (currentLen + chLen > targetSize * 1.15) && currentLen >= targetSize * 0.5) {
         const firstTitle = currentChapters[0].title;
         const lastTitle = currentChapters[currentChapters.length - 1].title;
@@ -700,7 +691,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       currentChapters.push(ch);
       currentLen += chLen;
 
-      // 最后一章收尾
       if (idx === rawChapters.length - 1 && currentChapters.length > 0) {
         const firstTitle = currentChapters[0].title;
         const lastTitle = currentChapters[currentChapters.length - 1].title;
@@ -720,19 +710,16 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     return chunks;
   }
 
-  /* ---- 从分卷精读结果中自动提取 STATE_HANDOFF 交接包 ---- */
   function extractHandoffFromAnalysis(analysisText) {
     const raw = String(analysisText || '').trim();
     if (!raw) return '';
     const m = raw.match(/===HANDOFF_BEGIN===([\s\S]*?)===HANDOFF_END===/);
     if (m && m[1].trim()) return m[1].trim();
-    // 降级匹配“六、STATE_HANDOFF”之后的内容
     const m2 = raw.match(/(?:STATE_HANDOFF|跨卷交接压缩包)[^\n]*\n([\s\S]*?)(?=\[SELF_CHECK\]|$)/i);
     if (m2 && m2[1].trim()) return m2[1].trim().slice(0, 800);
     return raw.slice(-600);
   }
 
-  /* ---- 从 S1 定稿中提取结构化角色名单（兼容竖线表格、标题行与纯空格排版） ---- */
   function extractRolesFromS1(text) {
     if (!text) return [];
     const roles = [];
@@ -743,8 +730,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       if (!trimmed) return;
 
       let id = '', name = '', pinyin = '', identity = '';
-
-      // 1. 匹配含 CH-nn 的竖线表格或标题：| CH-01 | 角色名 | PINYIN | ... 或 【角色编号 CH-01｜角色名｜...】
       const chMatch = trimmed.match(/CH-(\d+)/i);
       if (chMatch) {
         id = 'CH-' + chMatch[1].padStart(2, '0');
@@ -779,7 +764,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     return roles;
   }
 
-  /* ---- 超级自愈 @@ENTRY 解析器 ---- */
   function mapPosToStandard(p) {
     if (!p) return 'AT_DEPTH';
     const s = String(p).toUpperCase();
@@ -828,7 +812,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
   }
 
   /* ================================================================
-     PART 4 · 全动态 Prompt 组装引擎（v7.0 变量无缝注入）
+     PART 4 · 组装 Prompt
      ================================================================ */
   function buildAssembledPrompt() {
     const step = saState.currentStep;
@@ -840,7 +824,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     const s3BiosDraft = (saState.drafts.S3 || '').trim() || '（尚未生成 S3 电影级角色小传）';
     const s4OutlineDraft = (saState.drafts.S4 || '').trim() || '（尚未生成 S4 逐集剧本详纲）';
 
-    // S1 阶段：分 1A（分卷精读）与 1B（全书终极底账汇总）
     if (step === 'S1') {
       if (saState.s1SubMode === '1B') {
         body = promptDict.S1B_MASTER || DEFAULT_PROMPT_DICT.S1B_MASTER;
@@ -856,7 +839,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         const chRange = curChunk ? curChunk.chapterRange : '全书开篇分卷';
         const chunkText = curChunk ? curChunk.text : (saState.novelText.trim() || '（请先上传原著 TXT 或粘贴本卷原文）');
 
-        // 自动收集前面所有分卷的 STATE_HANDOFF 交接包
         let prevSummary = '无（当前为第 1 卷开篇）';
         let prevLedger = '无（当前为第 1 卷开篇）';
         if (saState.currentChunkIdx > 0) {
@@ -875,13 +857,9 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           .replace(/\{\{THREAD_LEDGER_PREV\}\}/g, prevLedger)
           .replace(/\{\{NOVEL_CHUNK\}\}/g, chunkText);
       }
-    }
-
-    // S2 阶段：剧版立项总纲 + 参演心愿单兑现
-    else if (step === 'S2') {
+    } else if (step === 'S2') {
       body = promptDict.S2_ADAPT || DEFAULT_PROMPT_DICT.S2_ADAPT;
 
-      // 合并用户在卡片网格里点选的演员与自由填写的心愿单
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
       let playerAutoWish = saState.playerWish.trim();
@@ -917,29 +895,20 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         .replace(/\{\{PLATFORM\}\}/g, saState.platform || 'AUTO')
         .replace(/\{\{TIER\}\}/g, saState.tier || 'S+')
         .replace(/\{\{ADDON_TARGET\}\}/g, saState.addonTarget || 'AUTO');
-    }
-
-    // S3 阶段：电影级深度角色小传
-    else if (step === 'S3') {
+    } else if (step === 'S3') {
       body = promptDict.S3_BIOS || DEFAULT_PROMPT_DICT.S3_BIOS;
       body = body
         .replace(/\{\{S1_MASTER_CANON\}\}/g, s1MasterDraft)
         .replace(/\{\{S2_ADAPTATION_PLAN\}\}/g, s2PlanDraft)
         .replace(/\{\{TARGET_ROLES\}\}/g, saState.s3TargetRoles.trim() || 'ALL');
-    }
-
-    // S4 阶段：全剧逐集剧本详纲
-    else if (step === 'S4') {
+    } else if (step === 'S4') {
       body = promptDict.S4_EPISODES || DEFAULT_PROMPT_DICT.S4_EPISODES;
       body = body
         .replace(/\{\{S2_ADAPTATION_PLAN\}\}/g, s2PlanDraft)
         .replace(/\{\{S3_CHARACTER_BIOS\}\}/g, s3BiosDraft)
         .replace(/\{\{EPISODE_COUNT\}\}/g, saState.episodeCount || '12')
         .replace(/\{\{EPISODE_RANGE\}\}/g, saState.s4EpisodeRange.trim() || '全部集数');
-    }
-
-    // S5 阶段：单场实拍通告单与边界死锁
-    else if (step === 'S5') {
+    } else if (step === 'S5') {
       body = promptDict.S5_SCENE || DEFAULT_PROMPT_DICT.S5_SCENE;
       body = body
         .replace(/\{\{S4_EPISODE_OUTLINE\}\}/g, s4OutlineDraft)
@@ -974,7 +943,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     if (cc) cc.textContent = `${raw.length} 字`;
 
     const ha = $('saHaltAlert');
-    const hm = raw.match(/HALT:E0\d\s*\|\s*([^\n]+)/);
+    const hm = raw.match(/\[?HALT:E0\d[^\]\n]*\]?/);
     if (ha) {
       if (hm) {
         ha.classList.remove('hidden');
@@ -1009,7 +978,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
   }
 
   /* ================================================================
-     PART 5 · 五阶段交互控制台渲染（S1 智能分卷台 + S2 参演心愿单与卡司台）
+     PART 5 · 交互控制台渲染
      ================================================================ */
   function renderSlotConsole() {
     const box = $('saSlotConsole');
@@ -1017,12 +986,11 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     box.innerHTML = '';
     const step = saState.currentStep;
 
-    // ==================== S1：智能按章分卷器 & 1A/1B 双模控制台 ====================
+    // S1 控制台
     if (step === 'S1') {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
-      // 1A / 1B 模式切换胶囊栏
       const doneChunksCount = saState.chunks.filter(c => (c.analysis || '').trim().length > 100).length;
       wrap.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:10px 14px">
@@ -1083,7 +1051,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         }
         wrap.appendChild(chunkPanel);
       } else {
-        // 1B 模式说明面板
         const masterPanel = document.createElement('div');
         masterPanel.style.cssText = 'background:#edf3ef;border:1px solid #ccdcd2;border-radius:12px;padding:12px 14px;font-size:12px;color:#18181b;';
         masterPanel.innerHTML = `
@@ -1097,7 +1064,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
       box.appendChild(wrap);
 
-      // 绑定 S1 内部事件
       setTimeout(() => {
         $('btnMode1A')?.addEventListener('click', () => { saState.s1SubMode = '1A'; persistState(); renderAll(); });
         $('btnMode1B')?.addEventListener('click', () => { saState.s1SubMode = '1B'; persistState(); renderAll(); });
@@ -1160,7 +1126,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S2：参演立项心愿单 + 卡司指派台 ====================
+    // S2 控制台
     else if (step === 'S2') {
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
@@ -1169,7 +1135,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       s2Wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
       s2Wrap.innerHTML = `
-        <!-- 1. 玩家参演立项与心愿单（前置核心输入） -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
             <strong style="font-size:13.5px;color:#18181b">参演立项与定制心愿单 · PROJECT WISHLIST</strong>
@@ -1210,7 +1175,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           </div>
         </div>
 
-        <!-- 2. 原著角色卡片快捷指派台（可选辅助） -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline">
             <div>
@@ -1350,7 +1314,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S3：电影级角色小传（支持分批防缩水） ====================
+    // S3 控制台
     else if (step === 'S3') {
       const row = document.createElement('div');
       row.className = 'sa-slot-row';
@@ -1364,7 +1328,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S4：全剧分集剧本详纲（支持按集数范围分批） ====================
+    // S4 控制台
     else if (step === 'S4') {
       const grid = document.createElement('div');
       grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;';
@@ -1385,7 +1349,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S5：单场实拍通告单与死锁 ====================
+    // S5 控制台
     else if (step === 'S5') {
       const row = document.createElement('div');
       row.className = 'sa-slot-row';
@@ -1401,7 +1365,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
   }
 
   /* ================================================================
-     PART 6 · 世界书编译入库与全局事件绑定
+     PART 6 · 编译入库与事件绑定
      ================================================================ */
   const TYPE_GROUP_LABELS = {
     MASTER: '01_全局总纲与底护 (MASTER)',
@@ -1533,7 +1497,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     renderDraftDiagnostics();
   }
 
-  /* ---- 绑定主界面按钮事件 ---- */
   $('saDraftEditor')?.addEventListener('input', e => {
     saState.drafts[saState.currentStep] = e.target.value;
     if (saState.currentStep === 'S1') {
@@ -1558,7 +1521,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     window.toast(`✓ 已复制 [${STEP_META[saState.currentStep].label}] v7.0 指令，发给 AI 即可推演！`);
   });
 
-  // 读取原著小说 TXT 并自动按完整章节分卷
   $('saTxtFilePicker')?.addEventListener('change', e => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1598,7 +1560,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     window.toast('已清空全部工程记录');
   });
 
-  // 编译当前步骤入库（若无 @@ENTRY 标签则自动按阶段封装为标准世界书条目）
   $('saCompileCurrentBtn')?.addEventListener('click', () => {
     const step = saState.currentStep;
     let content = (saState.drafts[step] || '').trim();
@@ -1635,7 +1596,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       saState.parsedRoster = extractRolesFromS1(raw);
     }
 
-    // 自动静默同步至世界书
     if (raw.includes('@@ENTRY|')) {
       await compileEntriesToWorldBook(raw, saState.currentStep === 'S5');
     } else if (saState.currentStep === 'S1' || saState.currentStep === 'S4') {
