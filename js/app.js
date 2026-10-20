@@ -4,7 +4,7 @@
 
 import { openDatabase } from './db.js';
 import { state, on, emit } from './state.js';
-import { $, notify, makeEl, copyText, showNotice } from './utils.js';
+import { $, notify, makeEl, copyText, showNotice, getData, safeName, downloadJSON, downloadBlob } from './utils.js';
 import {
   loadCards, renderList, renderCharacterGrid, renderFolderPills,
   setupLibraryToolbar, importPNGs, exportBackup, restoreBackup,
@@ -94,8 +94,6 @@ on('refresh-detail-star', c => {
   if (b) { b.textContent = c.favorite ? '★' : '☆'; b.classList.toggle('is-favorite', c.favorite); b.setAttribute('aria-pressed', String(!!c.favorite)); }
 });
 on('edit-card', ({ card, categoryOnly }) => {
-  // 简化编辑弹窗（复用 openModal）
-  // 这里按需从原代码的 openEditModal 搬入，或保持简化版
   notify('编辑功能已就绪（使用详情页编辑按钮）');
 });
 
@@ -211,7 +209,7 @@ function bindGlobalEvents() {
   $('copyRaw')?.addEventListener('click', async () => { try { await copyText($('rawJson')?.textContent); notify('已复制 JSON'); } catch { notify('复制失败'); } });
   $('downloadRaw')?.addEventListener('click', () => {
     const c = state.cardCache.find(x => x.id === state.currentId);
-    if (c) { const { getData, downloadJSON, safeName } = require('./utils.js'); downloadJSON(c.data, safeName(getData(c).name) + '-raw.json'); }
+    if (c) { downloadJSON(c.data, safeName(getData(c).name) + '-raw.json'); }
   });
 
   // Lightbox
@@ -219,7 +217,7 @@ function bindGlobalEvents() {
   $('lightboxClose')?.addEventListener('click', closeLightbox);
   $('lightboxSave')?.addEventListener('click', () => {
     const c = state.cardCache.find(x => x.id === state.currentId);
-    if (c) { const { downloadBlob, safeName, getData } = require('./utils.js'); downloadBlob(c.blob, safeName(getData(c).name) + '-原图.png'); }
+    if (c) { downloadBlob(c.blob, safeName(getData(c).name) + '-原图.png'); }
   });
   $('lightboxRoot')?.addEventListener('click', e => { if (e.target === $('lightboxRoot')) closeLightbox(); });
 
@@ -258,36 +256,6 @@ function bindGlobalEvents() {
     });
   });
 }
-
-/* ================================================================
-   启动
-   ================================================================ */
-
-async function boot() {
-  setupLibraryToolbar();
-  bindGlobalEvents();
-  initWorldBook();
-
-  try {
-    await openDatabase();
-    await loadCards();
-    await loadWorldBooks();
-  } catch (e) {
-    showNotice('本地数据库无法打开：' + e.message);
-  }
-
-  // 剧本工坊延迟初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initScriptAtelier);
-  } else {
-    initScriptAtelier();
-  }
-
-  // 初始化网易云播放器
-  initNetease();
-}
-
-boot();
 
 /* ================================================================
    新建角色卡弹窗与保存（直接写入 IndexedDB）
@@ -438,3 +406,33 @@ document.addEventListener('click', e => {
     openCreateCharModal();
   }
 });
+
+/* ================================================================
+   启动
+   ================================================================ */
+
+async function boot() {
+  setupLibraryToolbar();
+  bindGlobalEvents();
+  initWorldBook();
+
+  try {
+    await openDatabase();
+    await loadCards();
+    await loadWorldBooks();
+  } catch (e) {
+    showNotice('本地数据库无法打开：' + e.message);
+  }
+
+  // 剧本工坊延迟初始化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScriptAtelier);
+  } else {
+    initScriptAtelier();
+  }
+
+  // 初始化网易云播放器
+  initNetease();
+}
+
+boot();

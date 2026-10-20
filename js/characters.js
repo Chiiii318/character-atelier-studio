@@ -299,7 +299,7 @@ export async function toggleFavorite(id) {
   } catch (e) { c.favorite = !c.favorite; notify('收藏状态保存失败：' + (e?.message || String(e))); }
 }
 
-/* ---- JSON 角色卡解析适配器（支持 Sully 卡片、Tavern V2、通用标准） ---- */
+/* ---- JSON 角色卡解析适配器（支持 Sully 卡片、Tavern V2、通用标准、独立世界书） ---- */
 
 async function parseCardJSONContent(text, filename) {
   let json;
@@ -309,17 +309,15 @@ async function parseCardJSONContent(text, filename) {
     throw new Error('JSON 解析失败，请确认文件格式完整');
   }
 
-  // 1. Sully 格式角色卡（如周淳业卡片：包含 type: 'sully_character_card' 或 systemPrompt / mountedWorldbooks）
+  // 1. Sully 格式角色卡（包含 type: 'sully_character_card' 或 systemPrompt / mountedWorldbooks）
   if (json.type === 'sully_character_card' || json.systemPrompt || Array.isArray(json.mountedWorldbooks)) {
     const charName = String(json.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
 
-    // 解析挂载世界书为标准 character_book.entries
     const entries = [];
     if (Array.isArray(json.mountedWorldbooks)) {
       json.mountedWorldbooks.forEach((wb, idx) => {
         if (!wb) return;
         const rawContent = String(wb.content || '');
-        // 尝试解析包含在 content 里的嵌入式 JSON entries（如核心锚定）
         const jsonMatch = rawContent.match(/\{[\s\S]*"entries"\s*:\s*\[[\s\S]*\][\s\S]*\}/);
         if (jsonMatch) {
           try {
@@ -341,10 +339,9 @@ async function parseCardJSONContent(text, filename) {
               });
               return;
             }
-          } catch (_) { /* 保持降级 */ }
+          } catch (_) {}
         }
 
-        // 普通文本世界书条目（如系统提示词、后置指令）
         entries.push({
           id: idx + 1,
           keys: [wb.title || charName],
@@ -384,7 +381,6 @@ async function parseCardJSONContent(text, filename) {
       }
     };
 
-    // 头像转换：将 base64 转换成 Blob
     let blob = null;
     if (typeof json.avatar === 'string' && json.avatar.trim()) {
       try {
@@ -448,38 +444,7 @@ async function parseCardJSONContent(text, filename) {
     return { cardData, blob };
   }
 
-  throw new Error('未识别的角色卡 JSON 格式');
-}
-
-  // 3. Tavern V1 或通用平铺角色卡
-  if (json.name || json.description || json.first_mes || json.system_prompt) {
-    const charName = String(json.name || filename.replace(/\.[^/.]+$/, '') || '未命名角色');
-    const cardData = {
-      name: charName,
-      description: json.description || '',
-      personality: json.personality || '',
-      scenario: json.scenario || '',
-      first_mes: json.first_mes || '',
-      mes_example: json.mes_example || '',
-      creator_notes: json.creator_notes || '',
-      system_prompt: json.system_prompt || '',
-      tags: Array.isArray(json.tags) ? json.tags : [],
-      alternate_greetings: Array.isArray(json.alternate_greetings) ? json.alternate_greetings : [],
-      character_book: json.character_book || null,
-      extensions: json.extensions || {}
-    };
-    let blob = null;
-    if (typeof json.avatar === 'string' && json.avatar.trim()) {
-      try {
-        const cleanBase64 = json.avatar.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
-        blob = base64ToBlob(cleanBase64, 'image/png');
-      } catch (_) {}
-    }
-    if (!blob) blob = await resolveMufyAvatarBlob('', charName);
-    return { cardData, blob };
-  }
-
-  // 4. 酒馆独立世界书 / Lorebook 架构角色卡（如《狐儿脸狗儿心.生生不已^v^》）
+  // 4. 酒馆独立世界书 / Lorebook 架构角色卡
   if (json.entries && (typeof json.entries === 'object' || Array.isArray(json.entries))) {
     const rawName = json.originalData?.name || json.name || filename.replace(/\.json$/i, '') || '世界书角色';
     const charName = String(rawName);
@@ -495,7 +460,6 @@ async function parseCardJSONContent(text, filename) {
       const content = ent.content || '';
       const keys = Array.isArray(ent.key) ? ent.key : (Array.isArray(ent.keys) ? ent.keys : [comment]);
 
-      // 通用识别：智能提取包含“性格/人设/设定/档案/简介/描述”等关键字的条目正文
       const isPersonalityKey = /性格|人设|设定|档案|简介|描述/i.test(comment);
       if (!extractedPersonality && isPersonalityKey && content.trim()) {
         extractedPersonality = content;
@@ -515,7 +479,6 @@ async function parseCardJSONContent(text, filename) {
       });
     });
 
-    // 如果没有自带简介，自动用提取到的性格设定前100字作为卡片摘要
     if (!extractedDesc && extractedPersonality) {
       extractedDesc = extractedPersonality.replace(/[\r\n\s]+/g, ' ').slice(0, 100) + '...';
     }
@@ -537,7 +500,6 @@ async function parseCardJSONContent(text, filename) {
       }
     };
 
-    // 通用首字头像：清理特殊符号（如【】、^v^、标点），若有点分结构（如 前缀.角色名）优先提取角色名首字
     let avatarChar = '卡';
     let targetName = charName;
     if (charName.includes('.')) {
@@ -555,8 +517,9 @@ async function parseCardJSONContent(text, filename) {
     return { cardData, blob };
   }
 
-throw new Error('未识别的角色卡 JSON 格式');
-}             
+  throw new Error('未识别的角色卡 JSON 格式');
+}
+
 /* ---- 导入角色卡（PNG + XML + JSON 三轨支持） ---- */
 
 export async function importPNGs(files) {
@@ -746,9 +709,6 @@ export function setupLibraryToolbar() {
   renderFolderPills();
 }
 
-// 在 setupLibraryToolbar 或顶层事件中监听新建按钮
-document.getElementById('btnCreateNewChar')?.addEventListener('click', openCreateCharModal);
-
 /* ---- 提取内嵌世界书到独立书库 ---- */
 
 export async function extractLoreToWorldBook() {
@@ -780,149 +740,4 @@ export async function extractLoreToWorldBook() {
   emit('worldbooks-changed');
   notify(`成功提取 ${list.length} 条世界书至《${newBookName}》！`);
   emit('go', 'worlds');
-}
-
-/* ================================================================
-   新建角色卡弹窗与保存逻辑（纯净本地人设，存入 IndexedDB）
-   ================================================================ */
-
-export function openCreateCharModal() {
-  const modalWrap = document.createElement('div');
-  modalWrap.style.cssText = 'background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;max-height:88dvh;overflow-y:auto;';
-
-  modalWrap.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">
-      <strong style="font-size:16px;color:var(--ink)">新建本地角色卡</strong>
-      <button type="button" class="close" id="btnCloseCreateModal" style="border:none;background:var(--soft);border-radius:8px;width:30px;height:30px;cursor:pointer">×</button>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <!-- 头像上传 -->
-      <div style="display:flex;align-items:center;gap:14px;background:var(--soft);padding:12px;border-radius:12px">
-        <img id="newCharAvatarPreview" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" style="width:58px;height:78px;border-radius:8px;object-fit:cover;border:1px solid var(--line)">
-        <div style="flex:1">
-          <label class="btn btn-small btn-primary" for="newCharAvatarPicker" style="cursor:pointer">上传头像照片</label>
-          <input type="file" id="newCharAvatarPicker" accept="image/*" style="display:none">
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">支持任何相册照片作为角色卡封面</div>
-        </div>
-      </div>
-
-      <!-- 角色名 -->
-      <div>
-        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">角色名称</label>
-        <input type="text" id="newCharName" placeholder="例如：沈昱北" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
-      </div>
-
-      <!-- 标签与分类 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">文件夹/分类</label>
-          <input type="text" id="newCharFolder" placeholder="例如：自建、主角" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">标签（逗号隔开）</label>
-          <input type="text" id="newCharTags" placeholder="例如：现代, 艺人, 傲娇" style="width:100%;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:13px;outline:none">
-        </div>
-      </div>
-
-      <!-- 描述设定 -->
-      <div>
-        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">描述设定 (Description / 人设)</label>
-        <textarea id="newCharDesc" placeholder="写下他的背景、身份、外貌特征等..." style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
-      </div>
-
-      <!-- 性格 -->
-      <div>
-        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">性格特点 (Personality)</label>
-        <textarea id="newCharPersonality" placeholder="例如：表面冷淡克制，私底下极度护短，发烧也不肯承认的死傲娇..." style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
-      </div>
-
-      <!-- 默认开场白 -->
-      <div>
-        <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">第一句开场白 (First Message)</label>
-        <textarea id="newCharFirstMes" placeholder="第一句跟你说的话..." style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;line-height:1.6;font-family:inherit;outline:none"></textarea>
-      </div>
-    </div>
-
-    <!-- 底部保存按钮 -->
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
-      <button type="button" class="btn btn-quiet" id="btnCancelCreate">取消</button>
-      <button type="button" class="btn btn-primary" id="btnSaveNewChar">创建并加入资料库</button>
-    </div>
-  `;
-
-  // 打开弹窗
-  emit('open-modal', { title: '新建角色卡', builder: () => modalWrap });
-
-  let avatarBlob = null;
-
-  setTimeout(() => {
-    // 监听头像选择
-    const picker = modalWrap.querySelector('#newCharAvatarPicker');
-    const preview = modalWrap.querySelector('#newCharAvatarPreview');
-    picker.onchange = (e) => {
-      const f = e.target.files?.[0];
-      if (f) {
-        avatarBlob = f;
-        preview.src = URL.createObjectURL(f);
-      }
-    };
-
-    modalWrap.querySelector('#btnCloseCreateModal').onclick = () => emit('close-modal');
-    modalWrap.querySelector('#btnCancelCreate').onclick = () => emit('close-modal');
-
-    // 保存新角色卡
-    modalWrap.querySelector('#btnSaveNewChar').onclick = async () => {
-      const name = modalWrap.querySelector('#newCharName').value.trim();
-      if (!name) {
-        alert('请输入角色名称');
-        return;
-      }
-
-      // 如果没传头像，自动生成一张纯色占位图
-      if (!avatarBlob) {
-        const { createMufyPlaceholderAvatar } = await import('./png-parser.js');
-        avatarBlob = await createMufyPlaceholderAvatar(name);
-      }
-
-      const tags = modalWrap.querySelector('#newCharTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
-      const folder = modalWrap.querySelector('#newCharFolder').value.trim() || '自建';
-      const desc = modalWrap.querySelector('#newCharDesc').value.trim();
-      const personality = modalWrap.querySelector('#newCharPersonality').value.trim();
-      const firstMes = modalWrap.querySelector('#newCharFirstMes').value.trim();
-
-      // 标准 V2 数据模型（无复杂正则，纯净好用）
-      const newCard = {
-        id: uuid(),
-        time: Date.now(),
-        category: folder,
-        customTags: [],
-        favorite: false,
-        blob: avatarBlob,
-        data: {
-          spec: 'chara_card_v2',
-          spec_version: '2.0',
-          data: {
-            name: name,
-            description: desc,
-            personality: personality,
-            scenario: '',
-            first_mes: firstMes,
-            mes_example: '',
-            creator_notes: '自建角色卡',
-            system_prompt: '',
-            tags: tags,
-            alternate_greetings: [],
-            character_book: null,
-            extensions: {}
-          }
-        }
-      };
-
-      await saveCard(newCard);
-      await loadCards();
-      emit('close-modal');
-      notify(`✓ 角色卡「${name}」已创建成功！`);
-    };
-  }, 0);
 }
