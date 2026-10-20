@@ -536,151 +536,193 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       box.appendChild(makePillRow('商业定级 [TIER]', '', [{ label: '✦ AUTO', val: 'AUTO' }, { label: 'S+ 顶配（扛招商）', val: 'S+' }, { label: 'S 级质感', val: 'S' }, { label: 'A+ 概念黑马', val: 'A+' }], saState.tier, val => { saState.tier = val; persistState(); }));
     }
 
-    // S3: 核心卡司认领与定制台（一键轻量化点击）
+        // S3: 核心卡司指派台（多角色自由选角 + 极简冷淡风网格）
     else if (step === 'S3') {
-      const roles = saState.parsedRoster;
+      const roles = saState.parsedRoster || [];
+      const casting = saState.customCasting || {};
 
       const castingDesk = document.createElement('div');
-      castingDesk.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
+      castingDesk.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.03);display:flex;flex-direction:column;gap:12px;';
+
       castingDesk.innerHTML = `
-        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong style="font-size:12.5px;color:#18181b">
-              从 S1 原著角色名册中，一键指派认领席位：
-            </strong>
-            <small style="color:#71717a;font-size:11px">已识别出 ${roles.length} 位角色</small>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid #e4e4e7">
+          <div>
+            <strong style="font-size:13.5px;color:#18181b">剧本卡司指派台 · CASTING SPEC</strong>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">点击角色卡片可指定演员；未设置的角色由 AI 盲盒/原著接管</div>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="s3RoleChips"></div>
+          <small style="font-size:11px;color:#71717a">共 ${roles.length} 位角色</small>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
-          <!-- 席位①：我主演的角色 -->
-          <div style="background:#fff;border:1.5px solid #18181b;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f4f4f5;padding-bottom:6px">
-              <strong style="font-size:13px;color:#18181b">① 我主演的角色席位 (Player)</strong>
-              <span style="font-size:11px;background:#18181b;color:#fff;padding:2px 8px;border-radius:4px" id="s3MyBadge">${saState.playerRoleName ? `已绑定: ${saState.playerRoleName}` : '待指派'}</span>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">戏内角色原名</label>
-              <input type="text" class="input-box" id="inpS3MyRole" value="${saState.playerRoleName}" placeholder="点选上方角色快速填入" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">我的戏外艺名/称呼 <small style="color:#a1a1aa">(留空则称呼“你”)</small></label>
-              <input type="text" class="input-box" id="inpS3MyActor" value="${saState.playerActorName}" placeholder="留空则不设真实姓名" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:13px">
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">番位设定</label>
-              <select id="selS3MySeat" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px">
-                <option value="一番大女主（绝对领衔）"${saState.playerSeat.includes('女主') ? ' selected' : ''}>一番大女主（绝对领衔）</option>
-                <option value="一番大男主（绝对领衔）"${saState.playerSeat.includes('男主') ? ' selected' : ''}>一番大男主（绝对领衔）</option>
-                <option value="双强平番"${saState.playerSeat.includes('平番') ? ' selected' : ''}>双强平番</option>
-                <option value="特邀领衔反派/女二"${saState.playerSeat.includes('女二') ? ' selected' : ''}>特邀领衔反派/女二</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">个性微调诉求 <small style="color:#a1a1aa">(有想法就写，没有留空)</small></label>
-              <textarea id="txtS3MyReq" placeholder="例如：性格更冷静克制，台词节奏更锋利..." style="width:100%;min-height:64px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.playerCustomReq}</textarea>
-            </div>
+        <!-- 角色紧凑网格 -->
+        <div id="saRoleGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;max-height:220px;overflow-y:auto;padding-right:2px"></div>
+
+        <!-- 点选编辑抽屉浮层 -->
+        <div id="saEditDrawer" style="display:none;background:#fafaf9;border:1.5px solid #18181b;border-radius:12px;padding:14px;margin-top:6px;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e4e7;padding-bottom:8px">
+            <span id="saDrawerTitle" style="font-weight:750;font-size:13px;color:#18181b">设置角色卡司</span>
+            <button type="button" id="saBtnCloseDrawer" style="border:none;background:#f4f4f5;border-radius:6px;width:24px;height:24px;cursor:pointer;color:#71717a;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
           </div>
 
-          <!-- 席位②：对手戏角色 -->
-          <div style="background:#fffcf6;border:1.5px solid #d97706;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fef3c7;padding-bottom:6px">
-              <strong style="font-size:13px;color:#b45309">② 对手戏角色席位 (Partner)</strong>
-              <span style="font-size:11px;background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:4px" id="s3PartnerBadge">${saState.partnerRoleName ? `已绑定: ${saState.partnerRoleName}` : '待指派'}</span>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">对手戏内角色名</label>
-              <input type="text" class="input-box" id="inpS3PartnerRole" value="${saState.partnerRoleName}" placeholder="点选上方角色快速填入" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:13px">
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">戏外扮演演员 <small style="color:#a1a1aa">(留空则AI生成盲盒)</small></label>
-              <input type="text" class="input-box" id="inpS3PartnerActor" value="${saState.partnerActorName}" placeholder="如 沈昱北 / 张凌赫" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:13px">
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">对手演员咖位生态</label>
-              <select id="selS3PartnerArch" style="width:100%;height:36px;border:1px solid #fed7aa;border-radius:8px;padding:0 10px;font-size:12px">
-                <option value="上升期质感小生（极看重原声台词与高光）">上升期质感小生（极看重原声台词与高光）</option>
-                <option value="叔圈电影咖戏骨（气场强，讲究实感）">叔圈电影咖戏骨（气场强，讲究实感）</option>
-                <option value="顶流爱豆转型（团队防爆意识强，戏外避嫌）">顶流爱豆转型（团队防爆意识强，戏外避嫌）</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#71717a">对他的微调诉求 <small style="color:#a1a1aa">(有想法就写，没有留空)</small></label>
-              <textarea id="txtS3PartnerReq" placeholder="例如：强化暗恋细节，眼神回避频率提高..." style="width:100%;min-height:64px;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit">${saState.partnerCustomReq}</textarea>
-            </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;color:#18181b">
+            <input type="checkbox" id="saChkIsPlayer" style="accent-color:#18181b;width:15px;height:15px;cursor:pointer"/>
+            <span>由我亲自扮演此角色（在戏中代入第一人称“你/我”）</span>
+          </label>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;font-weight:700;color:#52525b">指定演员/艺人姓名 <span style="font-weight:400;color:#71717a">(留空则为 AI 原著/盲盒)</span></label>
+            <input type="text" id="saInpActorName" placeholder="填入你期望的演员姓名..." style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:7px 10px;font-size:12.5px;outline:none;background:#fff;color:#18181b"/>
           </div>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;font-weight:700;color:#52525b">戏外演员梯队生态</label>
+            <select id="saSelArchetype" style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;color:#18181b">
+              <option value="默认">遵循原著（不附加戏外生态）</option>
+              <option value="上升期质感演员（极看重原声台词与高光）">上升期质感演员（极看重原声台词与高光）</option>
+              <option value="戏骨电影咖（气场强，讲究实感）">戏骨电影咖（气场强，讲究实感）</option>
+              <option value="顶流偶像转型（防爆意识强，戏外避嫌）">顶流偶像转型（防爆意识强，戏外避嫌）</option>
+              <option value="清冷文艺片常客（注重留白与眼神微表情）">清冷文艺片常客（注重留白与眼神微表情）</option>
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:11px;font-weight:700;color:#52525b">专属人设微调要求 <span style="font-weight:400;color:#71717a">(有想法就写，没有留空)</span></label>
+            <textarea id="saInpCustomReq" placeholder="例如：眼神回避频率提高、台词节奏更凌厉一些..." style="width:100%;min-height:54px;border:1px solid #e4e4e7;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:#fff;color:#18181b;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <button type="button" id="saBtnResetRole" style="border:none;background:transparent;color:#71717a;cursor:pointer;font-size:11px;padding:0;text-decoration:underline;text-underline-offset:2px">恢复默认盲盒</button>
+            <button type="button" id="saBtnSaveRole" style="background:#18181b;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">保存设置</button>
+          </div>
+        </div>
+
+        <!-- 底部状态摘要 -->
+        <div style="margin-top:4px;padding-top:10px;border-top:1px dashed #e4e4e7;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:#71717a">
+          <span>已自定义演员：<strong id="saCustomCountTag" style="background:#edf3ef;color:#668271;font-weight:700;padding:2px 7px;border-radius:6px;border:1px solid #ccdcd2">0 人</strong></span>
+          <span id="saPlayerSummaryTag" style="margin-left:auto;font-weight:600">我演：尚未指派</span>
         </div>
       `;
 
       box.appendChild(castingDesk);
 
-      // 渲染无感直选卡片
-      const chipsBox = castingDesk.querySelector('#s3RoleChips');
-      if (roles.length) {
+      const roleGrid = castingDesk.querySelector('#saRoleGrid');
+      const drawer = castingDesk.querySelector('#saEditDrawer');
+      const drawerTitle = castingDesk.querySelector('#saDrawerTitle');
+      const chkIsPlayer = castingDesk.querySelector('#saChkIsPlayer');
+      const inpActorName = castingDesk.querySelector('#saInpActorName');
+      const selArchetype = castingDesk.querySelector('#saSelArchetype');
+      const inpCustomReq = castingDesk.querySelector('#saInpCustomReq');
+      const btnCloseDrawer = castingDesk.querySelector('#saBtnCloseDrawer');
+      const btnResetRole = castingDesk.querySelector('#saBtnResetRole');
+      const btnSaveRole = castingDesk.querySelector('#saBtnSaveRole');
+      const customCountTag = castingDesk.querySelector('#saCustomCountTag');
+      const playerSummaryTag = castingDesk.querySelector('#saPlayerSummaryTag');
+
+      function updateCastingGridUI() {
+        roleGrid.innerHTML = '';
+        let customCount = 0;
+        let playerText = '尚未指派';
+
+        if (!roles.length) {
+          roleGrid.innerHTML = '<div style="font-size:11px;color:#71717a;grid-column:1/-1;padding:8px">在 S1 定稿框填入原著角色表后，此处将自动生成角色卡片。</div>';
+        }
+
         roles.forEach(r => {
-          const isPlayer = saState.playerRoleName === r.name;
-          const isPartner = saState.partnerRoleName === r.name;
+          const cfg = casting[r.id];
+          const isCustom = !!(cfg && (cfg.actor || cfg.req || cfg.isPlayer || (cfg.archetype && cfg.archetype !== '默认')));
+          const isPlayer = !!(cfg && cfg.isPlayer);
 
-          const chip = document.createElement('div');
-          chip.style.cssText = `display:inline-flex;align-items:center;background:${isPlayer ? '#18181b' : (isPartner ? '#d97706' : '#f4f4f5')};color:${(isPlayer || isPartner) ? '#fff' : '#18181b'};border-radius:8px;padding:4px 8px;gap:6px;font-size:12px;border:1px solid ${isPlayer ? '#18181b' : (isPartner ? '#d97706' : '#e4e4e7')};`;
+          if (isCustom) customCount++;
+          if (isPlayer) playerText = `${r.name} (${cfg.actor || '我'})`;
 
-          chip.innerHTML = `
-            <strong>${r.id} ${r.name}</strong>
-            <button type="button" class="btn-assign-player" style="border:0;background:${isPlayer ? '#fff' : 'rgba(0,0,0,0.06)'};color:${isPlayer ? '#18181b' : 'inherit'};font-size:10px;padding:2px 5px;border-radius:4px;cursor:pointer;font-weight:700">${isPlayer ? '✓ 我演' : '演主角'}</button>
-            <button type="button" class="btn-assign-partner" style="border:0;background:${isPartner ? '#fff' : 'rgba(0,0,0,0.06)'};color:${isPartner ? '#b45309' : 'inherit'};font-size:10px;padding:2px 5px;border-radius:4px;cursor:pointer;font-weight:700">${isPartner ? '✓ 对手' : '演对手'}</button>
+          const pill = document.createElement('div');
+          pill.style.cssText = `
+            border: 1px solid ${isPlayer ? '#18181b' : (isCustom ? '#ccdcd2' : '#e4e4e7')};
+            background: ${isPlayer ? '#f4f4f5' : (isCustom ? '#edf3ef' : '#ffffff')};
+            border-radius: 10px; padding: 8px 10px; cursor: pointer; transition: all 0.16s ease;
+            display: flex; flex-direction: column; gap: 3px; position: relative;
           `;
 
-          // 一键指派我演
-          chip.querySelector('.btn-assign-player').onclick = e => {
-            e.stopPropagation();
-            if (saState.playerRoleName === r.name) {
-              saState.playerRoleName = '';
-              saState.playerRoleChId = '';
-            } else {
-              saState.playerRoleChId = r.id;
-              saState.playerRoleName = r.name;
-              saState.playerRolePinyin = r.pinyin;
-              if (saState.partnerRoleName === r.name) saState.partnerRoleName = '';
-            }
-            persistState();
-            renderAll();
+          pill.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:10px;font-weight:700;color:${isPlayer ? '#18181b' : '#71717a'}">${r.id}</span>
+              <span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:${isPlayer ? '#18181b' : (isCustom ? '#e0ece4' : '#f4f4f5')};color:${isPlayer ? '#fff' : (isCustom ? '#668271' : '#71717a')};font-weight:${(isPlayer || isCustom) ? '700' : '500'}">
+                ${isPlayer ? '我演主角' : (isCustom ? '已定' : '原著/盲盒')}
+              </span>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#18181b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+            <div style="font-size:11px;color:${isCustom ? '#668271' : '#71717a'};font-weight:${isCustom ? '600' : '400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${isCustom && cfg.actor ? cfg.actor : (isCustom ? '自定义人设' : 'AI生成盲盒')}
+            </div>
+          `;
+
+          pill.onclick = () => {
+            saState.activeRoleIdForEdit = r.id;
+            drawerTitle.textContent = `指派 [${r.id}] ${r.name} 的演员与人设`;
+            const currentCfg = casting[r.id] || {};
+            chkIsPlayer.checked = !!currentCfg.isPlayer;
+            inpActorName.value = currentCfg.actor || '';
+            selArchetype.value = currentCfg.archetype || '默认';
+            inpCustomReq.value = currentCfg.req || '';
+
+            drawer.style.display = 'flex';
+            drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           };
 
-          // 一键指派对手演
-          chip.querySelector('.btn-assign-partner').onclick = e => {
-            e.stopPropagation();
-            if (saState.partnerRoleName === r.name) {
-              saState.partnerRoleName = '';
-              saState.partnerRoleChId = '';
-            } else {
-              saState.partnerRoleChId = r.id;
-              saState.partnerRoleName = r.name;
-              saState.partnerRolePinyin = r.pinyin;
-              if (saState.playerRoleName === r.name) saState.playerRoleName = '';
-            }
-            persistState();
-            renderAll();
-          };
-
-          chipsBox.appendChild(chip);
+          roleGrid.appendChild(pill);
         });
-      } else {
-        chipsBox.innerHTML = '<span style="font-size:11px;color:#a1a1aa">在 S1 定稿框填入角色名单后，此处将自动生成原著角色指派按钮。</span>';
+
+        if (customCountTag) customCountTag.textContent = `${customCount} 人`;
+        if (playerSummaryTag) playerSummaryTag.textContent = `我演：${playerText}`;
       }
 
-      // 输入框双向同步
-      setTimeout(() => {
-        $('inpS3MyRole')?.addEventListener('input', e => { saState.playerRoleName = e.target.value.trim(); persistState(); updatePromptPreview(); });
-        $('inpS3MyActor')?.addEventListener('input', e => { saState.playerActorName = e.target.value.trim(); persistState(); updatePromptPreview(); });
-        $('selS3MySeat')?.addEventListener('change', e => { saState.playerSeat = e.target.value; persistState(); updatePromptPreview(); });
-        $('txtS3MyReq')?.addEventListener('input', e => { saState.playerCustomReq = e.target.value; persistState(); updatePromptPreview(); });
+      btnCloseDrawer.onclick = () => {
+        drawer.style.display = 'none';
+        saState.activeRoleIdForEdit = null;
+      };
 
-        $('inpS3PartnerRole')?.addEventListener('input', e => { saState.partnerRoleName = e.target.value.trim(); persistState(); updatePromptPreview(); });
-        $('inpS3PartnerActor')?.addEventListener('input', e => { saState.partnerActorName = e.target.value.trim(); persistState(); updatePromptPreview(); });
-        $('selS3PartnerArch')?.addEventListener('change', e => { saState.partnerArchetype = e.target.value; persistState(); updatePromptPreview(); });
-        $('txtS3PartnerReq')?.addEventListener('input', e => { saState.partnerCustomReq = e.target.value; persistState(); updatePromptPreview(); });
-      }, 0);
+      btnResetRole.onclick = () => {
+        const id = saState.activeRoleIdForEdit;
+        if (id && casting[id]) {
+          delete casting[id];
+          persistState();
+          updatePromptPreview();
+          updateCastingGridUI();
+        }
+        drawer.style.display = 'none';
+        saState.activeRoleIdForEdit = null;
+      };
+
+      btnSaveRole.onclick = () => {
+        const id = saState.activeRoleIdForEdit;
+        if (!id) return;
+
+        const isPlayer = chkIsPlayer.checked;
+        const actor = inpActorName.value.trim();
+        const archetype = selArchetype.value;
+        const req = inpCustomReq.value.trim();
+
+        // 若勾选了“我演”，先将其他已勾选角色重置
+        if (isPlayer) {
+          Object.keys(casting).forEach(k => {
+            if (casting[k]) casting[k].isPlayer = false;
+          });
+        }
+
+        if (actor || req || isPlayer || archetype !== '默认') {
+          casting[id] = { actor, isPlayer, archetype, req };
+        } else {
+          delete casting[id];
+        }
+
+        persistState();
+        updatePromptPreview();
+        updateCastingGridUI();
+        drawer.style.display = 'none';
+        saState.activeRoleIdForEdit = null;
+        window.toast('已保存角色卡司设置');
+      };
+
+      updateCastingGridUI();
     }
 
     // S4: 小传与盲盒
