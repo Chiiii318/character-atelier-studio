@@ -1848,22 +1848,96 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
     // S4 控制台
     else if (step === 'S4') {
-      const grid = document.createElement('div');
-      grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;';
-      grid.innerHTML = `
-        <div class="sa-slot-row">
-          <div class="sa-slot-label"><span>全剧总集数 [EPISODE_COUNT]</span></div>
-          <input type="text" id="inpS4EpCount" value="${saState.episodeCount}" placeholder="如 12" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+      const s2Draft = (saState.drafts.S2 || '').trim();
+
+      // 智能从 S2 定稿中精准提取最终核定集数
+      function detectFinalEpisodes() {
+        const m1 = s2Draft.match(/EPISODE_COUNT_FINAL:\s*(\d+)/i);
+        if (m1) return parseInt(m1[1], 10);
+        const m2 = s2Draft.match(/(?:总集数|规划集数|最终集数)[：:\s]*(\d+)\s*集/i);
+        if (m2) return parseInt(m2[1], 10);
+        const m3 = s2Draft.match(/共\s*(\d+)\s*集/i);
+        if (m3) return parseInt(m3[1], 10);
+        const num = parseInt(saState.episodeCount, 10);
+        return Number.isFinite(num) && num > 0 ? num : 12; // 默认 12 集短剧
+      }
+
+      const totalEps = detectFinalEpisodes();
+      saState.episodeCount = String(totalEps);
+
+      const s4Box = document.createElement('div');
+      s4Box.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;';
+
+      // 动态生成批次建议
+      const needBatch = totalEps > 8;
+
+      s4Box.innerHTML = `
+        <div style="border-bottom:1px solid #e4e4e7;padding-bottom:10px;display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <strong style="font-size:13.5px;color:#18181b">分集详纲生成管线（自动承接 S2 定案）</strong>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">
+              已自动识别 S2 核定总集数：<strong style="color:#18181b">${totalEps} 集</strong> ｜ 每集强制 ≥500字详纲（含镜头张力算子与回流锁）
+            </div>
+          </div>
+          <span style="font-size:10.5px;padding:2px 8px;border-radius:6px;background:${needBatch ? '#fef3c7' : '#edf3ef'};color:${needBatch ? '#b45309' : '#668271'};font-weight:700">
+            ${needBatch ? '大体量剧集 · 建议分批生成' : '标准短剧 · 默认全量直出'}
+          </span>
         </div>
-        <div class="sa-slot-row">
-          <div class="sa-slot-label"><span>本批输出集数范围 [EPISODE_RANGE]（防缩水：建议每次生成 4~6 集，确保每集≥500字）</span></div>
-          <input type="text" id="inpS4EpRange" value="${saState.s4EpisodeRange}" placeholder="例如：第1集-第6集 / 第7集-第12集" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+
+        <!-- 批次选择胶囊 -->
+        <div>
+          <div style="font-size:11.5px;font-weight:700;color:#52525b;margin-bottom:6px">选择本批输出范围 [EPISODE_RANGE]：</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="s4BatchBtnGroup">
+            <button type="button" class="btn btn-small btn-primary" data-range="全剧第1集至第${totalEps}集全量" style="background:#668271;border-color:#668271;color:#fff;font-weight:700">
+              ✦ 一键全量输出（第 1 集 ～ 第 ${totalEps} 集全部）
+            </button>
+            ${needBatch ? `
+              <button type="button" class="btn btn-small btn-soft" data-range="第1集至第${Math.ceil(totalEps/2)}集">
+                第一批（第 1 ～ ${Math.ceil(totalEps/2)} 集 · 深度防截断）
+              </button>
+              <button type="button" class="btn btn-small btn-soft" data-range="第${Math.ceil(totalEps/2)+1}集至第${totalEps}集">
+                第二批（第 ${Math.ceil(totalEps/2)+1} ～ ${totalEps} 集 · 终局回流）
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- 当前指令状态反馈 -->
+        <div style="background:#f4f4f5;border-radius:8px;padding:9px 12px;font-size:11.5px;display:flex;justify-content:space-between;align-items:center">
+          <span>当前指令锁定范围：<strong id="s4CurrentRangeLabel" style="color:#18181b">全剧第 1 集至第 ${totalEps} 集全量</strong></span>
+          <span style="font-size:10.5px;color:#71717a">已挂载 S2 蝴蝶效应与 S3 语言指纹</span>
         </div>
       `;
-      box.appendChild(grid);
+
+      box.appendChild(s4Box);
+
       setTimeout(() => {
-        $('inpS4EpCount')?.addEventListener('input', e => { saState.episodeCount = e.target.value.trim(); persistState(); updatePromptPreview(); });
-        $('inpS4EpRange')?.addEventListener('input', e => { saState.s4EpisodeRange = e.target.value; persistState(); updatePromptPreview(); });
+        // 初始化默认设为全剧全量
+        saState.s4EpisodeRange = `全剧第1集至第${totalEps}集全量`;
+        persistState();
+        updatePromptPreview();
+
+        s4Box.querySelectorAll('#s4BatchBtnGroup button').forEach(btn => {
+          btn.onclick = () => {
+            s4Box.querySelectorAll('#s4BatchBtnGroup button').forEach(b => {
+              b.classList.remove('btn-primary');
+              b.classList.add('btn-soft');
+              b.style.background = '#f4f4f5';
+              b.style.color = '#18181b';
+            });
+            btn.classList.remove('btn-soft');
+            btn.classList.add('btn-primary');
+            btn.style.background = '#668271';
+            btn.style.color = '#fff';
+
+            const range = btn.dataset.range;
+            saState.s4EpisodeRange = range;
+            persistState();
+            updatePromptPreview();
+
+            s4Box.querySelector('#s4CurrentRangeLabel').textContent = range;
+          };
+        });
       }, 0);
     }
 
