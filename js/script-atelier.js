@@ -94,29 +94,26 @@ S2 · 剧版改编规划与蝴蝶效应引擎 (ADAPTATION & BUTTERFLY)
 @@END@@`,
 
     S3_CASTING: `════════════════════════════════════════════════════════════════════════════════
-S3 · 卡司大盘配置与全角色演职画像推演 (CASTING SPEC)
+S3 · 全角色演职卡司与拟邀生态推演 (CASTING SPEC)
 ════════════════════════════════════════════════════════════════════════════════
 [INPUT DATA]
 - 剧版改编方案与关系网:
 {{S2_OUTPUT}}
 
-[USER CASTING ASSIGNMENT / 核心卡司定制清单]
+[USER CONFIRMED CASTING / 用户已钦定卡司]
 {{CASTING_CUSTOM_LIST}}
 
-[TASK / 编剧策划任务]
-你现在是该剧总制片人兼选角导演。电视剧需要完整的演职员大盘方案供后续实机 RP 动态调用。请输出：
-
-§01 【全剧角色卡司配置总表】（涵盖 S1 名册中的核心与重要配角）
-请输出标准 Markdown 表格，格式严格如下：
+[TASK / 编剧选角任务]
+请输出标准表格：
 | 角色编号 | 戏内角色名 | 演职状态 (已定/AI拟邀) | 演员姓名/画像标签 | 咖位梯队与戏外生态方向 | 选角核心依据与对戏张力点 |
 
-【拟邀与编排规则】：
-1. 用户清单中特别指定的角色：演职状态标为【已定】，严格填入用户指定的演员与诉求，锁定状态。
-2. 玩家主演角色：锁定为玩家本人/指定艺名，第一人称代入。
-3. 其余未指定的所有配角：请根据原著人设和剧版定位，**主动拟定精准的内娱演员梯队方向与生态画像**（例如：“拟邀上升期电影脸小生 / 原声台词扎实 / 戏外避嫌型”、“拟邀年代剧黄金绿叶戏骨 / 压场感强”），为后续 RP 实机模型提供最鲜活的对戏底账！
+【硬性约束】：
+1. 【全剧有且仅有一个角色是玩家饰演】：严格以[用户已钦定卡司]中标记为【玩家领衔】的角色为准（代入第一人称称呼“你/我”）。其余任何角色绝对禁止标为玩家！
+2. 用户已指定演员的角色（如田曦薇）：演职状态必须标为【已定】，演员姓名必须直接写具体人名！
+3. 未指定演员的所有其余角色：演职状态统一标为【AI拟邀】，演员姓名必须直接给出【具体拟邀画像标签】（如：“温柔刀型上升期小生”、“年代剧黄金绿叶戏骨”），并写明戏外梯队方向，供后续实机 RP 调用！
 
 §02 【戏外内娱舆情与番位生态前瞻】
-- 针对上述卡司大盘，分析该剧公布阵容后在内娱可能引发的番位争议、招商预期与防爆焦点（≤150字）。`,
+针对本卡司大盘，分析公布阵容后的内娱番位争议、招商预期与防爆焦点（≤150字）。`,
 
     S4_CHAR_OFFSET: `════════════════════════════════════════════════════════════════════════════════
 S4 · 双轨小传与内娱生态盲盒编译 (CHAR & OFFSET COMPILATION)
@@ -380,7 +377,7 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
         .replace(/\{\{PLATFORM\}\}/g, saState.platform)
         .replace(/\{\{ORIGIN\}\}/g, saState.origin)
         .replace(/\{\{ADDON_TARGET\}\}/g, saState.addonTarget);
-          } else if (step === 'S3') {
+      } else if (step === 'S3') {
       body = promptDict.S3_CASTING || DEFAULT_PROMPT_DICT.S3_CASTING;
 
       const roles = saState.parsedRoster || [];
@@ -390,18 +387,20 @@ RT-5 严禁违反 BLOCKLIST 中的负面情绪与用词规范。
       roles.forEach(r => {
         const cfg = casting[r.id];
         if (cfg && (cfg.actor || cfg.req || cfg.isPlayer || (cfg.archetype && cfg.archetype !== '默认'))) {
-          const roleIdentity = cfg.isPlayer ? '【玩家本人亲自领衔主演（第一人称代入“你/我”）】' : '【用户钦定演员】';
-          const actorName = cfg.actor ? cfg.actor : (cfg.isPlayer ? '玩家本人' : 'AI自主推演盲盒');
+          // 真实读取：若勾选了我演，优先取用户填写的真实艺名
+          const isPlayer = !!cfg.isPlayer;
+          const roleStatus = isPlayer ? '【玩家唯一领衔主演席位】' : '【用户钦定已定演员】';
+          const realActor = cfg.actor ? cfg.actor : (isPlayer ? '玩家本人' : '未定');
           const eco = (cfg.archetype && cfg.archetype !== '默认') ? cfg.archetype : '遵循原著真实质感';
           const req = cfg.req ? cfg.req : '无（完全忠实原著）';
 
-          customLines.push(`- 角色席位 [${r.id} ${r.name}]:\n  * 状态: ${roleIdentity}\n  * 指定演员: ${actorName}\n  * 演员生态画像: ${eco}\n  * 微调诉求: ${req}`);
+          customLines.push(`- 角色席位 [${r.id} ${r.name}]:\n  * 演职状态: ${roleStatus}\n  * 实际演员姓名: ${realActor}\n  * 戏外生态方向: ${eco}\n  * 人设微调诉求: ${req}`);
         }
       });
 
       const assignmentText = customLines.length 
-        ? customLines.join('\n\n') + '\n\n- 其余原著角色: 未钦定具体人选，请 AI 全权自主拟定内娱演员画像大方向。'
-        : '（暂无特别钦定演员，全部角色请 AI 结合原著与剧版定位，自主拟定全剧演员梯队画像）';
+        ? customLines.join('\n\n') + '\n\n- 其余所有未列出的角色: 均未钦定演员，演职状态统一为【AI拟邀】，请 AI 自主给出具体画像标签与生态方向。'
+        : '（暂无钦定演员，除玩家主演外，其余角色全部由 AI 自主给出拟邀画像方向）';
 
       body = body
         .replace(/\{\{S2_OUTPUT\}\}/g, s2Draft)
