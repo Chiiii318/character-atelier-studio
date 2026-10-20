@@ -1166,7 +1166,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // S2 控制台
+        // S2 控制台
     else if (step === 'S2') {
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
@@ -1175,30 +1175,31 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       s2Wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
       s2Wrap.innerHTML = `
-        <!-- 卡片 1: 平台排播 + 商业定级 + 集数 -->
+        <!-- 卡片 1: 平台排播形态 + 商业定级 + 集数 -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
-            <strong style="font-size:13.5px;color:#18181b">播出平台排播与播前商业定级</strong>
-            <div style="font-size:11px;color:#71717a;margin-top:2px">主流长视频平台全覆盖 · 工业化预算核算 · 默认 AUTO 由 AI 自主推导最佳落地渠道</div>
+            <strong style="font-size:13.5px;color:#18181b">播出平台排播渠道与播前商业定级</strong>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">通配单平台独播 / 双平台联播拼盘 / 上星台网黄金档 · 默认 AUTO 由 AI 自主研判</div>
           </div>
 
-          <!-- 1. 首播平台 -->
+          <!-- 1. 首播平台与排播形态 (支持逐玉同款双平台、上星台网、全网独播) -->
           <div style="display:flex;flex-direction:column;gap:6px">
-            <div style="font-size:11.5px;font-weight:700;color:#52525b">首播平台与排播渠道 [PLATFORM]</div>
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">首播平台与排播渠道 [PLATFORM & SLOT]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saPlatformPills">
-              <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI自主论证最佳平台与剧场)</button>
+              <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI自主研判最契合排播渠道)</button>
+              <button type="button" class="sa-p-btn" data-val="双平台跨端联播 (爱奇艺 + 腾讯视频拼盘，《逐玉》同款)">双平台跨端联播 (爱奇艺 + 腾讯视频)</button>
+              <button type="button" class="sa-p-btn" data-val="台网联播·上星黄金档 (CCTV-8 / 一线卫视 + 网络平台同步)">台网双播·上星黄金档 (CCTV/卫视 + 平台)</button>
               <button type="button" class="sa-p-btn" data-val="爱奇艺 全网独播">爱奇艺 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="腾讯视频 全网独播">腾讯视频 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="优酷 全网独播">优酷 全网独播</button>
               <button type="button" class="sa-p-btn" data-val="芒果TV 全网独播">芒果TV 全网独播</button>
-              <button type="button" class="sa-p-btn" data-val="台网联播 (央视/一线卫视 + 网络同步)">台网联播 (央视/卫视 + 平台同步)</button>
             </div>
-            <input type="text" id="saIptCustomPlatform" placeholder="选填：若有特定剧场要求可在此补充（如：爱奇艺迷雾剧场、腾讯X剧场、爱奇艺恋恋剧场等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:11.5px;outline:none;background:#fafafa"/>
+            <input type="text" id="saIptCustomPlatform" placeholder="选填：若有更具体排播/剧场诉求可在此补充（如：腾讯X剧场、爱奇艺迷雾剧场、爱优腾三平台联播等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:11.5px;outline:none;background:#fafafa"/>
           </div>
 
           <!-- 2. 商业定级 -->
           <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #e4e4e7;padding-top:10px">
-            <div style="font-size:11.5px;font-weight:700;color:#52525b;display:flex;justify-content:space-between"><span>播前商业定级 [TIER]</span><span style="color:#71717a;font-weight:400">单集制作成本基准</span></div>
+            <div style="font-size:11.5px;font-weight:700;color:#52525b;display:flex;justify-content:space-between"><span>播前商业定级 [TIER]</span><span style="color:#71717a;font-weight:400">单集制作投资基准</span></div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saTierPills">
               <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI根据IP体量定级)</button>
               <button type="button" class="sa-p-btn" data-val="S+ 头部顶配 (950~1250万/集)">S+ 头部顶配 (950~1250万/集 · 重点招商)</button>
@@ -1221,11 +1222,11 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           </div>
         </div>
 
-        <!-- 卡片 2: 音乐 OST + 视听美学 (自由开放，全题材通配) -->
+        <!-- 卡片 2: 音乐 OST + 视听美学 (自带双 AUTO，通配全剧种) -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
             <strong style="font-size:13.5px;color:#18181b">音乐资产 (OST) 与主创视听审美</strong>
-            <div style="font-size:11px;color:#71717a;margin-top:2px">通配仙侠/古偶/现偶/都市/悬疑/年代 · 点击灵感芯片可叠加或手写</div>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">通配仙侠/古偶/现偶/都市/悬疑/年代 · 默认 AUTO 由 AI 自行定制全套视听乐器与镜头</div>
           </div>
 
           <!-- OST 规格 -->
@@ -1233,16 +1234,17 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             <div style="font-size:11.5px;font-weight:700;color:#52525b">歌曲资产规格 [OST STRATEGY]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saOstPills">
               <button type="button" class="sa-p-btn auto-p" data-val="AUTO">✦ AUTO (AI根据题材与预算裁决)</button>
-              <button type="button" class="sa-p-btn" data-val="全量定制分层拼盘大户">全量定制OST分层拼盘大户 (古偶/爱情大剧强推)</button>
-              <button type="button" class="sa-p-btn" data-val="克制人声纯配乐流">克制人声纯配乐流 (仅OP/ED两首，正片由氛围Score驱动)</button>
-              <button type="button" class="sa-p-btn" data-val="单集片尾独立版权选曲拼盘">单集片尾独立版权选曲拼盘 (《漫长的季节》模式)</button>
+              <button type="button" class="sa-p-btn" data-val="全量定制分层拼盘大户 (顶级特邀OP + 多位唱将插曲)">全量定制分层拼盘大户 (古偶/爱情大剧强推)</button>
+              <button type="button" class="sa-p-btn" data-val="克制人声纯配乐流 (仅OP/ED两首，正片由氛围Score驱动)">克制人声纯配乐流 (仅OP/ED两首，正片靠Score)</button>
+              <button type="button" class="sa-p-btn" data-val="单集片尾独立版权选曲拼盘 (《漫长的季节》模式)">单集片尾独立版权选曲拼盘 (《漫长的季节》模式)</button>
             </div>
           </div>
 
-          <!-- 配乐风格 -->
+          <!-- 配乐风格 (自带 AUTO 按钮) -->
           <div style="display:flex;flex-direction:column;gap:4px">
-            <div style="font-size:11.5px;font-weight:700;color:#52525b">配乐风格灵感芯片（点击可叠加加入）</div>
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">配乐风格与乐器调性 [SCORE STYLE]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saMusicChips">
+              <button type="button" class="sa-chip-btn auto-chip active" id="btnMusicAuto">✦ AUTO (AI依据故事内核自动定制配乐编制)</button>
               <button type="button" class="sa-chip-btn" data-val="宿命感古风大弦乐 + 民族乐器">宿命古风大弦乐</button>
               <button type="button" class="sa-chip-btn" data-val="极简现代都市流行情歌">都市流行情歌</button>
               <button type="button" class="sa-chip-btn" data-val="极简室内弦乐 + 钢琴独奏">极简室内弦乐</button>
@@ -1251,13 +1253,14 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
               <button type="button" class="sa-chip-btn" data-val="电影级年代交响叙事">管弦交响叙事</button>
               <button type="button" class="sa-chip-btn" data-val="极端克制无BGM · 纯现场ASMR声场">无BGM纯现场声</button>
             </div>
-            <input type="text" id="saIptMusicVibe" placeholder="在此自由填写/微调音乐偏好（如：周深空灵高音、蔡健雅微醺吉他、大提琴独奏等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+            <input type="text" id="saIptMusicVibe" placeholder="当前为 AUTO（可点击上方灵感芯片或在此手写定制：如周深空灵高音、大提琴独奏等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
           </div>
 
-          <!-- 视听美学 -->
+          <!-- 视听美学 (自带 AUTO 按钮) -->
           <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #e4e4e7;padding-top:10px">
-            <div style="font-size:11.5px;font-weight:700;color:#52525b">主创视听美学灵感芯片（点击可叠加加入）</div>
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">主创视听美学与导演镜头风格 [AESTHETICS]</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px" id="saAestheticChips">
+              <button type="button" class="sa-chip-btn auto-chip active" id="btnAestheticAuto">✦ AUTO (AI依据全书意象定制专属导演摄影风格)</button>
               <button type="button" class="sa-chip-btn" data-val="高对比抽帧慢镜 + 冷暖光斑暧昧拉扯">抽帧暧昧光影</button>
               <button type="button" class="sa-chip-btn" data-val="冷峻写实生活流长镜头 + 克制留白">冷峻写实长镜头</button>
               <button type="button" class="sa-chip-btn" data-val="手持呼吸跟拍 + 纪实压迫追踪感">手持呼吸压迫感</button>
@@ -1266,16 +1269,16 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
               <button type="button" class="sa-chip-btn" data-val="高饱和华丽仙侠视效 + 大场面调度">华丽仙侠视效</button>
               <button type="button" class="sa-chip-btn" data-val="韩式精致打光特写 + 高质感服化道">韩式精致打光</button>
             </div>
-            <input type="text" id="saIptAestheticVibe" placeholder="在此自由填写导演视听偏好（如：刁亦男潮湿黑夜、快节奏美剧手持、日式微风清爽等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+            <input type="text" id="saIptAestheticVibe" placeholder="当前为 AUTO（可点击上方芯片或在此手写导演偏好：如刁亦男潮湿黑夜、日式微风清爽等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
           </div>
         </div>
 
-        <!-- 卡片 3: 卡司网格 (全站唯一选角入口) -->
+        <!-- 卡片 3: 卡司网格 (全站唯一指派入口，干净到底) -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline">
             <div>
               <strong style="font-size:13px;color:#18181b">原著角色卡司指派网格 [CASTING GRID]</strong>
-              <div style="font-size:11px;color:#71717a;margin-top:2px">全站唯一选角入口：点卡片设为【由我饰演】或【指定演员】；未指派角色全权交由 AI 自主拟邀</div>
+              <div style="font-size:11px;color:#71717a;margin-top:2px">全站唯一选角入口：点卡片设为【由我饰演】或【指定演员】；未指派角色全权交由 AI 拟邀</div>
             </div>
             <small style="font-size:11px;color:#71717a">已识别 ${roles.length} 位角色</small>
           </div>
@@ -1317,7 +1320,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
       box.appendChild(s2Wrap);
 
-      // 通用胶囊选择器辅助函数
+      // 通用胶囊单选辅助函数
       function bindButtonGroup(containerId, stateKey, onSelect) {
         const wrapEl = s2Wrap.querySelector(`#${containerId}`);
         if (!wrapEl) return;
@@ -1385,7 +1388,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         });
       }
 
-      // 初始化各组件绑定
       setTimeout(() => {
         bindButtonGroup('saPlatformPills', 'platform');
         bindButtonGroup('saTierPills', 'tier');
@@ -1393,7 +1395,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         bindButtonGroup('saOstPills', 'addonTarget');
         updateRoleGrid();
 
-        // 自定义剧场输入
+        // 平台自定义输入监听
         s2Wrap.querySelector('#saIptCustomPlatform')?.addEventListener('input', e => {
           const val = e.target.value.trim();
           if (val) {
@@ -1403,24 +1405,78 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           }
         });
 
-        // 音乐灵感芯片
-        s2Wrap.querySelectorAll('#saMusicChips .sa-chip-btn').forEach(btn => {
+        // 音乐灵感芯片与 AUTO 按钮
+        const iptMusic = s2Wrap.querySelector('#saIptMusicVibe');
+        const btnMusicAuto = s2Wrap.querySelector('#btnMusicAuto');
+
+        btnMusicAuto.style.cssText = 'border:1px solid #ccdcd2;background:#668271;color:#fff;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer';
+        btnMusicAuto.onclick = () => {
+          iptMusic.value = '';
+          btnMusicAuto.style.background = '#668271';
+          btnMusicAuto.style.color = '#fff';
+          persistState();
+          updatePromptPreview();
+        };
+
+        s2Wrap.querySelectorAll('#saMusicChips .sa-chip-btn:not(.auto-chip)').forEach(btn => {
           btn.style.cssText = 'border:1px solid #e4e4e7;background:#fff;color:#18181b;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer';
           btn.onclick = () => {
-            const ipt = s2Wrap.querySelector('#saIptMusicVibe');
+            btnMusicAuto.style.background = '#edf3ef';
+            btnMusicAuto.style.color = '#668271';
             const val = btn.dataset.val;
-            ipt.value = ipt.value ? `${ipt.value} + ${val}` : val;
+            iptMusic.value = iptMusic.value ? `${iptMusic.value} + ${val}` : val;
+            persistState();
+            updatePromptPreview();
           };
         });
 
-        // 美学灵感芯片
-        s2Wrap.querySelectorAll('#saAestheticChips .sa-chip-btn').forEach(btn => {
+        iptMusic.addEventListener('input', () => {
+          if (iptMusic.value.trim()) {
+            btnMusicAuto.style.background = '#edf3ef';
+            btnMusicAuto.style.color = '#668271';
+          } else {
+            btnMusicAuto.style.background = '#668271';
+            btnMusicAuto.style.color = '#fff';
+          }
+          persistState();
+          updatePromptPreview();
+        });
+
+        // 视听美学灵感芯片与 AUTO 按钮
+        const iptAesthetic = s2Wrap.querySelector('#saIptAestheticVibe');
+        const btnAestheticAuto = s2Wrap.querySelector('#btnAestheticAuto');
+
+        btnAestheticAuto.style.cssText = 'border:1px solid #ccdcd2;background:#668271;color:#fff;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer';
+        btnAestheticAuto.onclick = () => {
+          iptAesthetic.value = '';
+          btnAestheticAuto.style.background = '#668271';
+          btnAestheticAuto.style.color = '#fff';
+          persistState();
+          updatePromptPreview();
+        };
+
+        s2Wrap.querySelectorAll('#saAestheticChips .sa-chip-btn:not(.auto-chip)').forEach(btn => {
           btn.style.cssText = 'border:1px solid #e4e4e7;background:#fff;color:#18181b;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer';
           btn.onclick = () => {
-            const ipt = s2Wrap.querySelector('#saIptAestheticVibe');
+            btnAestheticAuto.style.background = '#edf3ef';
+            btnAestheticAuto.style.color = '#668271';
             const val = btn.dataset.val;
-            ipt.value = ipt.value ? `${ipt.value} + ${val}` : val;
+            iptAesthetic.value = iptAesthetic.value ? `${iptAesthetic.value} + ${val}` : val;
+            persistState();
+            updatePromptPreview();
           };
+        });
+
+        iptAesthetic.addEventListener('input', () => {
+          if (iptAesthetic.value.trim()) {
+            btnAestheticAuto.style.background = '#edf3ef';
+            btnAestheticAuto.style.color = '#668271';
+          } else {
+            btnAestheticAuto.style.background = '#668271';
+            btnAestheticAuto.style.color = '#fff';
+          }
+          persistState();
+          updatePromptPreview();
         });
 
         // 集数自定义
@@ -1457,6 +1513,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         };
       }, 0);
     }
+
 
     // S3 控制台
     else if (step === 'S3') {
