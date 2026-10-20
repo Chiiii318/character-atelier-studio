@@ -164,7 +164,10 @@ function bindCardLongPress(cardEl, ent, idx) {
 
 function closePeekMenu() {
   if (peekCard) peekCard.classList.remove('context-active-peek');
-  if (peekBackdrop) peekBackdrop.classList.remove('show');
+  if (peekBackdrop) {
+    peekBackdrop.classList.remove('show');
+    peekBackdrop.style.display = 'none';
+  }
   if (menuPopover) menuPopover.style.display = 'none';
   peekCard = null;
 }

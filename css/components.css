@@ -769,10 +769,18 @@ button.primary {
   background: rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 10000; opacity: 0; pointer-events: none;
+  z-index: 10000; 
+  opacity: 0; 
+  pointer-events: none !important;
+  display: none; 
   transition: opacity .25s ease;
 }
-.peek-backdrop.show { opacity: 1; pointer-events: auto; }
+.peek-backdrop.show { 
+  display: block !important; 
+  opacity: 1; 
+  pointer-events: auto !important; 
+}
+
 .context-active-peek {
   position: relative !important; z-index: 10001 !important;
   transform: scale(1.03) !important;
