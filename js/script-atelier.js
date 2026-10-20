@@ -986,7 +986,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     box.innerHTML = '';
     const step = saState.currentStep;
 
-    // S1 控制台
+       // S1 控制台
     if (step === 'S1') {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
@@ -1015,8 +1015,8 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         if (saState.chunks.length > 0) {
           const cur = saState.chunks[saState.currentChunkIdx] || saState.chunks[0];
           chunkPanel.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <strong style="font-size:12.5px;color:#18181b">选择要精读的分卷（严格按章节边界打包，绝不劈断章节）：</strong>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <strong style="font-size:12.5px;color:#18181b">选择要精读的分卷（严格按完整章节打包）：</strong>
               <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#71717a">
                 <span>单卷目标字数：</span>
                 <select id="selChunkSize" style="border:1px solid #e4e4e7;border-radius:6px;padding:2px 6px;font-size:11px">
@@ -1026,18 +1026,38 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
                 </select>
               </div>
             </div>
+
             <div id="saChunkPills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+
             <div style="background:#f8f9fa;border:1px solid #e4e4e7;border-radius:8px;padding:10px;font-size:12px;color:#52525b">
-              <div><strong>当前选中：第 ${cur.partNo} 卷</strong> ｜ 章节范围：<span style="color:#18181b;font-weight:600">${cur.chapterRange}</span> ｜ 原文字数：${cur.charCount} 字</div>
-              <div style="margin-top:4px;font-size:11px;color:#71717a">
-                操作流程：① 点击下方「一键复制本步指令发给 AI」➔ ② 将 AI 输出的 1200 字精读报告粘贴到下方「本卷精读结果保存框」➔ ③ 自动解锁下一卷交接包！
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+                <div><strong>当前选中：第 ${cur.partNo} 卷</strong> ｜ 章节范围：<span style="color:#18181b;font-weight:600">${cur.chapterRange}</span> ｜ 原文字数：${cur.charCount} 字</div>
+                <button type="button" id="btnCopyCurChunkPrompt" class="btn btn-primary btn-small" style="background:#18181b;color:#fff;border-radius:6px;padding:5px 12px;font-weight:700;cursor:pointer">
+                  复制第 ${cur.partNo} 卷精读指令发给 AI
+                </button>
               </div>
             </div>
+
             <div>
-              <label style="font-size:11.5px;font-weight:700;color:#18181b;display:block;margin-bottom:4px">
-                第 ${cur.partNo} 卷 AI 精读报告回填区（贴入后自动提取 STATE_HANDOFF 传给第 ${cur.partNo + 1} 卷）：
-              </label>
-              <textarea id="taChunkAnalysis" placeholder="将 AI 对第 ${cur.partNo} 卷的精读分析粘贴到这里..." style="width:100%;min-height:110px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;font-family:inherit;outline:none">${cur.analysis || ''}</textarea>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <label style="font-size:11.5px;font-weight:700;color:#18181b">
+                  第 ${cur.partNo} 卷 AI 精读报告回填框（贴入后自动提取交接包传给第 ${cur.partNo + 1} 卷）：
+                </label>
+                <small style="color:#71717a;font-size:11px">已填 ${(cur.analysis || '').length} 字</small>
+              </div>
+              <textarea id="taChunkAnalysis" placeholder="将 AI 对第 ${cur.partNo} 卷的精读分析粘贴到这里..." style="width:100%;min-height:140px;border:1px solid #e4e4e7;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;font-family:inherit;outline:none">${cur.analysis || ''}</textarea>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+              ${cur.partNo < saState.chunks.length ? `
+                <button type="button" id="btnSaveAndNextChunk" class="btn btn-soft btn-small" style="font-weight:700;cursor:pointer">
+                  保存并切换到第 ${cur.partNo + 1} 卷 →
+                </button>
+              ` : `
+                <button type="button" id="btnGoTo1B" class="btn btn-primary btn-small" style="background:#668271;border-color:#668271;color:#fff;font-weight:700;cursor:pointer">
+                  全部分卷精读完成，进入 1B 汇总全书底账 →
+                </button>
+              `}
             </div>
           `;
         } else {
@@ -1104,6 +1124,26 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             persistState();
             updatePromptPreview();
           }
+        });
+
+        $('btnCopyCurChunkPrompt')?.addEventListener('click', () => {
+          $('saCopyPromptBtn')?.click();
+        });
+
+        $('btnSaveAndNextChunk')?.addEventListener('click', () => {
+          if (saState.currentChunkIdx < saState.chunks.length - 1) {
+            saState.currentChunkIdx++;
+            persistState();
+            renderAll();
+            window.toast(`已切到第 ${saState.currentChunkIdx + 1} 卷`);
+          }
+        });
+
+        $('btnGoTo1B')?.addEventListener('click', () => {
+          saState.s1SubMode = '1B';
+          persistState();
+          renderAll();
+          window.toast('已进入步骤 1B 全书底账汇总');
         });
 
         $('taRawNovelInput')?.addEventListener('input', e => {
@@ -1454,7 +1494,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     });
   }
 
-  function renderAll() {
+   function renderAll() {
     const meta = STEP_META[saState.currentStep];
     const t = $('saStepTitle'); if (t) t.textContent = meta.title;
     const d = $('saStepDesc'); if (d) d.textContent = meta.desc;
@@ -1463,6 +1503,13 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     if (ed && ed.value !== (saState.drafts[saState.currentStep] || '')) {
       ed.value = saState.drafts[saState.currentStep] || '';
     }
+
+    // 智能排重：在 S1 的 1A 分卷精读模式下，隐藏底部重复的定稿框和下一步按钮
+    const draftSection = document.querySelector('.sa-draft-section');
+    const bottomActionBar = document.querySelector('.sa-action-bar');
+    const isS1_1A = saState.currentStep === 'S1' && saState.s1SubMode === '1A';
+    if (draftSection) draftSection.style.display = isS1_1A ? 'none' : 'block';
+    if (bottomActionBar) bottomActionBar.style.display = isS1_1A ? 'none' : 'flex';
 
     if (saState.drafts.S1) {
       saState.parsedRoster = extractRolesFromS1(saState.drafts.S1);
