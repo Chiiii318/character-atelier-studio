@@ -58,8 +58,15 @@ function openModal(title, bodyBuilder) {
 }
 
 function closeModal() {
-  if (state.activeModalEscHandler) { document.removeEventListener('keydown', state.activeModalEscHandler); state.activeModalEscHandler = null; }
-  $('modalRoot')?.replaceChildren();
+  if (state.activeModalEscHandler) { 
+    document.removeEventListener('keydown', state.activeModalEscHandler); 
+    state.activeModalEscHandler = null; 
+  }
+  const root = $('modalRoot');
+  if (root) root.replaceChildren();
+  document.querySelectorAll('.modal-backdrop.show, .peek-backdrop.show').forEach(el => el.classList.remove('show'));
+  document.body.style.overflow = '';
+  document.body.style.pointerEvents = '';
 }
 
 /* ================================================================
@@ -111,6 +118,13 @@ window.closeDrawer = closeDrawer;
    ================================================================ */
 
 function bindGlobalEvents() {
+  // 点击空白透明遮罩保底关闭，防止全屏卡死点不动
+  document.addEventListener('click', e => {
+    if (e.target && (e.target.classList.contains('modal-backdrop') || e.target.id === 'modalRoot')) {
+      closeModal();
+    }
+  });
+
   // 导航点击
   document.addEventListener('click', e => {
     const nav = e.target.closest('[data-page]');
