@@ -17,7 +17,12 @@
 
 <!-- 注入 SVG 图标精灵（异步加载） -->
 <div id="svg-sprites" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></div>
-<script>fetch('icons.svg').then(r=>r.text()).then(t=>{document.getElementById('svg-sprites').innerHTML=t})</script>
+<script>
+  fetch('icons.svg').then(r=>r.text()).then(t=>{
+    const el = document.getElementById('svg-sprites');
+    if (el) el.innerHTML = t;
+  }).catch(e=>console.warn('SVG icons loaded fallback', e));
+</script>
 
 <div class="app">
   <aside class="sidebar" id="mainNavSidebar">

@@ -461,4 +461,51 @@ async function boot() {
   initNetease();
 }
 
+boot();async function boot() {
+  // 1. 最高优先级：先绑定全局所有按钮和导航点击事件！确保全站无论何时都能点动！
+  try {
+    bindGlobalEvents();
+  } catch (err) {
+    console.error('bindGlobalEvents error:', err);
+  }
+
+  // 2. 独立初始化角色工具栏
+  try {
+    setupLibraryToolbar();
+  } catch (err) {
+    console.error('setupLibraryToolbar error:', err);
+  }
+
+  // 3. 独立初始化世界书
+  try {
+    initWorldBook();
+  } catch (err) {
+    console.error('initWorldBook error:', err);
+  }
+
+  // 4. 加载 IndexedDB 本地数据库
+  try {
+    await openDatabase();
+    await loadCards();
+    await loadWorldBooks();
+  } catch (e) {
+    showNotice('本地数据库无法打开：' + e.message);
+  }
+
+  // 5. 独立初始化剧本改编工坊
+  try {
+    initScriptAtelier();
+  } catch (err) {
+    console.error('initScriptAtelier error:', err);
+  }
+
+  // 6. 独立初始化网易云
+  try {
+    initNetease();
+  } catch (err) {
+    console.error('initNetease error:', err);
+  }
+}
+
 boot();
+
