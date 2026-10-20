@@ -167,7 +167,7 @@ function closePeekMenu() {
   if (peekCard) peekCard.classList.remove('context-active-peek');
   if (peekBackdrop) {
     peekBackdrop.classList.remove('show');
-    peekBackdrop.style.display = 'none';
+    peekBackdrop.style.cssText = 'display: none !important; pointer-events: none !important;';
   }
   if (menuPopover) menuPopover.style.display = 'none';
   peekCard = null;
