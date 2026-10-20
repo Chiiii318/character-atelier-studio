@@ -110,7 +110,7 @@ export function initScriptAtelier() {
 </NOVEL_CHUNK>
 
 【执行铁律】
-1. 若 `{{NOVEL_CHUNK}}` 为空，输出 `HALT:E01`。
+1. 若 {{NOVEL_CHUNK}} 为空，输出 `HALT:E01`。
 2. 承接原则：已在 `{{PREV_SUMMARY}}` 与 `{{THREAD_LEDGER_PREV}}` 中确立的静态设定不再重复，重点剖析“本卷发生了什么新变化、兑现了什么旧账、撕开了什么新裂缝”。
 3. **硬性字数下限**：本卷分析正文有效中文汉字 **不少于 1200 字**（不含原文摘录与末尾交接包）。
 
