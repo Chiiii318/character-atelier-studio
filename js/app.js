@@ -125,6 +125,18 @@ function bindGlobalEvents() {
     }
   });
 
+    // 破除全屏隐形卡死遮罩
+  document.addEventListener('click', e => {
+    if (e.target && (e.target.classList.contains('modal-backdrop') || e.target.classList.contains('peek-backdrop') || e.target.id === 'modalRoot')) {
+      closeModal();
+      document.querySelectorAll('.modal-backdrop.show, .peek-backdrop.show').forEach(el => {
+        el.classList.remove('show');
+        el.style.display = 'none';
+      });
+      document.body.style.pointerEvents = 'auto';
+    }
+  });
+
   // 导航点击
   document.addEventListener('click', e => {
     const nav = e.target.closest('[data-page]');

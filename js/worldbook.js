@@ -133,7 +133,8 @@ function bindCardLongPress(cardEl, ent, idx) {
       peekCard = cardEl;
       if (navigator.vibrate) navigator.vibrate(15);
       cardEl.classList.add('context-active-peek');
-      peekBackdrop.classList.add('show');
+peekBackdrop.style.cssText = 'display: block !important; pointer-events: auto !important;';
+peekBackdrop.classList.add('show');
       const rect = cardEl.getBoundingClientRect();
       menuPopover.style.display = 'flex';
       menuPopover.style.left = `${Math.max(16, rect.left + 16)}px`;
@@ -971,11 +972,13 @@ export async function loadWorldBooks() {
 export function initWorldBook() {
   // 创建长按菜单 DOM
   peekBackdrop = makeEl('div', 'peek-backdrop');
+  peekBackdrop.style.cssText = 'display: none !important; pointer-events: none !important;';
   menuPopover = makeEl('div', 'menu-popover');
   menuPopover.style.display = 'none';
   menuPopover.innerHTML = `<div class="menu-item" id="ctxEdit">编辑条目 <span>✎</span></div><div class="menu-item" id="ctxCopy">复制正文 <span>❐</span></div><div class="menu-item" id="ctxToggleConst">切换常驻状态 <span>✦</span></div><div class="menu-item danger" id="ctxDelete">删除此条目 <span>✕</span></div>`;
   document.body.append(peekBackdrop, menuPopover);
   peekBackdrop.onclick = closePeekMenu;
+
 
   $('wbSmartParseBtn')?.addEventListener('click', openSmartParserModal);
   $('wbSandboxBtn')?.addEventListener('click', openKelivoSandboxModal);
