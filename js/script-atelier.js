@@ -1166,96 +1166,161 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // S2 控制台
+     // S2 控制台
     else if (step === 'S2') {
       const roles = saState.parsedRoster || [];
       const casting = saState.customCasting || {};
+
+      // 全网真实剧场数据字典
+      const theaterData = [
+        { cat: 'all_main', name: '腾讯视频 全网独播黄金档（头部大剧/古偶/现偶）' },
+        { cat: 'all_main', name: '爱奇艺 全网独播黄金档（头部大剧/古偶/现偶）' },
+        { cat: 'all_main', name: '优酷 全网独播黄金档（头部大剧/古偶/现偶）' },
+        { cat: 'all_main', name: '芒果TV 全网独播黄金档（自制大剧）' },
+        { cat: 'all_main', name: '台网联播（央视/卫视黄金档 + 平台同步）' },
+        { cat: 'suspense', name: '腾讯 X剧场（先锋精品短剧集·悬疑/现实/黑色幽默）' },
+        { cat: 'suspense', name: '优酷 白夜剧场（悬疑/刑侦/犯罪/现实悬疑）' },
+        { cat: 'romance', name: '腾讯 萤火单元（都市质感/女性成长/现实情感）' },
+        { cat: 'romance', name: '优酷 宠爱剧场（古言/现言/甜爱/偶像剧）' },
+        { cat: 'costume', name: '优酷 生花剧场（古装仙侠/古偶）' },
+        { cat: 'comedy', name: '腾讯 板凳单元（古装/现实合家欢喜剧）' },
+        { cat: 'hk', name: '优酷 港剧场（TVB港剧）' },
+        { cat: 'realism', name: '芒果 季风剧场（现实精品短剧/都市/轻悬疑/成长）' }
+      ];
+
+      const catLabels = {
+        'all': '全部赛道',
+        'all_main': '全网独播 / 台网大盘',
+        'suspense': '悬疑 / 罪案',
+        'romance': '都市 / 甜宠 / 女性情感',
+        'costume': '古装 / 仙侠 / 古偶',
+        'comedy': '合家欢 / 喜剧',
+        'hk': '港剧',
+        'realism': '现实向精品短剧'
+      };
+
+      let currentTheaterFilter = 'all';
 
       const s2Wrap = document.createElement('div');
       s2Wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
 
       s2Wrap.innerHTML = `
+        <!-- 卡片 1: 平台剧场 + 定级 + 集数 -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
           <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
-            <strong style="font-size:13.5px;color:#18181b">参演立项与定制心愿单 · PROJECT WISHLIST</strong>
-            <div style="font-size:11px;color:#71717a;margin-top:2px">可写明你饰演的具体角色，也可只写定位（如“我演男一/最具张力的反派”）交由 AI 根据全书内核分配</div>
+            <strong style="font-size:13.5px;color:#18181b">平台排播赛道与播前商业定级</strong>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">已内置全网真实剧场 · 支持全题材通配 · 默认 AUTO 由 AI 自动推导</div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">我的参演意愿 [PLAYER_WISH]</label>
-              <input type="text" id="inpPlayerWish" value="${saState.playerWish}" placeholder="例：我演某角色 / 或填：我演男主（交由AI判断）" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">我的戏外艺名 [PLAYER_STAGE_NAME]</label>
-              <input type="text" id="inpPlayerStageName" value="${saState.playerStageName}" placeholder="填入你在演艺圈的艺名..." style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+          <!-- 平台与剧场 -->
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b;display:flex;justify-content:space-between"><span>播出平台与剧场赛道 [PLATFORM]</span><span style="color:#71717a;font-weight:400">点击题材分类快速筛选</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px" id="saTheaterCatBar"></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px" id="saTheaterPool"></div>
+            <div style="background:#f4f4f5;border-radius:8px;padding:7px 12px;font-size:11.5px;color:#18181b;display:flex;justify-content:space-between;align-items:center">
+              <span>当前锁定赛道：<strong id="saCurrentTheater" style="color:#668271">✦ AUTO（AI 自主推导最佳剧场）</strong></span>
             </div>
           </div>
 
-          <div>
-            <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">
-              其他演员定制心愿单 [OTHER_ACTOR_WISH] <span style="font-weight:400;color:#71717a">（有就写，没有留空；支持写“某演员演女主/演男二”或点选下方角色卡片）</span>
-            </label>
-            <textarea id="taOtherActorWish" placeholder="例如：指定某演员饰演女主（攻略对象）；指定某演员饰演核心反派男二...（留空则由 AI 拟定演员梯队画像方向）" style="width:100%;min-height:54px;border:1px solid #e4e4e7;border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.5;font-family:inherit;outline:none">${saState.otherActorWish}</textarea>
+          <!-- 商业定级 -->
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #e4e4e7;padding-top:10px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b;display:flex;justify-content:space-between"><span>播前商业定级 [TIER]</span><span style="color:#71717a;font-weight:400">单集制作投资基准</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px" id="saGrpTier"></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">规划集数 [EPISODE_COUNT]</label>
-              <input type="text" id="inpEpCount" value="${saState.episodeCount}" placeholder="如 12 或 AUTO" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+          <!-- 集数 -->
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #e4e4e7;padding-top:10px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b;display:flex;justify-content:space-between"><span>规划集数 [EPISODE_COUNT]</span><span style="color:#71717a;font-weight:400">拒绝无因果注水</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center" id="saGrpEp">
             </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">播出平台与剧场 [PLATFORM]</label>
-              <input type="text" id="inpPlatform" value="${saState.platform}" placeholder="如 平台S+悬疑剧场" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
-            </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:4px">商业定级 [TIER]</label>
-              <input type="text" id="inpTier" value="${saState.tier}" placeholder="如 S+ 顶配精品" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
-            </div>
+            <input type="text" id="saIptCustomEp" placeholder="或手动填入确切集数（如 20、30）" style="width:160px;height:28px;border:1px solid #e4e4e7;border-radius:6px;padding:0 8px;font-size:11px;outline:none;margin-top:2px"/>
           </div>
         </div>
 
+        <!-- 卡片 2: 音乐 OST + 视听美学（自由芯片 + 手动输入，全题材通配） -->
+        <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="border-bottom:1px solid #e4e4e7;padding-bottom:8px">
+            <strong style="font-size:13.5px;color:#18181b">音乐资产 (OST) 与主创视听美学</strong>
+            <div style="font-size:11px;color:#71717a;margin-top:2px">自由开放 · 点击灵感芯片快速填入或手动书写定制 · 支持全题材</div>
+          </div>
+
+          <!-- OST 规格 -->
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">歌曲资产规格 [OST STRATEGY]</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px" id="saGrpOst"></div>
+          </div>
+
+          <!-- 音乐风格灵感芯片 -->
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">配乐风格灵感芯片（点击快速加入）</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px" id="saMusicChips">
+              <button type="button" class="sa-chip-btn" data-val="宿命感古风大弦乐 + 民族乐器">宿命古风大弦乐</button>
+              <button type="button" class="sa-chip-btn" data-val="现代都市流行情歌">都市流行情歌</button>
+              <button type="button" class="sa-chip-btn" data-val="极简室内弦乐 + 钢琴">极简室内弦乐</button>
+              <button type="button" class="sa-chip-btn" data-val="冷感电子氛围 Ambience / 低频底噪">冷感电子氛围</button>
+              <button type="button" class="sa-chip-btn" data-val="复古民谣 / 老歌质感 / 留声机年代感">复古民谣老歌</button>
+              <button type="button" class="sa-chip-btn" data-val="管弦交响叙事 (电影级年代史诗)">管弦交响叙事</button>
+              <button type="button" class="sa-chip-btn" data-val="工业摇滚 / 独立乐队 / 先锋实验">工业摇滚先锋</button>
+              <button type="button" class="sa-chip-btn" data-val="极端克制无BGM · 纯现场ASMR声场">无BGM纯写实声场</button>
+            </div>
+            <input type="text" id="saIptMusicVibe" placeholder="在此自由填写/微调音乐偏好（如：周深空灵高音、蔡健雅微醺吉他、大提琴独奏等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+          </div>
+
+          <!-- 视听美学灵感芯片 -->
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #e4e4e7;padding-top:10px">
+            <div style="font-size:11.5px;font-weight:700;color:#52525b">主创视听美学灵感芯片（点击快速加入）</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px" id="saAestheticChips">
+              <button type="button" class="sa-chip-btn" data-val="高对比抽帧慢镜 + 冷暖光斑暧昧拉扯">抽帧暧昧光影</button>
+              <button type="button" class="sa-chip-btn" data-val="冷峻写实生活流长镜头 + 克制留白">冷峻写实长镜头</button>
+              <button type="button" class="sa-chip-btn" data-val="手持呼吸跟拍 + 纪实压迫追踪感">手持呼吸压迫感</button>
+              <button type="button" class="sa-chip-btn" data-val="东方古典雅致构图 + 水墨留白意境">东方古典意境</button>
+              <button type="button" class="sa-chip-btn" data-val="先锋对称几何构图 + 色彩编码隐喻">先锋对称隐喻</button>
+              <button type="button" class="sa-chip-btn" data-val="高饱和华丽仙侠视效 + 大场面调度">华丽仙侠视效</button>
+              <button type="button" class="sa-chip-btn" data-val="韩式精致打光特写 + 高质感服化道">韩式精致打光</button>
+            </div>
+            <input type="text" id="saIptAestheticVibe" placeholder="在此自由填写导演视听偏好（如：刁亦男潮湿黑夜、快节奏美剧手持、日式微风清爽等）" style="width:100%;height:32px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12px;outline:none"/>
+          </div>
+        </div>
+
+        <!-- 卡片 3: 卡司网格 (唯一指派入口) -->
         <div style="background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline">
             <div>
-              <strong style="font-size:13px;color:#18181b">原著角色快捷点选台（可选）</strong>
-              <span style="font-size:11px;color:#71717a;margin-left:6px">若 S1 已提取角色，可直接点卡片锁定演员；未点选的角色自动交由 AI 拟定画像方向</span>
+              <strong style="font-size:13px;color:#18181b">原著角色卡司指派网格 [CASTING GRID]</strong>
+              <div style="font-size:11px;color:#71717a;margin-top:2px">全站唯一选角入口：点卡片设为【由我饰演】或【指定演员】；未指派角色全权交由 AI 拟邀</div>
             </div>
             <small style="font-size:11px;color:#71717a">已识别 ${roles.length} 位角色</small>
           </div>
 
-          <div id="saRoleGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;max-height:200px;overflow-y:auto;padding-right:2px"></div>
+          <div id="saRoleGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;max-height:220px;overflow-y:auto;padding-right:2px"></div>
 
           <div id="saEditDrawer" style="display:none;background:#fafaf9;border:1.5px solid #18181b;border-radius:12px;padding:14px;margin-top:4px;flex-direction:column;gap:10px">
             <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e4e7;padding-bottom:8px">
               <span id="saDrawerTitle" style="font-weight:750;font-size:13px;color:#18181b">设置角色卡司</span>
               <button type="button" id="saBtnCloseDrawer" style="border:none;background:#f4f4f5;border-radius:6px;width:24px;height:24px;cursor:pointer;color:#71717a;font-size:14px">✕</button>
             </div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;color:#18181b">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#18181b;cursor:pointer">
               <input type="checkbox" id="saChkIsPlayer" style="accent-color:#18181b;width:15px;height:15px"/>
-              <span>由我亲自饰演此角色（设为全剧唯一玩家主视角）</span>
+              <span>由我饰演此角色（全剧唯一锁定 · 玩家第一人称领衔）</span>
             </label>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div>
-                <label style="font-size:11px;font-weight:700;color:#52525b">指定演员姓名</label>
-                <input type="text" id="saInpActorName" placeholder="留空则由AI拟邀画像" style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff"/>
+                <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:3px">指定演员姓名 / 我的艺名</label>
+                <input type="text" id="saInpActorName" placeholder="留空则由AI拟定画像" style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff;outline:none"/>
               </div>
               <div>
-                <label style="font-size:11px;font-weight:700;color:#52525b">戏外演员梯队定位</label>
-                <select id="saSelArchetype" style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff">
-                  <option value="默认">交由 AI 根据人设推演</option>
-                  <option value="上升期质感生花（看重原声台词与高光）">上升期质感生花</option>
-                  <option value="实力派电影咖/戏骨（气场压制，讲究实感）">实力派电影咖/戏骨</option>
-                  <option value="顶流偶像转型（流量大，团队防爆意识强）">顶流偶像转型</option>
+                <label style="font-size:11px;font-weight:700;color:#52525b;display:block;margin-bottom:3px">戏外梯队定位</label>
+                <select id="saSelArchetype" style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff;outline:none">
+                  <option value="默认">遵循原著 (交由AI推导)</option>
+                  <option value="当红质感生花">当红质感生花</option>
+                  <option value="顶级电影咖/戏骨">顶级电影咖/戏骨</option>
+                  <option value="顶流偶像转型">顶流偶像转型</option>
+                  <option value="贴脸潜力新人">贴脸潜力新人</option>
                 </select>
               </div>
             </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:#52525b">角色人设微调/加戏诉求</label>
-              <input type="text" id="saInpCustomReq" placeholder="选填：对此角色的改编或对手戏张力要求..." style="width:100%;border:1px solid #e4e4e7;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff"/>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <button type="button" id="saBtnResetRole" style="border:none;background:transparent;color:#71717a;cursor:pointer;font-size:11px;text-decoration:underline">恢复默认未指定</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+              <button type="button" id="saBtnResetRole" style="border:none;background:transparent;color:#71717a;cursor:pointer;font-size:11px;text-decoration:underline">恢复为 AI拟邀画像</button>
               <button type="button" id="saBtnSaveRole" style="background:#18181b;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">保存此角设置</button>
             </div>
           </div>
@@ -1264,18 +1329,128 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
       box.appendChild(s2Wrap);
 
+      // ========== 渲染剧场题材分类 + 剧场池 ==========
+      function renderTheaterUI() {
+        const catBar = s2Wrap.querySelector('#saTheaterCatBar');
+        const pool = s2Wrap.querySelector('#saTheaterPool');
+        catBar.innerHTML = '';
+        pool.innerHTML = '';
+
+        // AUTO 按钮
+        const autoBtn = document.createElement('button');
+        autoBtn.type = 'button';
+        autoBtn.style.cssText = `padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${saState.platform === 'AUTO' || !saState.platform ? '#ccdcd2' : '#e4e4e7'};background:${saState.platform === 'AUTO' || !saState.platform ? '#668271' : '#f8f9fa'};color:${saState.platform === 'AUTO' || !saState.platform ? '#fff' : '#18181b'}`;
+        autoBtn.textContent = '✦ AUTO（AI自动推导）';
+        autoBtn.onclick = () => { saState.platform = 'AUTO'; persistState(); updatePromptPreview(); renderTheaterUI(); s2Wrap.querySelector('#saCurrentTheater').textContent = '✦ AUTO（AI 自主推导最佳剧场）'; s2Wrap.querySelector('#saCurrentTheater').style.color = '#668271'; };
+        catBar.appendChild(autoBtn);
+
+        // 题材分类按钮
+        const cats = ['all', 'all_main', 'suspense', 'romance', 'costume', 'comedy', 'hk', 'realism'];
+        cats.forEach(cat => {
+          if (cat === 'all' && !catLabels[cat]) return;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.style.cssText = `padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid ${currentTheaterFilter === cat ? '#18181b' : '#e4e4e7'};background:${currentTheaterFilter === cat ? '#18181b' : '#f4f4f5'};color:${currentTheaterFilter === cat ? '#fff' : '#71717a'}`;
+          btn.textContent = catLabels[cat] || cat;
+          btn.onclick = () => { currentTheaterFilter = cat; renderTheaterUI(); };
+          catBar.appendChild(btn);
+        });
+
+        // 剧场芯片
+        const filtered = currentTheaterFilter === 'all' ? theaterData : theaterData.filter(t => t.cat === currentTheaterFilter);
+        filtered.forEach(t => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = saState.platform === t.name;
+          btn.style.cssText = `padding:5px 10px;border-radius:8px;font-size:11px;font-weight:${isActive ? '700' : '500'};cursor:pointer;border:1px solid ${isActive ? '#18181b' : '#e4e4e7'};background:${isActive ? '#18181b' : '#fff'};color:${isActive ? '#fff' : '#18181b'}`;
+          btn.textContent = t.name;
+          btn.onclick = () => {
+            saState.platform = t.name;
+            persistState();
+            updatePromptPreview();
+            renderTheaterUI();
+            s2Wrap.querySelector('#saCurrentTheater').textContent = t.name;
+            s2Wrap.querySelector('#saCurrentTheater').style.color = '#18181b';
+          };
+          pool.appendChild(btn);
+        });
+      }
+
+      // ========== 渲染定级 + 集数 ==========
+      function renderTierAndEp() {
+        const tierBox = s2Wrap.querySelector('#saGrpTier');
+        const epBox = s2Wrap.querySelector('#saGrpEp');
+        tierBox.innerHTML = '';
+        epBox.innerHTML = '';
+
+        const tierOpts = [
+          { val: 'AUTO', label: '✦ AUTO (AI依据IP体量定级)', isAuto: true },
+          { val: 'S+ 头部顶配 (950~1250万/集)', label: 'S+ 头部顶配 (950~1250万/集)' },
+          { val: 'S 级中坚 (750~950万/集)', label: 'S 级中坚品质 (750~950万/集)' },
+          { val: 'A+/A 级黑马 (300~750万/集)', label: 'A+/A 级黑马 (300~750万/集)' }
+        ];
+        tierOpts.forEach(o => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = saState.tier === o.val || (o.isAuto && (!saState.tier || saState.tier === 'AUTO'));
+          btn.style.cssText = `padding:5px 11px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid ${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#e4e4e7'};background:${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#fff'};color:${isActive ? '#fff' : '#18181b'}`;
+          btn.textContent = o.label;
+          btn.onclick = () => { saState.tier = o.val; persistState(); updatePromptPreview(); renderTierAndEp(); };
+          tierBox.appendChild(btn);
+        });
+
+        const epOpts = [
+          { val: 'AUTO', label: '✦ AUTO (AI反推)', isAuto: true },
+          { val: '12', label: '12集' },
+          { val: '16', label: '16集' },
+          { val: '24', label: '24集' },
+          { val: '36', label: '36~40集' }
+        ];
+        epOpts.forEach(o => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const isActive = saState.episodeCount === o.val || (o.isAuto && (!saState.episodeCount || saState.episodeCount === 'AUTO'));
+          btn.style.cssText = `padding:5px 11px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid ${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#e4e4e7'};background:${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#fff'};color:${isActive ? '#fff' : '#18181b'}`;
+          btn.textContent = o.label;
+          btn.onclick = () => { saState.episodeCount = o.val; persistState(); updatePromptPreview(); renderTierAndEp(); };
+          epBox.appendChild(btn);
+        });
+      }
+
+      // ========== 渲染 OST 规格 ==========
+      function renderOstSpec() {
+        const ostBox = s2Wrap.querySelector('#saGrpOst');
+        ostBox.innerHTML = '';
+        const ostOpts = [
+          { val: 'AUTO', label: '✦ AUTO (AI根据题材与预算裁决)', isAuto: true },
+          { val: '全量定制分层拼盘大户', label: '全量定制OST分层拼盘大户 (古偶/言情大剧推荐)' },
+          { val: '克制人声纯配乐驱动', label: '克制人声纯配乐流 (仅OP/ED，正片靠Score)' },
+          { val: '单集片尾版权选曲拼盘', label: '单集片尾版权选曲拼盘 (漫长的季节模式)' }
+        ];
+        ostOpts.forEach(o => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const cur = saState.addonTarget; // 复用 addonTarget 存 OST 选择
+          const isActive = cur === o.val || (o.isAuto && (!cur || cur === 'AUTO'));
+          btn.style.cssText = `padding:5px 11px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;border:1px solid ${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#e4e4e7'};background:${isActive ? (o.isAuto ? '#668271' : '#18181b') : '#fff'};color:${isActive ? '#fff' : '#18181b'}`;
+          btn.textContent = o.label;
+          btn.onclick = () => { saState.addonTarget = o.val; persistState(); updatePromptPreview(); renderOstSpec(); };
+          ostBox.appendChild(btn);
+        });
+      }
+
+      // ========== 渲染卡司网格 ==========
       const roleGrid = s2Wrap.querySelector('#saRoleGrid');
       const drawer = s2Wrap.querySelector('#saEditDrawer');
       const drawerTitle = s2Wrap.querySelector('#saDrawerTitle');
       const chkIsPlayer = s2Wrap.querySelector('#saChkIsPlayer');
       const inpActorName = s2Wrap.querySelector('#saInpActorName');
       const selArchetype = s2Wrap.querySelector('#saSelArchetype');
-      const inpCustomReq = s2Wrap.querySelector('#saInpCustomReq');
 
       function updateRoleGrid() {
         roleGrid.innerHTML = '';
         if (!roles.length) {
-          roleGrid.innerHTML = '<div style="font-size:11.5px;color:#71717a;grid-column:1/-1;padding:6px">尚未从 S1 中检测到结构化角色表，你可直接在上方文本框填写参演心愿单，AI 将自动从 S1 底账中配型角色。</div>';
+          roleGrid.innerHTML = '<div style="font-size:11.5px;color:#71717a;grid-column:1/-1;padding:6px">若 S1 已完成全书底账，此处将自动排列全部角色卡片。</div>';
           return;
         }
         roles.forEach(r => {
@@ -1289,12 +1464,12 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:10px;font-weight:700;color:${isPlayer ? '#18181b' : '#71717a'}">${r.id}</span>
               <span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:${isPlayer ? '#18181b' : (isCustom ? '#e0ece4' : '#f4f4f5')};color:${isPlayer ? '#fff' : (isCustom ? '#668271' : '#71717a')};font-weight:600">
-                ${isPlayer ? '我演' : (isCustom ? '已定' : 'AI拟邀')}
+                ${isPlayer ? '由我饰演' : (isCustom ? '已定演员' : 'AI拟邀')}
               </span>
             </div>
             <div style="font-size:13px;font-weight:700;color:#18181b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
             <div style="font-size:11px;color:${isCustom ? '#668271' : '#71717a'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              ${isCustom && cfg.actor ? cfg.actor : (isPlayer ? (saState.playerStageName || '玩家领衔') : 'AI拟定画像')}
+              ${isCustom && cfg.actor ? cfg.actor : (isPlayer ? (saState.playerStageName || '玩家领衔') : 'AI自主拟定画像')}
             </div>
           `;
           pill.onclick = () => {
@@ -1304,21 +1479,46 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             chkIsPlayer.checked = !!cur.isPlayer;
             inpActorName.value = cur.actor || '';
             selArchetype.value = cur.archetype || '默认';
-            inpCustomReq.value = cur.req || '';
             drawer.style.display = 'flex';
           };
           roleGrid.appendChild(pill);
         });
       }
 
+      // ========== 绑定事件 ==========
       setTimeout(() => {
-        $('inpPlayerWish')?.addEventListener('input', e => { saState.playerWish = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpPlayerStageName')?.addEventListener('input', e => { saState.playerStageName = e.target.value; persistState(); updatePromptPreview(); updateRoleGrid(); });
-        $('taOtherActorWish')?.addEventListener('input', e => { saState.otherActorWish = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpEpCount')?.addEventListener('input', e => { saState.episodeCount = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpPlatform')?.addEventListener('input', e => { saState.platform = e.target.value; persistState(); updatePromptPreview(); });
-        $('inpTier')?.addEventListener('input', e => { saState.tier = e.target.value; persistState(); updatePromptPreview(); });
+        renderTheaterUI();
+        renderTierAndEp();
+        renderOstSpec();
+        updateRoleGrid();
 
+        // 音乐灵感芯片点击
+        s2Wrap.querySelectorAll('#saMusicChips .sa-chip-btn').forEach(btn => {
+          btn.style.cssText = 'border:1px solid #e4e4e7;background:#fff;color:#18181b;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer';
+          btn.onclick = () => {
+            const ipt = s2Wrap.querySelector('#saIptMusicVibe');
+            const val = btn.dataset.val;
+            ipt.value = ipt.value ? `${ipt.value} + ${val}` : val;
+          };
+        });
+
+        // 视听美学灵感芯片点击
+        s2Wrap.querySelectorAll('#saAestheticChips .sa-chip-btn').forEach(btn => {
+          btn.style.cssText = 'border:1px solid #e4e4e7;background:#fff;color:#18181b;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer';
+          btn.onclick = () => {
+            const ipt = s2Wrap.querySelector('#saIptAestheticVibe');
+            const val = btn.dataset.val;
+            ipt.value = ipt.value ? `${ipt.value} + ${val}` : val;
+          };
+        });
+
+        // 集数自定义输入
+        s2Wrap.querySelector('#saIptCustomEp')?.addEventListener('input', e => {
+          const v = e.target.value.trim();
+          if (v) { saState.episodeCount = v; persistState(); updatePromptPreview(); }
+        });
+
+        // 卡司抽屉
         s2Wrap.querySelector('#saBtnCloseDrawer').onclick = () => { drawer.style.display = 'none'; };
         s2Wrap.querySelector('#saBtnResetRole').onclick = () => {
           const id = saState.activeRoleIdForEdit;
@@ -1332,25 +1532,18 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           const isPlayer = chkIsPlayer.checked;
           const actor = inpActorName.value.trim();
           const archetype = selArchetype.value;
-          const req = inpCustomReq.value.trim();
           if (isPlayer) {
             Object.keys(casting).forEach(k => { if (casting[k]) casting[k].isPlayer = false; });
-            if (actor) {
-              saState.playerStageName = actor;
-              const stageInp = $('inpPlayerStageName');
-              if (stageInp) stageInp.value = actor;
-            }
+            if (actor) saState.playerStageName = actor;
           }
-          if (actor || req || isPlayer || archetype !== '默认') {
-            casting[id] = { actor, isPlayer, archetype, req };
+          if (actor || isPlayer || archetype !== '默认') {
+            casting[id] = { actor, isPlayer, archetype, req: '' };
           } else {
             delete casting[id];
           }
           drawer.style.display = 'none';
           persistState(); updateRoleGrid(); updatePromptPreview();
         };
-
-        updateRoleGrid();
       }, 0);
     }
 
