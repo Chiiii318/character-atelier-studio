@@ -306,52 +306,84 @@
       </div>
     </section>
 
-    <!-- ======== 剧本改编工坊 ======== -->
+     <!-- ======== 剧本改编工坊 ======== -->
     <section class="page" id="page-prompts">
       <div class="page-heading">
-        <div><div class="eyebrow">SCRIPT ATELIER · v5.1 RELAY ENGINE</div><h1>剧本改编工坊</h1><p class="muted" style="color:var(--muted)">演艺圈 / 戏中戏双轨编译流水线。</p></div>
-          <div class="heading-actions">
-            <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
-            <button class="btn btn-quiet" id="saEditTemplateBtn" type="button"><svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>v5.1 母本词库</span></button>
-            <button class="btn btn-quiet" id="saLoadDemoBtn" type="button"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>填入本步演示定稿</span></button>
-            <label class="btn btn-primary" for="saTxtFilePicker" style="cursor:pointer">
-              <svg class="ui-icon"><use href="#i-upload"></use></svg>
-              <span>导入原著小说 TXT</span>
-            </label>
-            <input type="file" id="saTxtFilePicker" accept=".txt,text/plain" style="display:none" aria-label="上传原著文本文件"/>
-          </div>
+        <div>
+          <div class="eyebrow">SCRIPT ATELIER · v7.0 RELAY ENGINE</div>
+          <h1>剧本改编工坊</h1>
+          <p class="muted" style="color:var(--muted)">影视工业级改编流水线 · 按章分卷精读与戏中戏双轨编译。</p >
+        </div>
+        <div class="heading-actions">
+          <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
+          <button class="btn btn-quiet" id="saEditTemplateBtn" type="button"><svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>v7.0 母本词库</span></button>
+          <label class="btn btn-primary" for="saTxtFilePicker" style="cursor:pointer">
+            <svg class="ui-icon"><use href="#i-upload"></use></svg>
+            <span>导入原著小说 TXT</span>
+          </label>
+          <input type="file" id="saTxtFilePicker" accept=".txt,text/plain" style="display:none" aria-label="上传原著文本文件"/>
+        </div>
       </div>
+
       <div class="sa-shell">
         <div class="sa-project-bar">
-          <div class="sa-proj-field"><label for="saProjectName">剧组项目代号 / 目标世界书名</label><input type="text" id="saProjectName" class="search" placeholder="例如：《折玉》剧组世界书" value="《折玉》剧组世界书"/></div>
-          <div class="sa-proj-stats"><span class="token-badge safe" id="saExtractedStats">已识别角色: 0 · 台词锚点: 0</span><button type="button" class="btn btn-quiet btn-small" id="saResetAllDraftsBtn">清空全流程定稿</button></div>
+          <div class="sa-proj-field">
+            <label for="saProjectName">剧组项目代号 / 目标世界书名</label>
+            <input type="text" id="saProjectName" class="search" placeholder="例如：《雪粒镇》剧组世界书" value="《雪粒镇》剧组世界书"/>
+          </div>
+          <div class="sa-proj-stats">
+            <span class="token-badge safe" id="saExtractedStats">已识别角色: 0 · 台词锚点: 0</span>
+            <button type="button" class="btn btn-quiet btn-small" id="saResetAllDraftsBtn">清空全流程定稿</button>
+          </div>
         </div>
+
         <nav class="sa-stepper-bar" aria-label="剧本改编五步流水线">
           <div class="sa-stepper-track" id="saStepperTrack">
-            <button type="button" class="sa-step-pill active" data-step="P0"><span class="sa-step-code">P0</span><span class="sa-step-label">原著证据抽取</span></button><span class="sa-step-sep">→</span>
-            <button type="button" class="sa-step-pill" data-step="P1"><span class="sa-step-code">P1</span><span class="sa-step-label">视听转化与加戏</span></button><span class="sa-step-sep">→</span>
-            <button type="button" class="sa-step-pill" data-step="P2_CHAR"><span class="sa-step-code">P2-A</span><span class="sa-step-label">戏内角色小传</span></button><span class="sa-step-sep">→</span>
-            <button type="button" class="sa-step-pill" data-step="P2_OFFSET"><span class="sa-step-code">P2-B</span><span class="sa-step-label">戏外内娱盲盒</span></button><span class="sa-step-sep">→</span>
-            <button type="button" class="sa-step-pill" data-step="P3"><span class="sa-step-code">P3</span><span class="sa-step-label">通告单与停机锁</span></button>
+            <!-- 由 js 动态渲染 S1 -> S2 -> S3 -> S4 -> S5 胶囊步进器 -->
           </div>
         </nav>
+
         <div class="panel sa-workbench">
-          <div class="sa-step-head"><div><h2 id="saStepTitle">P0 · 原著证据抽取机</h2><p class="muted" id="saStepDesc" style="margin:4px 0 0;font-size:12.5px">纯抽取、零创作。</p></div><button type="button" class="btn btn-quiet btn-small" id="saRandomSlotBtn"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>本步参数随机盲盒</span></button></div>
-          <div class="sa-relay-banner" id="saRelayBanner"><span id="saRelayBannerText">当前为首步（P0）。</span></div>
-          <div class="sa-slot-console" id="saSlotConsole"></div>
-          <div class="sa-block">
-            <div class="sa-block-head"><div class="sa-block-title"><span class="sa-num-badge">1</span><span>获取本步 v5.1 编译指令</span></div><button type="button" class="btn btn-primary" id="saCopyPromptBtn"><svg class="ui-icon"><use href="#i-copy"></use></svg><span>一键复制本步指令发给 AI</span></button></div>
-            <details class="sa-prompt-fold"><summary><span>点击展开查看完整 Prompt</span><span class="muted">展开 ▾</span></summary><pre class="sa-prompt-pre" id="saPromptPreview"></pre></details>
+          <div class="sa-step-head">
+            <div>
+              <h2 id="saStepTitle">S1 · 原著证据抽取与分卷精读</h2>
+              <p class="muted" id="saStepDesc" style="margin:4px 0 0;font-size:12.5px">自动切分章节，先按卷精读，再汇总全书底账。</p >
+            </div>
+            <button type="button" class="btn btn-quiet btn-small" id="saRandomSlotBtn"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>参数随机盲盒</span></button>
           </div>
-          <div class="sa-block">
-            <div class="sa-block-head"><div class="sa-block-title"><span class="sa-num-badge">2</span><span id="saDraftLabel">本步定稿与人工修订区</span></div><span class="detail-count" id="saDraftCharCount">0 字</span></div>
+
+          <div class="sa-relay-banner" id="saRelayBanner"><span id="saRelayBannerText">当前为首步（S1）。</span></div>
+          
+          <!-- S1 智能按章分卷器 / S2 心愿单与选角台等动态界面 -->
+          <div class="sa-slot-console" id="saSlotConsole"></div>
+
+          <!-- 步骤指令区 -->
+          <div class="sa-block sa-prompt-section">
+            <div class="sa-block-head">
+              <div class="sa-block-title"><span class="sa-num-badge">1</span><span>获取本阶段 AI 编译指令</span></div>
+              <button type="button" class="btn btn-primary" id="saCopyPromptBtn"><svg class="ui-icon"><use href="#i-copy"></use></svg><span>一键复制本步指令发给 AI</span></button>
+            </div>
+            <details class="sa-prompt-fold">
+              <summary><span>点击展开查看完整 Prompt</span><span class="muted">展开 ▾</span></summary>
+              <pre class="sa-prompt-pre" id="saPromptPreview"></pre>
+            </details>
+          </div>
+
+          <!-- 定稿区（在 1A 模式下由 JS 自动隐藏，避免重复） -->
+          <div class="sa-block sa-draft-section">
+            <div class="sa-block-head">
+              <div class="sa-block-title"><span class="sa-num-badge">2</span><span id="saDraftLabel">本步定稿与人工修订区</span></div>
+              <span class="detail-count" id="saDraftCharCount">0 字</span>
+            </div>
             <div class="sa-halt-alert hidden" id="saHaltAlert"></div>
-            <textarea class="sa-draft-textarea" id="saDraftEditor" placeholder="将 AI 输出粘贴在此处…"></textarea>
+            <textarea class="sa-draft-textarea" id="saDraftEditor" placeholder="将 AI 生成的最终定稿粘贴在此处…"></textarea>
             <div class="sa-parsed-entries" id="saParsedEntriesBox"></div>
           </div>
-          <div class="sa-footer-actions">
+
+          <!-- 底部操作栏（在 1A 模式下由 JS 自动隐藏） -->
+          <div class="sa-footer-actions sa-action-bar">
             <button type="button" class="btn btn-soft" id="saCompileCurrentBtn"><svg class="ui-icon"><use href="#i-book"></use></svg><span>编译本步入库 (<span id="saCurrentEntryCount">0</span>)</span></button>
-            <button type="button" class="btn btn-primary" id="saConfirmNextBtn"><span id="saNextStepBtnText">确认 P0 定稿 & 进入 P1 →</span></button>
+            <button type="button" class="btn btn-primary" id="saConfirmNextBtn"><span id="saNextStepBtnText">确认本步定稿 & 进入下一步 →</span></button>
           </div>
         </div>
       </div>
