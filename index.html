@@ -338,9 +338,7 @@
         </div>
 
         <nav class="sa-stepper-bar" aria-label="剧本改编五步流水线">
-          <div class="sa-stepper-track" id="saStepperTrack">
-            <!-- 由 js 动态渲染 S1 -> S2 -> S3 -> S4 -> S5 胶囊步进器 -->
-          </div>
+          <div class="sa-stepper-track" id="saStepperTrack"></div>
         </nav>
 
         <div class="panel sa-workbench">
@@ -354,7 +352,7 @@
 
           <div class="sa-relay-banner" id="saRelayBanner"><span id="saRelayBannerText">当前为首步（S1）。</span></div>
           
-          <!-- S1 智能按章分卷器 / S2 心愿单与选角台等动态界面 -->
+          <!-- 全流程所有动态面板（S1按章切卷、S2心愿卡司大盘、S3人物小传清单、S4等宽分包）全部由此容器渲染！ -->
           <div class="sa-slot-console" id="saSlotConsole"></div>
 
           <!-- 步骤指令区 -->
@@ -369,7 +367,7 @@
             </details>
           </div>
 
-          <!-- 定稿区（在 1A 模式下由 JS 自动隐藏，避免重复） -->
+          <!-- 定稿区（在 1A 模式下由 JS 自动隐藏） -->
           <div class="sa-block sa-draft-section">
             <div class="sa-block-head">
               <div class="sa-block-title"><span class="sa-num-badge">2</span><span id="saDraftLabel">本步定稿与人工修订区</span></div>
