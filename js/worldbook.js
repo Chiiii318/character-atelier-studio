@@ -1,5 +1,5 @@
 /* ================================================================
-   worldbook.js — 世界书管理、Smart Parser、触发沙盒、Kelivo 表单
+   worldbook.js — 世界书管理、Smart Parser、触发沙盒、规范化表单
    ================================================================ */
 
 import { saveWorldBook, getWorldBooks, deleteWorldBookFromDB } from './db.js';
@@ -10,10 +10,10 @@ import {
 } from './utils.js';
 
 /* ================================================================
-   Kelivo 关键词与位置规范化工具
+   通用关键词与位置规范化工具
    ================================================================ */
 
-function sanitizeKelivoKeyword(kw) {
+function sanitizeKeyword(kw) {
   let str = String(kw || '').trim();
   if (!str) return '';
   const match = str.match(/^\/(.*?)\/([a-z]*)$/i);
@@ -26,14 +26,14 @@ export function parseKeywordsList(raw, isRegex = false) {
   if (typeof raw !== 'string') return [];
   const trimmed = raw.trim();
   if (!trimmed) return [];
-  const sanitized = sanitizeKelivoKeyword(trimmed);
+  const sanitized = sanitizeKeyword(trimmed);
   if (isRegex || sanitized.includes('|')) {
-    return sanitized.split(/[\n,，]/).map(s => sanitizeKelivoKeyword(s).trim()).filter(Boolean);
+    return sanitized.split(/[\n,，]/).map(s => sanitizeKeyword(s).trim()).filter(Boolean);
   }
-  return sanitized.split(/[\n,，]/).map(s => sanitizeKelivoKeyword(s).trim()).filter(Boolean);
+  return sanitized.split(/[\n,，]/).map(s => sanitizeKeyword(s).trim()).filter(Boolean);
 }
 
-export function normalizeKelivoPosition(pos) {
+export function normalizePosition(pos) {
   const p = String(pos || '').toUpperCase();
   if (p.includes('BEFORE_SYSTEM') || p === 'BEFORE_SYSTEM_PROMPT') return 'BEFORE_SYSTEM_PROMPT';
   if (p.includes('AFTER_SYSTEM') || p === 'AFTER_SYSTEM_PROMPT') return 'AFTER_SYSTEM_PROMPT';
@@ -43,7 +43,7 @@ export function normalizeKelivoPosition(pos) {
   return 'AFTER_SYSTEM_PROMPT';
 }
 
-export function normalizeKelivoRole(role) {
+export function normalizeRole(role) {
   return String(role || '').toUpperCase() === 'ASSISTANT' ? 'ASSISTANT' : 'USER';
 }
 
@@ -52,7 +52,7 @@ function getPositionDisplay(pos) {
     BEFORE_SYSTEM_PROMPT: '系统提示前', AFTER_SYSTEM_PROMPT: '系统提示后',
     TOP_OF_CHAT: '对话顶部', BOTTOM_OF_CHAT: '对话底部', AT_DEPTH: '指定深度'
   };
-  return map[normalizeKelivoPosition(pos)] || '系统提示后';
+  return map[normalizePosition(pos)] || '系统提示后';
 }
 
 function getNormalizedEntriesArray(book) {
@@ -67,20 +67,20 @@ function getCurrentBook() {
 }
 
 function createDefaultWorldBook() {
-  return { id: 'wb_' + Date.now(), name: 'Kelivo世界设定', description: '对齐 Kelivo 世界书规范', enabled: true, entries: [] };
+  return { id: 'wb_' + Date.now(), name: '通用世界设定', description: '标准世界书规范', enabled: true, entries: [] };
 }
 
 /* ================================================================
-   Kelivo 1:1 匹配逻辑
+   1:1 匹配逻辑
    ================================================================ */
 
-function kelivoMatchEntry(entry, context) {
+function matchEntry(entry, context) {
   if (entry.enabled === false || entry.disable === true) return false;
   if (entry.constantActive || entry.constant) return true;
   const kwList = parseKeywordsList(entry.keywords || entry.key || [], entry.useRegex !== false);
   const isCaseSensitive = !!entry.caseSensitive;
   for (const raw of kwList) {
-    const keyword = sanitizeKelivoKeyword(raw);
+    const keyword = sanitizeKeyword(raw);
     if (!keyword) continue;
     if (entry.useRegex !== false) {
       try { if (new RegExp(keyword, isCaseSensitive ? '' : 'i').test(context)) return true; } catch { }
@@ -261,10 +261,10 @@ export function renderWorldBookEntries() {
 }
 
 /* ================================================================
-   Kelivo BottomSheet Picker
+   底部选项弹窗选择器
    ================================================================ */
 
-function openKelivoBottomSheetPicker(title, options, currentVal, onSelect) {
+function openBottomSheetPicker(title, options, currentVal, onSelect) {
   const mask = makeEl('div', 'klv-sheet-backdrop');
   const panel = makeEl('div', 'klv-sheet-panel');
   panel.innerHTML = `<div class="klv-sheet-title">${escHtml(title)}</div>`;
@@ -279,7 +279,7 @@ function openKelivoBottomSheetPicker(title, options, currentVal, onSelect) {
 }
 
 /* ================================================================
-   编辑条目弹窗（Kelivo 表单）
+   编辑条目弹窗
    ================================================================ */
 
 function openEditEntryModal(entryIndex, ent) {
@@ -292,8 +292,8 @@ function openEditEntryModal(entryIndex, ent) {
   };
 
   let currentKeywords = parseKeywordsList(data.keywords || data.key || []);
-  let currentPos = normalizeKelivoPosition(data.position);
-  let currentRole = normalizeKelivoRole(data.role);
+  let currentPos = normalizePosition(data.position);
+  let currentRole = normalizeRole(data.role);
   const posLabels = { BEFORE_SYSTEM_PROMPT: '系统提示前', AFTER_SYSTEM_PROMPT: '系统提示后', TOP_OF_CHAT: '对话顶部', BOTTOM_OF_CHAT: '对话底部', AT_DEPTH: '指定深度' };
   const roleLabels = { USER: '用户', ASSISTANT: '助手' };
 
@@ -303,7 +303,7 @@ function openEditEntryModal(entryIndex, ent) {
 <div class="klv-modal-header"><div class="klv-drag-handle"></div><div class="klv-modal-title">编辑条目</div></div>
 <div class="klv-modal-body">
   <div class="klv-card">
-    <div class="klv-row"><span class="klv-label">条目名称</span><input type="text" class="klv-input-pill" id="klvName" value="${escAttr(data.name || data.comment || '')}" placeholder="例如：微信格式"></div>
+    <div class="klv-row"><span class="klv-label">条目名称</span><input type="text" class="klv-input-pill" id="klvName" value="${escAttr(data.name || data.comment || '')}" placeholder="例如：背景设定"></div>
     <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">所属分组</span><input type="text" class="klv-input-pill" id="klvGroup" value="${escAttr(data.group || '')}" placeholder="例如：人物/阵营"></div>
     <div class="klv-row" style="border-top:1px solid #f2f3f5;padding-top:10px"><span class="klv-label">启用条目</span><input type="checkbox" class="klv-switch" id="klvEnabled" ${data.enabled !== false && !data.disable ? 'checked' : ''}></div>
   </div>
@@ -357,10 +357,10 @@ function openEditEntryModal(entryIndex, ent) {
       kwInput.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } };
 
       wrap.querySelector('#klvPosBtn').onclick = () => {
-        openKelivoBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => { currentPos = val; wrap.querySelector('#klvPosBtn').textContent = label; });
+        openBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => { currentPos = val; wrap.querySelector('#klvPosBtn').textContent = label; });
       };
       wrap.querySelector('#klvRoleBtn').onclick = () => {
-        openKelivoBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => { currentRole = val; wrap.querySelector('#klvRoleBtn').textContent = label; });
+        openBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => { currentRole = val; wrap.querySelector('#klvRoleBtn').textContent = label; });
       };
       wrap.querySelector('#klvCancelBtn').onclick = () => emit('close-modal');
       wrap.querySelector('#klvSaveBtn').onclick = async () => {
@@ -394,7 +394,7 @@ function openEditEntryModal(entryIndex, ent) {
         if (isNew) book.entries.push(finalItem); else book.entries[entryIndex] = finalItem;
         book.updatedAt = Date.now(); await saveWorldBook(book);
         emit('close-modal'); renderWorldBookEntries(); updateWorldBookSelector();
-        notify('已按 Kelivo 格式保存');
+        notify('已保存条目设置');
       };
     }, 0);
     return wrap;
@@ -421,8 +421,8 @@ function parseSystemConfigSummary(text) {
     const scanM = l.match(/(?:扫描深度|scan_?depth)\s*[:：]\s*`?(\d+)`?/i); if (scanM) configMap[currentName].scanDepth = parseInt(scanM[1], 10);
     const depthM = l.match(/(?:插入深度|深度|depth)\s*[:：]\s*`?(\d+)`?/i); if (depthM) configMap[currentName].injectDepth = parseInt(depthM[1], 10);
     const kwM = l.match(/(?:关键词|keywords?)\s*[:：]\s*`?([^\n`]+)`?/i); if (kwM) configMap[currentName].keywords = kwM[1].trim();
-    const posM = l.match(/(?:位置|position)\s*[:：]\s*`?([a-zA-Z_]+)`?/i); if (posM) configMap[currentName].position = normalizeKelivoPosition(posM[1]);
-    const roleM = l.match(/(?:角色|身份|role)\s*[:：]\s*`?([a-zA-Z_]+)`?/i); if (roleM) configMap[currentName].role = normalizeKelivoRole(roleM[1]);
+    const posM = l.match(/(?:位置|position)\s*[:：]\s*`?([a-zA-Z_]+)`?/i); if (posM) configMap[currentName].position = normalizePosition(posM[1]);
+    const roleM = l.match(/(?:角色|身份|role)\s*[:：]\s*`?([a-zA-Z_]+)`?/i); if (roleM) configMap[currentName].role = normalizeRole(roleM[1]);
   }
   return configMap;
 }
@@ -444,7 +444,7 @@ function parseRawTextToEntries(rawText) {
       const posMatch = b.match(/\[?(?:位置|position)\]?\s*[:：]\s*([^\n\r]+)/i);
       let content = b; const cMatch = b.match(/\[正文\]\s*([\s\S]*)$/i); if (cMatch) content = cMatch[1].trim();
       const name = nameMatch ? nameMatch[1].trim() : '未命名条目';
-      items.push({ selected: true, id: 'wb_entry_' + Date.now().toString(36) + '_' + items.length, name, keywords: kwMatch ? kwMatch[1].trim() : cleanPersonName(name), priority: prioMatch ? parseInt(prioMatch[1], 10) : 100, injectDepth: depthMatch ? parseInt(depthMatch[1], 10) : 4, scanDepth: 3, constantActive: !!constMatch, position: posMatch ? normalizeKelivoPosition(posMatch[1].trim()) : 'AFTER_SYSTEM_PROMPT', role: 'USER', useRegex: true, caseSensitive: false, content });
+      items.push({ selected: true, id: 'wb_entry_' + Date.now().toString(36) + '_' + items.length, name, keywords: kwMatch ? kwMatch[1].trim() : cleanPersonName(name), priority: prioMatch ? parseInt(prioMatch[1], 10) : 100, injectDepth: depthMatch ? parseInt(depthMatch[1], 10) : 4, scanDepth: 3, constantActive: !!constMatch, position: posMatch ? normalizePosition(posMatch[1].trim()) : 'AFTER_SYSTEM_PROMPT', role: 'USER', useRegex: true, caseSensitive: false, content });
     });
     if (items.length > 0) { applyConfigs(items, configs); return items; }
   }
@@ -480,15 +480,15 @@ function applyConfigs(items, configs) {
     if (cfg.scanDepth !== undefined) item.scanDepth = cfg.scanDepth;
     if (cfg.injectDepth !== undefined) item.injectDepth = cfg.injectDepth;
     if (cfg.keywords) item.keywords = cfg.keywords;
-    if (cfg.position) item.position = normalizeKelivoPosition(cfg.position);
-    if (cfg.role) item.role = normalizeKelivoRole(cfg.role);
+    if (cfg.position) item.position = normalizePosition(cfg.position);
+    if (cfg.role) item.role = normalizeRole(cfg.role);
   });
 }
 
 export function openSmartParserModal() {
   emit('open-modal', { title: '智能批量解析', builder: () => {
     const wrap = makeEl('div', 'parser-modal-view'); wrap.style.cssText = 'padding:18px;max-width:860px;width:100%';
-    wrap.innerHTML = `<div class="parser-tip"><strong>Kelivo 世界书提取引擎</strong><br>支持粘贴 <code>=== 条目 ===</code> 或 <code>\`\`\`markdown\`\`\`</code> 格式。</div><textarea class="parser-textarea" id="parserRawInput" placeholder="在这里粘贴 AI 文本..."></textarea><div class="parser-actions-bar"><button type="button" class="btn btn-primary" id="parserRunBtn">开始提取</button></div><div id="parserPreviewArea" class="hidden"><div class="parser-results-header"><div style="font-weight:750" id="parserResultCount">解析结果</div><button type="button" class="btn btn-quiet btn-small" id="parserSelectAll">全选/反选</button></div><div class="parser-results-list" id="parserCardsList"></div><div class="modal-actions" style="margin-top:14px"><button type="button" class="btn btn-quiet" id="parserCancel">取消</button><button type="button" class="btn btn-primary" id="parserConfirmCommit">确认加入当前世界书</button></div></div>`;
+    wrap.innerHTML = `<div class="parser-tip"><strong>世界书提取引擎</strong><br>支持粘贴 <code>=== 条目 ===</code> 或 <code>\`\`\`markdown\`\`\`</code> 格式。</div><textarea class="parser-textarea" id="parserRawInput" placeholder="在这里粘贴 AI 文本..."></textarea><div class="parser-actions-bar"><button type="button" class="btn btn-primary" id="parserRunBtn">开始提取</button></div><div id="parserPreviewArea" class="hidden"><div class="parser-results-header"><div style="font-weight:750" id="parserResultCount">解析结果</div><button type="button" class="btn btn-quiet btn-small" id="parserSelectAll">全选/反选</button></div><div class="parser-results-list" id="parserCardsList"></div><div class="modal-actions" style="margin-top:14px"><button type="button" class="btn btn-quiet" id="parserCancel">取消</button><button type="button" class="btn btn-primary" id="parserConfirmCommit">确认加入当前世界书</button></div></div>`;
 
     let parsedItems = [];
     setTimeout(() => {
@@ -524,7 +524,7 @@ export function openSmartParserModal() {
         if (!Array.isArray(book.entries)) book.entries = getNormalizedEntriesArray(book);
         chosen.forEach(item => {
           const kwArr = parseKeywordsList(item.keywords || item.name);
-          book.entries.push({ id: item.id, group: '默认分组', name: item.name, comment: item.name, enabled: true, disable: false, priority: item.priority || 100, order: item.priority || 100, position: normalizeKelivoPosition(item.position), role: normalizeKelivoRole(item.role), content: item.content || '', injectDepth: item.injectDepth || 4, depth: item.injectDepth || 4, keywords: kwArr, key: kwArr, useRegex: item.useRegex !== false, caseSensitive: false, scanDepth: item.scanDepth || 3, scan_depth: item.scanDepth || 3, constantActive: !!item.constantActive, constant: !!item.constantActive, sticky: 0, cooldown: 0, delay: 0 });
+          book.entries.push({ id: item.id, group: '默认分组', name: item.name, comment: item.name, enabled: true, disable: false, priority: item.priority || 100, order: item.priority || 100, position: normalizePosition(item.position), role: normalizeRole(item.role), content: item.content || '', injectDepth: item.injectDepth || 4, depth: item.injectDepth || 4, keywords: kwArr, key: kwArr, useRegex: item.useRegex !== false, caseSensitive: false, scanDepth: item.scanDepth || 3, scan_depth: item.scanDepth || 3, constantActive: !!item.constantActive, constant: !!item.constantActive, sticky: 0, cooldown: 0, delay: 0 });
         });
         book.updatedAt = Date.now(); await saveWorldBook(book);
         emit('close-modal'); renderWorldBookEntries(); updateWorldBookSelector();
@@ -541,15 +541,15 @@ export function openSmartParserModal() {
 
 export function openKelivoSandboxModal() {
   const book = getCurrentBook(); if (!book) { notify('当前没有选择世界书'); return; }
-  emit('open-modal', { title: 'Kelivo 触发沙盒', builder: () => {
+  emit('open-modal', { title: '匹配触发沙盒', builder: () => {
     const wrap = makeEl('div', 'sandbox-modal');
-    wrap.innerHTML = `<div class="parser-tip"><strong>Kelivo 算法沙盒</strong>：1:1 对齐 Dart 源码匹配逻辑。</div><label class="klv-label">模拟对话内容：</label><textarea class="sandbox-textarea" id="sbInput" placeholder="输入测试文本..."></textarea><div style="display:flex;justify-content:space-between"><span class="klv-label">命中条目：</span><span class="detail-count" id="sbHitCount">0 条</span></div><div class="sandbox-hit-list" id="sbHitList"></div><label class="klv-label" style="margin-top:6px">组装预览：</label><div class="sandbox-preview-box" id="sbAssembledPreview">（等待输入...）</div><div class="modal-actions" style="margin-top:8px"><button type="button" class="btn btn-quiet" id="sbClose">关闭</button></div>`;
+    wrap.innerHTML = `<div class="parser-tip"><strong>算法沙盒</strong>：模拟上下文关键词触发与装载预览。</div><label class="klv-label">模拟对话内容：</label><textarea class="sandbox-textarea" id="sbInput" placeholder="输入测试文本..."></textarea><div style="display:flex;justify-content:space-between"><span class="klv-label">命中条目：</span><span class="detail-count" id="sbHitCount">0 条</span></div><div class="sandbox-hit-list" id="sbHitList"></div><label class="klv-label" style="margin-top:6px">组装预览：</label><div class="sandbox-preview-box" id="sbAssembledPreview">（等待输入...）</div><div class="modal-actions" style="margin-top:8px"><button type="button" class="btn btn-quiet" id="sbClose">关闭</button></div>`;
     setTimeout(() => {
       const input = wrap.querySelector('#sbInput'), hitList = wrap.querySelector('#sbHitList'), countEl = wrap.querySelector('#sbHitCount'), previewBox = wrap.querySelector('#sbAssembledPreview');
       wrap.querySelector('#sbClose').onclick = () => emit('close-modal');
       input.oninput = () => {
         const text = input.value.trim(), entries = getNormalizedEntriesArray(book), triggered = [];
-        entries.forEach((ent, idx) => { if (kelivoMatchEntry(ent, text)) triggered.push({ entry: ent, seq: idx }); });
+        entries.forEach((ent, idx) => { if (matchEntry(ent, text)) triggered.push({ entry: ent, seq: idx }); });
         triggered.sort((a, b) => (b.entry.priority ?? 100) - (a.entry.priority ?? 100) || a.seq - b.seq);
         countEl.textContent = `命中 ${triggered.length} 条`; hitList.replaceChildren();
         if (!triggered.length) { hitList.innerHTML = '<div class="muted" style="text-align:center;padding:18px">未命中</div>'; previewBox.textContent = ''; return; }
@@ -558,7 +558,7 @@ export function openKelivoSandboxModal() {
           const item = makeEl('div', 'sandbox-hit-item');
           item.innerHTML = `<div class="sandbox-hit-head"><strong>${escHtml(entry.name || '未命名')}</strong><span class="token-badge safe">${(entry.constantActive || entry.constant) ? '常驻' : '命中'} P:${entry.priority ?? 100}</span></div>`;
           hitList.append(item);
-          const r = normalizeKelivoRole(entry.role);
+          const r = normalizeRole(entry.role);
           prompt += r === 'USER' ? `<system>\n${entry.content}\n</system>\n\n` : `[Assistant]\n${entry.content}\n\n`;
         });
         previewBox.textContent = prompt.trim();
@@ -569,123 +569,172 @@ export function openKelivoSandboxModal() {
 }
 
 /* ================================================================
-   导入 / 导出 世界书 JSON
+   导入 / 导出 纯净原生规范世界书 JSON (1:1 严格对齐)
    ================================================================ */
 
 export function exportCurrentWorldBookJSON() {
   const book = getCurrentBook(); 
-  if (!book) { notify('没有可导出的世界书'); return; }
+  if (!book) { 
+    notify('没有可导出的世界书'); 
+    return; 
+  }
 
   const entriesArray = getNormalizedEntriesArray(book);
   
-  // 1. 生成 Kelivo & 酒馆通用的标准字典对象 (以 uid 作为 key)
-  const entriesDict = {};
-  // 2. 生成通用数组格式
-  const entriesList = [];
+  // 严格按客户端实机规范产出纯数组，绝无多余外层干扰
+  const exportEntries = entriesArray.map((ent, idx) => {
+    // 关键词处理
+    let kwList = [];
+    if (Array.isArray(ent.keywords) && ent.keywords.length) {
+      kwList = ent.keywords;
+    } else if (Array.isArray(ent.key) && ent.key.length) {
+      kwList = ent.key;
+    } else if (typeof ent.keywords === 'string' && ent.keywords.trim()) {
+      kwList = ent.keywords.split(/[\n,，]/).map(s => s.trim()).filter(Boolean);
+    } else if (typeof ent.key === 'string' && ent.key.trim()) {
+      kwList = ent.key.split(/[\n,，]/).map(s => s.trim()).filter(Boolean);
+    }
 
-  entriesArray.forEach((ent, idx) => {
-    const kwList = parseKeywordsList(ent.keywords || ent.key || ent.keys || ent.name || []);
-    const isConstant = !!(ent.constantActive || ent.constant);
+    const isConstant = !!(ent.constantActive ?? ent.constant ?? false);
     const isEnabled = ent.enabled !== false && !ent.disable;
-    const prio = ent.priority ?? ent.order ?? 100;
-    const depthVal = ent.injectDepth ?? ent.depth ?? 4;
-    const scanDepthVal = ent.scanDepth ?? ent.scan_depth ?? 3;
-    const posStr = normalizeKelivoPosition(ent.position);
+    const prio = Number(ent.priority ?? ent.order ?? 70);
+    const depthVal = Number(ent.injectDepth ?? ent.depth ?? 4);
+    const scanDepthVal = Number(ent.scanDepth ?? ent.scan_depth ?? 4);
 
-    // 标准条目结构
-    const stdEntry = {
-      uid: idx,
-      id: ent.id || ('wb_entry_' + idx),
-      key: kwList,
-      keysecondary: ent.secondary_keys || ent.keysecondary || [],
-      comment: ent.name || ent.comment || `条目 ${idx + 1}`,
-      name: ent.name || ent.comment || `条目 ${idx + 1}`,
-      content: ent.content || '',
-      constant: isConstant,
-      constantActive: isConstant,
-      vectorized: false,
-      selective: !!ent.selective,
-      selectiveLogic: 0,
-      addMemo: true,
-      order: prio,
-      priority: prio,
-      position: posStr,
-      role: normalizeKelivoRole(ent.role),
-      disable: !isEnabled,
+    return {
+      id: String(ent.id || `wb-entry-${Date.now()}-${idx}`),
+      name: String(ent.name || ent.comment || `条目 ${idx + 1}`),
       enabled: isEnabled,
-      excludeRecursion: false,
-      preventRecursion: false,
-      delayUntilRecursion: false,
-      scanDepth: scanDepthVal,
-      scan_depth: scanDepthVal,
-      depth: depthVal,
+      priority: prio,
+      position: normalizePosition(ent.position),
+      content: String(ent.content || ''),
       injectDepth: depthVal,
+      role: normalizeRole(ent.role),
+      keywords: kwList,
+      useRegex: ent.useRegex !== undefined ? !!ent.useRegex : true,
       caseSensitive: !!ent.caseSensitive,
-      useRegex: ent.useRegex !== false,
-      sticky: ent.sticky ?? 0,
-      cooldown: ent.cooldown ?? 0,
-      delay: ent.delay ?? 0,
-      group: ent.group || '默认分组'
+      scanDepth: scanDepthVal,
+      constantActive: isConstant,
+      sticky: Number(ent.sticky ?? 0),
+      cooldown: Number(ent.cooldown ?? 0),
+      delay: Number(ent.delay ?? 0)
     };
-
-    entriesDict[String(idx)] = stdEntry;
-    entriesList.push(stdEntry);
   });
 
-  // 构造顶层标准数据：同时满足 entries 为字典、数组，以及 originalData 识别
+  // 1:1 结构：严格按照实体原机导出的数据结构
   const exportPayload = {
-    name: book.name || '世界书设定',
-    description: book.description || 'Kelivo 世界书导出',
-    originalData: {
-      name: book.name || '世界书设定',
-      description: book.description || 'Kelivo 世界书导出',
-      entries: entriesDict
-    },
-    entries: entriesDict,       // 供 Kelivo / SillyTavern 标准解析器直接读取字典
-    entries_list: entriesList,  // 备用数组
+    version: 1,
+    type: "lorebook",
     data: {
-      id: book.id,
-      name: book.name,
-      entries: entriesList
+      id: String(book.id || `world-${Date.now()}`),
+      name: String(book.name || '世界书'),
+      description: String(book.description || '世界书设定库'),
+      enabled: true,
+      entries: exportEntries
     }
   };
 
   downloadJSON(exportPayload, safeName(book.name) + '.json');
-  notify(`✓ 已按 Kelivo 标准格式导出《${book.name}》！`);
+  notify(`✓ 导出成功！`);
 }
 
 export async function importWorldBookJSON(file) {
   try {
-    const text = await file.text(); const json = JSON.parse(text);
-    let bookName = file.name.replace(/\.json$/i, '') || '导入的世界书', rawEntries = [], desc = '';
+    const text = await file.text(); 
+    const json = JSON.parse(text);
+    let bookName = file.name.replace(/\.json$/i, '') || '导入的世界书';
+    let rawEntries = [];
+    let desc = '';
 
     if (Array.isArray(json.prompts)) {
-      bookName = file.name.replace(/\.json$/i, ''); desc = '从酒馆预设导入';
+      bookName = file.name.replace(/\.json$/i, ''); 
+      desc = '从预设导入';
       let activeGroup = '通用系统提示';
       rawEntries = json.prompts.map((p, idx) => {
         const rawTitle = p.name || `模块 ${idx + 1}`;
         if (/^[♫♬•\*\s─]+/.test(rawTitle)) activeGroup = rawTitle.replace(/[♫♬•\*\s─]/g, '').trim() || '通用';
         const cleanTitle = rawTitle.replace(/[♫♬•\*\s─]/g, '').trim();
-        return { id: p.identifier || ('preset_' + Date.now() + '_' + idx), group: activeGroup, name: cleanTitle, comment: cleanTitle, enabled: p.enabled !== false, priority: p.injection_order ?? 100, position: p.role === 'user' ? 'BOTTOM_OF_CHAT' : 'BEFORE_SYSTEM_PROMPT', role: p.role === 'assistant' ? 'ASSISTANT' : 'USER', content: p.content || '', injectDepth: p.injection_depth ?? 4, keywords: [cleanTitle], key: [cleanTitle], constantActive: p.enabled !== false, constant: p.enabled !== false };
+        return { 
+          id: p.identifier || ('preset_' + Date.now() + '_' + idx), 
+          group: activeGroup, 
+          name: cleanTitle, 
+          comment: cleanTitle, 
+          enabled: p.enabled !== false, 
+          priority: p.injection_order ?? 100, 
+          position: p.role === 'user' ? 'BOTTOM_OF_CHAT' : 'BEFORE_SYSTEM_PROMPT', 
+          role: p.role === 'assistant' ? 'ASSISTANT' : 'USER', 
+          content: p.content || '', 
+          injectDepth: p.injection_depth ?? 4, 
+          keywords: [cleanTitle], 
+          key: [cleanTitle], 
+          constantActive: p.enabled !== false, 
+          constant: p.enabled !== false 
+        };
       }).filter(e => e.content?.trim());
     } else if (json.type === 'lorebook' && json.data?.entries) {
-      if (json.data.name) bookName = json.data.name; rawEntries = json.data.entries;
+      if (json.data.name) bookName = json.data.name;
+      if (json.data.description) desc = json.data.description;
+      rawEntries = json.data.entries;
     } else if (json.entries) {
       if (json.originalData?.name) bookName = json.originalData.name;
       else if (json.name) bookName = json.name;
       rawEntries = json.entries;
     } else if (json.character_book || json.data?.character_book) {
       const cb = json.character_book || json.data.character_book;
-      if (cb.name) bookName = cb.name; rawEntries = cb.entries || [];
-    } else { throw new Error('未识别到有效的世界书格式。'); }
+      if (cb.name) bookName = cb.name; 
+      rawEntries = cb.entries || [];
+    } else { 
+      throw new Error('未识别到有效的世界书格式。'); 
+    }
 
     const entriesArray = Array.isArray(rawEntries) ? rawEntries : Object.values(rawEntries);
-    const newBook = { id: 'wb_' + Date.now(), name: bookName, description: desc || '导入的世界书', enabled: true, createdAt: Date.now(), updatedAt: Date.now(), entries: entriesArray.map((ent, idx) => { const kw = parseKeywordsList(ent.keywords || ent.key || ent.keys || ent.name || []); return { id: ent.id || ('wb_entry_' + idx), group: ent.group || '默认分组', name: ent.name || ent.comment || `条目 ${idx + 1}`, comment: ent.name || ent.comment || '', enabled: ent.enabled !== false && !ent.disable, priority: ent.priority ?? ent.order ?? 100, order: ent.priority ?? ent.order ?? 100, position: normalizeKelivoPosition(ent.position), role: normalizeKelivoRole(ent.role), content: ent.content || '', injectDepth: ent.injectDepth ?? ent.depth ?? 4, depth: ent.injectDepth ?? ent.depth ?? 4, keywords: kw, key: kw, useRegex: ent.useRegex ?? ent.use_regex ?? true, caseSensitive: !!(ent.caseSensitive ?? ent.case_sensitive), scanDepth: ent.scanDepth ?? ent.scan_depth ?? 3, constantActive: !!(ent.constantActive || ent.constant), constant: !!(ent.constantActive || ent.constant), sticky: ent.sticky ?? 0, cooldown: ent.cooldown ?? 0, delay: ent.delay ?? 0 }; }) };
-    await saveWorldBook(newBook); state.worldBooksCache.unshift(newBook); state.currentBookId = newBook.id;
-    updateWorldBookSelector(); renderWorldBookEntries();
-    notify(`成功导入《${bookName}》，${newBook.entries.length} 条目！`);
-  } catch (err) { notify('导入失败：' + (err.message || String(err))); }
-  finally { $('wbJsonPicker').value = ''; }
+    const newBook = { 
+      id: 'wb_' + Date.now(), 
+      name: bookName, 
+      description: desc || '导入的世界书', 
+      enabled: true, 
+      createdAt: Date.now(), 
+      updatedAt: Date.now(), 
+      entries: entriesArray.map((ent, idx) => { 
+        const kw = parseKeywordsList(ent.keywords || ent.key || ent.keys || ent.name || []); 
+        return { 
+          id: ent.id || ('wb_entry_' + idx), 
+          group: ent.group || '默认分组', 
+          name: ent.name || ent.comment || `条目 ${idx + 1}`, 
+          comment: ent.name || ent.comment || '', 
+          enabled: ent.enabled !== false && !ent.disable, 
+          priority: ent.priority ?? ent.order ?? 70, 
+          order: ent.priority ?? ent.order ?? 70, 
+          position: normalizePosition(ent.position), 
+          role: normalizeRole(ent.role), 
+          content: ent.content || '', 
+          injectDepth: ent.injectDepth ?? ent.depth ?? 4, 
+          depth: ent.injectDepth ?? ent.depth ?? 4, 
+          keywords: kw, 
+          key: kw, 
+          useRegex: ent.useRegex ?? ent.use_regex ?? true, 
+          caseSensitive: !!(ent.caseSensitive ?? ent.case_sensitive), 
+          scanDepth: ent.scanDepth ?? ent.scan_depth ?? 4, 
+          constantActive: !!(ent.constantActive || ent.constant), 
+          constant: !!(ent.constantActive || ent.constant), 
+          sticky: ent.sticky ?? 0, 
+          cooldown: ent.cooldown ?? 0, 
+          delay: ent.delay ?? 0 
+        }; 
+      }) 
+    };
+
+    await saveWorldBook(newBook); 
+    state.worldBooksCache.unshift(newBook); 
+    state.currentBookId = newBook.id;
+    updateWorldBookSelector(); 
+    renderWorldBookEntries();
+    notify(`成功导入《${bookName}》，共 ${newBook.entries.length} 个条目！`);
+  } catch (err) { 
+    notify('导入失败：' + (err.message || String(err))); 
+  } finally { 
+    $('wbJsonPicker').value = ''; 
+  }
 }
 
 /* ================================================================
@@ -695,10 +744,19 @@ export async function importWorldBookJSON(file) {
 export async function loadWorldBooks() {
   try {
     state.worldBooksCache = await getWorldBooks();
-    if (!state.worldBooksCache.length) { const d = createDefaultWorldBook(); await saveWorldBook(d); state.worldBooksCache = [d]; }
-    if (!state.currentBookId || !state.worldBooksCache.some(b => b.id === state.currentBookId)) state.currentBookId = state.worldBooksCache[0].id;
-    updateWorldBookSelector(); renderWorldBookEntries();
-  } catch (err) { console.error('加载世界书失败', err); }
+    if (!state.worldBooksCache.length) { 
+      const d = createDefaultWorldBook(); 
+      await saveWorldBook(d); 
+      state.worldBooksCache = [d]; 
+    }
+    if (!state.currentBookId || !state.worldBooksCache.some(b => b.id === state.currentBookId)) {
+      state.currentBookId = state.worldBooksCache[0].id;
+    }
+    updateWorldBookSelector(); 
+    renderWorldBookEntries();
+  } catch (err) { 
+    console.error('加载世界书失败', err); 
+  }
 }
 
 /* ================================================================
