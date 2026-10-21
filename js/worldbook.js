@@ -326,7 +326,6 @@ function openBottomSheetPicker(title, options, currentVal, onSelect) {
    ================================================================ */
 
 function openEditEntryModal(entryIndex, ent) {
-function openEditEntryModal(entryIndex, ent) {
   const isNew = entryIndex === null || entryIndex === undefined;
   const data = ent ? JSON.parse(JSON.stringify(ent)) : {
     id: 'wb-entry-' + Date.now().toString(36), name: '', enabled: true, priority: 70,
@@ -336,8 +335,8 @@ function openEditEntryModal(entryIndex, ent) {
   };
 
   let currentKeywords = parseKeywordsList(data.keywords || data.key || []);
-  let currentPos = normalizeKelivoPosition(data.position);
-  let currentRole = normalizeKelivoRole(data.role);
+  let currentPos = normalizePosition(data.position);
+  let currentRole = normalizeRole(data.role);
 
   const posLabels = {
     BEFORE_SYSTEM_PROMPT: '系统提示前',
@@ -348,7 +347,7 @@ function openEditEntryModal(entryIndex, ent) {
   };
   const roleLabels = { USER: '用户', ASSISTANT: '助手' };
 
-  emit('open-modal', { title: '编辑条目', builder: () => {
+  emit('open-modal', { title: isNew ? '新建条目' : '编辑条目', builder: () => {
     const wrap = makeEl('div', 'klv-modal-container');
     wrap.style.cssText = 'background:#f2f3f7;width:100%;max-width:480px;height:92dvh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;position:relative;overflow:hidden;margin:0 auto;';
 
@@ -517,17 +516,16 @@ function openEditEntryModal(entryIndex, ent) {
       wrap.querySelector('#klvAddKwBtn').onclick = addKeyword;
       kwInput.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } };
 
-      // ActionSheet 注入位置选择器
+      // 使用 openBottomSheetPicker
       wrap.querySelector('#klvPosRow').onclick = () => {
-        openKelivoBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => {
+        openBottomSheetPicker('注入位置', Object.entries(posLabels).map(([v, l]) => ({ label: l, value: v })), currentPos, (val, label) => {
           currentPos = val;
           wrap.querySelector('#klvPosText').textContent = label;
         });
       };
 
-      // ActionSheet 注入角色选择器
       wrap.querySelector('#klvRoleRow').onclick = () => {
-        openKelivoBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => {
+        openBottomSheetPicker('注入角色', Object.entries(roleLabels).map(([v, l]) => ({ label: l, value: v })), currentRole, (val, label) => {
           currentRole = val;
           wrap.querySelector('#klvRoleText').textContent = label;
         });
@@ -580,7 +578,6 @@ function openEditEntryModal(entryIndex, ent) {
 
     return wrap;
   }});
-}
 }
 
 /* ================================================================
@@ -1029,3 +1026,23 @@ export function initWorldBook() {
   // 监听事件总线
   on('worldbooks-changed', () => { updateWorldBookSelector(); renderWorldBookEntries(); });
 }
+
+/* ---- 补充：批量导出选中条目 ---- */
+export function exportSelectedWorldBookEntries() {
+  const book = getCurrentBook();
+  if (!book) return;
+  const list = getNormalizedEntriesArray(book);
+  const selected = list.filter(e => state.selectedWbEntryIds && state.selectedWbEntryIds.has(e.id));
+  if (!selected.length) {
+    notify('请先勾选要导出的条目');
+    return;
+  }
+  const exportPayload = {
+    name: `${book.name || '世界书'}_选中条目`,
+    description: `从《${book.name}》中导出的 ${selected.length} 个条目`,
+    entries: selected
+  };
+  downloadJSON(exportPayload, `${safeName(book.name)}-选中条目-${Date.now()}.json`);
+  notify(`已导出 ${selected.length} 个条目！`);
+}
+

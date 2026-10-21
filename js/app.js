@@ -118,20 +118,13 @@ window.closeDrawer = closeDrawer;
    ================================================================ */
 
 function bindGlobalEvents() {
-  // 点击空白透明遮罩保底关闭，防止全屏卡死点不动
+  // 统一的遮罩点击监听，关闭模态框
   document.addEventListener('click', e => {
-    if (e.target && (e.target.classList.contains('modal-backdrop') || e.target.id === 'modalRoot')) {
-      closeModal();
-    }
-  });
-
-    // 破除全屏隐形卡死遮罩
-  document.addEventListener('click', e => {
-    if (e.target && (e.target.classList.contains('modal-backdrop') || e.target.classList.contains('peek-backdrop') || e.target.id === 'modalRoot')) {
+    if (!e.target) return;
+    if (e.target.id === 'modalRoot' || e.target.classList.contains('modal-backdrop') || e.target.classList.contains('peek-backdrop')) {
       closeModal();
       document.querySelectorAll('.modal-backdrop.show, .peek-backdrop.show').forEach(el => {
         el.classList.remove('show');
-        el.style.display = 'none';
       });
       document.body.style.pointerEvents = 'auto';
     }
