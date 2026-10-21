@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+       <script>
+       window.onerror = function(msg, url, line) {
+         alert("报错文件: " + url.split('/').pop() + "\n第 " + line + " 行: " + msg);
+       };
+     </script>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
   <title>Character Atelier｜角色创作工作台</title>
