@@ -64,9 +64,19 @@ function closeModal() {
   }
   const root = $('modalRoot');
   if (root) root.replaceChildren();
-  document.querySelectorAll('.modal-backdrop.show, .peek-backdrop.show').forEach(el => el.classList.remove('show'));
+  
+  // 彻底移除所有遮罩并强制恢复点击穿透
+  document.querySelectorAll('.modal-backdrop, .peek-backdrop, #modalBackdrop').forEach(el => {
+    el.classList.remove('show');
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+  });
+  
+  const menuPopover = document.querySelector('.menu-popover');
+  if (menuPopover) menuPopover.style.display = 'none';
+
   document.body.style.overflow = '';
-  document.body.style.pointerEvents = '';
+  document.body.style.pointerEvents = 'auto';
 }
 
 /* ================================================================
