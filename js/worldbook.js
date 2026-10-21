@@ -174,10 +174,12 @@ function closePeekMenu() {
   if (peekCard) peekCard.classList.remove('context-active-peek');
   if (peekBackdrop) {
     peekBackdrop.classList.remove('show');
-    peekBackdrop.style.cssText = 'display: none !important; pointer-events: none !important;';
+    peekBackdrop.style.setProperty('display', 'none', 'important');
+    peekBackdrop.style.setProperty('pointer-events', 'none', 'important');
   }
   if (menuPopover) menuPopover.style.display = 'none';
   peekCard = null;
+  document.body.style.pointerEvents = 'auto';
 }
 
 // 全局记录用户勾选准备导出的条目 ID
