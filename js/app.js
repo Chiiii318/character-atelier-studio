@@ -440,50 +440,58 @@ document.addEventListener('click', e => {
    启动
    ================================================================ */
 
+/* ================================================================
+   安全启动：每一个模块完全独立，绝不互相连累卡死
+   ================================================================ */
 async function boot() {
-  // 1. 最高优先级：先绑定全局所有按钮和导航点击事件！
+  // 1. 优先绑定全局导航与点击（确保无论发生什么，页面永远能点动！）
   try {
     bindGlobalEvents();
   } catch (err) {
-    console.error('bindGlobalEvents error:', err);
+    console.warn('bindGlobalEvents fallback:', err);
   }
 
-  // 2. 独立初始化角色工具栏
+  // 2. 角色工具栏
   try {
     setupLibraryToolbar();
   } catch (err) {
-    console.error('setupLibraryToolbar error:', err);
+    console.warn('setupLibraryToolbar fallback:', err);
   }
 
-  // 3. 独立初始化世界书
-  try {
-    initWorldBook();
-  } catch (err) {
-    console.error('initWorldBook error:', err);
-  }
-
-  // 4. 加载 IndexedDB 本地数据库
+  // 3. 打开数据库并加载角色
   try {
     await openDatabase();
     await loadCards();
-    await loadWorldBooks();
-  } catch (e) {
-    showNotice('本地数据库无法打开：' + e.message);
+  } catch (err) {
+    console.warn('数据库加载角色失败:', err);
   }
 
-  // 5. 独立初始化剧本改编工坊
+  // 4. 世界书模块（即使它报错，也不影响角色卡和导航）
+  try {
+    initWorldBook();
+    await loadWorldBooks();
+  } catch (err) {
+    console.warn('世界书初始化异常，已自动跳过保底:', err);
+  }
+
+  // 5. 剧本改编工坊（即使它有10万字超大模板，也绝不影响工作台）
   try {
     initScriptAtelier();
   } catch (err) {
-    console.error('initScriptAtelier error:', err);
+    console.warn('剧本工坊初始化异常，已自动跳过保底:', err);
   }
 
-  // 6. 独立初始化网易云
+  // 6. 网易云音乐模块
   try {
     initNetease();
   } catch (err) {
-    console.error('initNetease error:', err);
+    console.warn('网易云模块初始化异常，已自动跳过保底:', err);
   }
 }
 
-boot();
+// 确保 DOM 加载完后安全启动
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
