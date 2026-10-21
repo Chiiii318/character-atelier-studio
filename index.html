@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/character-detail.css"/>
   <link rel="stylesheet" href="css/worldbook.css"/>
   <link rel="stylesheet" href="css/script-atelier.css"/>
-<link rel="stylesheet" href="css/netease.css"/>
+  <link rel="stylesheet" href="css/netease.css"/>
 </head>
 <body>
 
@@ -97,7 +97,6 @@
             <span>导入卡片 (PNG/XML/JSON)</span>
           </label>
         </div>
-
       </div>
       <div class="notice hidden" id="notice"></div>
       <div class="character-workspace">
@@ -312,7 +311,7 @@
         <div>
           <div class="eyebrow">SCRIPT ATELIER · v7.0 RELAY ENGINE</div>
           <h1>剧本改编工坊</h1>
-          <p class="muted" style="color:var(--muted)">影视工业级改编流水线 · 按章分卷精读与戏中戏双轨编译。</p >
+          <p class="muted" style="color:var(--muted)">影视工业级改编流水线 · 按章分卷精读与戏中戏双轨编译。</p>
         </div>
         <div class="heading-actions">
           <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
@@ -345,14 +344,13 @@
           <div class="sa-step-head">
             <div>
               <h2 id="saStepTitle">S1 · 原著证据抽取与分卷精读</h2>
-              <p class="muted" id="saStepDesc" style="margin:4px 0 0;font-size:12.5px">自动切分章节，先按卷精读，再汇总全书底账。</p >
+              <p class="muted" id="saStepDesc" style="margin:4px 0 0;font-size:12.5px">自动切分章节，先按卷精读，再汇总全书底账。</p>
             </div>
             <button type="button" class="btn btn-quiet btn-small" id="saRandomSlotBtn"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>参数随机盲盒</span></button>
           </div>
 
           <div class="sa-relay-banner" id="saRelayBanner"><span id="saRelayBannerText">当前为首步（S1）。</span></div>
           
-          <!-- 全流程所有动态面板（S1按章切卷、S2心愿卡司大盘、S3人物小传清单、S4等宽分包）全部由此容器渲染！ -->
           <div class="sa-slot-console" id="saSlotConsole"></div>
 
           <!-- 步骤指令区 -->
@@ -367,7 +365,7 @@
             </details>
           </div>
 
-          <!-- 定稿区（在 1A 模式下由 JS 自动隐藏） -->
+          <!-- 定稿区 -->
           <div class="sa-block sa-draft-section">
             <div class="sa-block-head">
               <div class="sa-block-title"><span class="sa-num-badge">2</span><span id="saDraftLabel">本步定稿与人工修订区</span></div>
@@ -378,7 +376,7 @@
             <div class="sa-parsed-entries" id="saParsedEntriesBox"></div>
           </div>
 
-          <!-- 底部操作栏（在 1A 模式下由 JS 自动隐藏） -->
+          <!-- 底部操作栏 -->
           <div class="sa-footer-actions sa-action-bar">
             <button type="button" class="btn btn-soft" id="saCompileCurrentBtn"><svg class="ui-icon"><use href="#i-book"></use></svg><span>编译本步入库 (<span id="saCurrentEntryCount">0</span>)</span></button>
             <button type="button" class="btn btn-primary" id="saConfirmNextBtn"><span id="saNextStepBtnText">确认本步定稿 & 进入下一步 →</span></button>
@@ -397,9 +395,8 @@
         </div>
       </div>
 
-      <!-- 8 个大图标卡片（和截图完全一致） -->
       <div class="icon-grid">
-        <div class="icon-tile" onclick="alert('地图动线功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('地图动线功能待开发') : alert('地图动线功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-map"></use></svg></div>
           <span class="icon-name">真实地图</span>
           <span class="icon-tag">地理 / 动线</span>
@@ -411,37 +408,37 @@
           <span class="icon-tag">一起听 / 黑胶</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('游戏电竞功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('游戏电竞功能待开发') : alert('游戏电竞功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-game"></use></svg></div>
           <span class="icon-name">游戏电竞</span>
           <span class="icon-tag">王者 / 开黑</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('日常烟火功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('日常烟火功能待开发') : alert('日常烟火功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-receipt"></use></svg></div>
           <span class="icon-name">日常烟火</span>
           <span class="icon-tag">外卖 / 小票</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('通告日程功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('通告日程功能待开发') : alert('通告日程功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-calendar"></use></svg></div>
           <span class="icon-name">通告日程</span>
           <span class="icon-tag">大夜 / 失联</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('热搜舆论功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('热搜舆论功能待开发') : alert('热搜舆论功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-trending"></use></svg></div>
           <span class="icon-name">热搜舆论</span>
           <span class="icon-tag">文娱 / 词条</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('出行足迹功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('出行足迹功能待开发') : alert('出行足迹功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-plane"></use></svg></div>
           <span class="icon-name">出行足迹</span>
           <span class="icon-tag">登机牌 / 跨城</span>
         </div>
 
-        <div class="icon-tile" onclick="alert('未发备忘功能待开发')">
+        <div class="icon-tile" onclick="window.toast ? window.toast('未发备忘功能待开发') : alert('未发备忘功能待开发')">
           <div class="icon-box"><svg class="ui-icon" style="width:20px;height:20px"><use href="#i-note"></use></svg></div>
           <span class="icon-name">未发备忘</span>
           <span class="icon-tag">私密草稿</span>
@@ -449,21 +446,17 @@
       </div>
     </section>
 
-    <!-- ======== 网易云音乐原生视窗 (AI RP 角色一起听 Pro Max 版) ======== -->
+    <!-- ======== 网易云音乐原生视窗 ======== -->
     <section class="page" id="page-netease">
       <div class="ne-phone-viewport" id="neViewport">
 
-        <!-- 左上角返回切片按钮 -->
         <button class="ne-app-exit-btn" id="btnExitNeteaseApp" data-page="vignettes" aria-label="退出网易云">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
 
-        <!-- 极轻量毛玻璃 Toast 浮层 -->
         <div class="cloud-toast" id="cloudToast"></div>
 
-        <!-- 1. 主层级：三大 Tab 视图 -->
         <div class="ne-tab-stack" id="neTabStack">
-
           <!-- Tab 1: 首页 / 推荐 -->
           <div class="ne-tab-panel active" id="tabHome">
             <header class="ne-header-bar">
@@ -479,7 +472,6 @@
             </header>
 
             <div class="ne-home-scroll-view">
-              <!-- 快捷状态卡片 (为 RP 角色一起听预留) -->
               <div class="ne-rp-status-banner" id="neRpBanner">
                 <div class="ne-rp-info">
                   <div class="ne-rp-dot"></div>
@@ -501,7 +493,7 @@
             </div>
           </div>
 
-          <!-- Tab 2: 搜索页 (真实可用) -->
+          <!-- Tab 2: 搜索页 -->
           <div class="ne-tab-panel" id="tabSearch">
             <header class="ne-header-bar">
               <div class="ne-search-input-wrap">
@@ -518,7 +510,7 @@
             </div>
           </div>
 
-          <!-- Tab 3: 我的页 (真机一比一：用户主页 + 歌单入口) -->
+          <!-- Tab 3: 我的页 -->
           <div class="ne-tab-panel" id="tabMine">
             <div class="ne-mine-scroll-view">
               <div class="ne-profile-hero">
@@ -548,18 +540,15 @@
                 </div>
               </div>
 
-              <!-- 二级 Tab -->
               <div class="ne-sub-tabbar">
                 <span class="active">音乐</span>
                 <span>播客</span>
                 <span>动态</span>
               </div>
 
-              <!-- 歌单列表 -->
               <div class="ne-playlist-cards" id="neMyPlaylists"></div>
             </div>
           </div>
-
         </div>
 
         <!-- 2. 二级层级：歌单详情页 -->
@@ -595,7 +584,6 @@
               </div>
             </div>
 
-            <!-- 白色吸顶歌曲列表容器 -->
             <div class="ne-songs-sheet">
               <div class="ne-sheet-sticky-head" id="sheetPlayAllBtn">
                 <div class="ne-play-all-left">
@@ -609,8 +597,6 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
                 </div>
               </div>
-
-              <!-- 单曲长列表 -->
               <div class="ne-detail-song-list" id="detailSongList"></div>
             </div>
           </div>
@@ -755,8 +741,6 @@
 
       </div> <!-- #neViewport 结束 -->
 
-      <!-- 弹窗层彻底放在外部，避免被手机视口裁剪 -->
-
       <!-- 5. 自定义名片弹窗 -->
       <div class="ne-modal-overlay" id="modalProfileEdit">
         <div class="ne-modal-card">
@@ -820,7 +804,7 @@
           </div>
           <div class="ne-modal-actions">
             <button class="ne-btn-cancel" id="btnCancelImportPl" onclick="document.getElementById('modalImportPlaylist').classList.remove('open')">取消</button>
-            <button class="ne-btn-confirm" id="btnConfirmImportPl" onclick="window.doImportPlaylist()">确认导入</button>
+            <button class="ne-btn-confirm" id="btnConfirmImportPl" onclick="typeof window.doImportPlaylist === 'function' ? window.doImportPlaylist() : (window.toast ? window.toast('导入模块加载中...') : alert('导入模块加载中...'))">确认导入</button>
           </div>
         </div>
       </div>
@@ -861,8 +845,8 @@
   <button data-page="relations"><svg><use href="#i-network"></use></svg>关系</button>
 </nav>
 
-<!-- 旧版通用弹窗 -->
-<div class="modal-backdrop" id="modalBackdrop">
+<!-- 旧版通用弹窗：默认 display:none 彻底杜绝隐形透明遮罩卡死 -->
+<div class="modal-backdrop" id="modalBackdrop" style="display:none;pointer-events:none">
   <div aria-labelledby="modalTitle" aria-modal="true" class="modal" role="dialog" style="max-width:500px;width:100%;padding:22px">
     <div class="modalhead"><h2 id="modalTitle" style="margin:0;font-size:17px">新建内容</h2><button aria-label="关闭" class="close" id="closeModal">×</button></div>
     <div id="modalContent"></div>
@@ -884,7 +868,7 @@
 </div>
 
 <!-- 移动端侧边栏遮罩 -->
-<div class="mobile-backdrop" id="mobileBackdrop"></div>
+<div class="mobile-backdrop" id="mobileBackdrop" style="display:none;pointer-events:none"></div>
 
 <!-- 唯一 JS 入口 -->
 <script type="module" src="js/app.js"></script>
