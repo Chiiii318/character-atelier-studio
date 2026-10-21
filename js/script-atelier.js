@@ -1,5 +1,5 @@
 /* ================================================================
-   script-atelier.js — 剧本改编工坊 v7.0 终极合体版（纯通用零硬编码）
+   script-atelier.js — 剧本改编工坊 v7.0 终极合体版（S4渲染已彻底修复）
    ================================================================ */
 
 export function initScriptAtelier() {
@@ -1861,7 +1861,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }, 0);
     }
 
-    // ==================== S4 控制台 (纯通用动态关系拓扑图 + 等宽分包) ====================
+    // ==================== S4 控制台 (纯通用动态关系拓扑图 + 等宽分包 · 终极防空指针安全版) ====================
     else if (step === 'S4') {
       const s2Draft = (saState.drafts.S2 || '').trim();
       const s3Draft = (saState.drafts.S3 || '').trim();
@@ -1883,7 +1883,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       const totalEps = detectFinalEpisodes();
       saState.episodeCount = String(totalEps);
 
-      // 解析 S3 中的 RELATION_MATRIX（纯通用动态解析，0 硬编码！）
+      // 解析 S3 中的 RELATION_MATRIX（纯通用稳健解析）
       function parseRelationMatrix(text) {
         const rels = [];
         if (!text) return rels;
@@ -1907,27 +1907,33 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
 
       const dynamicRels = parseRelationMatrix(s3Draft);
 
-      // 动态提取图谱涉及的人物节点（纯通用！）
+      // 动态提取图谱节点
       const graphNodesMap = new Map();
       if (dynamicRels.length) {
         dynamicRels.forEach(r => {
           [r.a, r.b].forEach(nameStr => {
-            if (!graphNodesMap.has(nameStr)) {
-              graphNodesMap.set(nameStr, { name: nameStr });
+            const cleanName = String(nameStr || '').split('|')[0].trim();
+            if (cleanName && !graphNodesMap.has(cleanName)) {
+              graphNodesMap.set(cleanName, { name: cleanName });
             }
           });
         });
       } else if (roles.length) {
-        // 兜底：从 S1 抽取的角色名单中动态取前 5 位，绝不写死任何人名！
         roles.slice(0, 5).forEach(r => {
-          const tag = r.id === saState.playerRoleChId ? '玩家领衔' : (casting[r.id]?.actor ? `${casting[r.id].actor} 饰` : '原著角色');
+          const tag = casting[r.id]?.isPlayer ? '玩家领衔' : (casting[r.id]?.actor ? `${casting[r.id].actor} 饰` : '原著角色');
           graphNodesMap.set(`${r.id} ${r.name}`, { name: `${r.id} ${r.name}`, tag });
         });
       }
 
+      // 兜底节点
+      if (!graphNodesMap.size) {
+        graphNodesMap.set('主角视角', { name: '主角视角', tag: '玩家领衔' });
+        graphNodesMap.set('核心对手', { name: '核心对手', tag: '宿命博弈' });
+      }
+
       const graphNodes = Array.from(graphNodesMap.values()).slice(0, 6);
 
-      // 动态计算节点 SVG 坐标（纯数学圆周拓扑排布，自适应 2~6 个节点！）
+      // 动态计算节点 SVG 坐标（绝对防除以零）
       const svgW = 700, svgH = 240;
       const cx = 350, cy = 120, rx = 230, ry = 75;
       graphNodes.forEach((node, i) => {
@@ -1942,9 +1948,9 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         }
       });
 
-      // 初始化 S4 批次存储容器
-      if (!Array.isArray(saState.s4Batches) || saState.s4Batches.length === 0 || saState.s4TotalEps !== totalEps) {
-        saState.s4TotalEps = totalEps;
+      // 初始化 S4 批次存储容器（绝对健壮安全版）
+      saState.s4TotalEps = totalEps;
+      if (!Array.isArray(saState.s4Batches) || saState.s4Batches.length === 0) {
         const bSize = totalEps <= 12 ? 6 : (totalEps <= 24 ? 6 : 8);
         const bList = [];
         for (let i = 1; i <= totalEps; i += bSize) {
@@ -1961,8 +1967,18 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
         saState.s4CurrentBatchIdx = 0;
       }
 
-      const curBatchIdx = Math.min(saState.s4CurrentBatchIdx || 0, saState.s4Batches.length - 1);
-      const curBatch = saState.s4Batches[curBatchIdx];
+      let curBatchIdx = saState.s4CurrentBatchIdx || 0;
+      if (curBatchIdx < 0 || curBatchIdx >= saState.s4Batches.length) {
+        curBatchIdx = 0;
+        saState.s4CurrentBatchIdx = 0;
+      }
+      const curBatch = saState.s4Batches[curBatchIdx] || {
+        batchNo: 1,
+        rangeName: '第 1 ～ 6 集',
+        content: '',
+        start: 1,
+        end: 6
+      };
 
       const s4Box = document.createElement('div');
       s4Box.style.cssText = 'background:#fff;border:1px solid #e4e4e7;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;';
@@ -1970,16 +1986,15 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       const doneBatchCount = saState.s4Batches.filter(b => (b.content || '').trim().length > 100).length;
 
       s4Box.innerHTML = `
-        <!-- 1. 全景人物关系作战图谱 (纯原生动态 SVG，0 硬编码！) -->
+        <!-- 1. 全景人物关系作战图谱 -->
         <div style="border:1px solid #e4e4e7;border-radius:10px;overflow:hidden;background:#fafafa">
           <div style="padding:8px 12px;background:#f4f4f5;border-bottom:1px solid #e4e4e7;display:flex;justify-content:space-between;align-items:center;font-size:11.5px">
-            <strong style="color:#18181b">全景人物关系网与戏剧张力地图 (S3 关系矩阵已挂载 · 纯动态拓扑)</strong>
+            <strong style="color:#18181b">全景人物关系网与戏剧张力地图 (S3 关系矩阵已挂载)</strong>
             <span style="font-size:10.5px;color:#71717a">点击节点或连线查看博弈焦点</span>
           </div>
 
           <div style="width:100%;height:240px;background:#fff;position:relative">
             <svg viewBox="0 0 700 240" style="width:100%;height:100%">
-              <!-- 动态连线渲染 -->
               ${dynamicRels.slice(0, 6).map((r, idx) => {
                 const nodeA = graphNodes.find(n => n.name.includes(r.a) || r.a.includes(n.name));
                 const nodeB = graphNodes.find(n => n.name.includes(r.b) || r.b.includes(n.name));
@@ -1988,21 +2003,19 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
                   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 4;
                   return `
                     <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${idx % 2 === 0 ? '#b45309' : '#668271'}" stroke-width="1.8"/>
-                    <text x="${mx}" y="${my}" font-size="9" fill="${idx % 2 === 0 ? '#b45309' : '#668271'}" text-anchor="middle">${r.type}</text>
+                    <text x="${mx}" y="${my}" font-size="9" fill="${idx % 2 === 0 ? '#b45309' : '#668271'}" text-anchor="middle">${escHtml(r.type)}</text>
                   `;
                 }
                 return '';
               }).join('')}
 
-              <!-- 动态节点渲染（根据实际角色动态生成，绝无写死人名！） -->
               ${graphNodes.map((n, i) => {
-                const isPlayer = n.name.includes(saState.playerRoleName || '___');
-                const isCustom = !isPlayer && Object.values(casting).some(c => c.actor && n.name.includes(c.actor));
+                const isPlayer = n.name.includes('玩家') || n.name.includes(saState.playerStageName || '___');
                 return `
                   <g class="s4-dyn-node" data-name="${escAttr(n.name)}" style="cursor:pointer">
-                    <rect x="${n.x}" y="${n.y}" width="125" height="44" rx="8" fill="${isPlayer ? '#f4f4f5' : (isCustom ? '#edf3ef' : '#ffffff')}" stroke="${isPlayer ? '#18181b' : (isCustom ? '#668271' : '#e4e4e7')}" stroke-width="${isPlayer || isCustom ? '2' : '1.2'}"/>
+                    <rect x="${n.x}" y="${n.y}" width="125" height="44" rx="8" fill="${isPlayer ? '#f4f4f5' : '#ffffff'}" stroke="${isPlayer ? '#18181b' : '#e4e4e7'}" stroke-width="${isPlayer ? '2' : '1.2'}"/>
                     <text x="${n.x + 12}" y="${n.y + 19}" font-size="11.5" font-weight="700" fill="#18181b">${escHtml(n.name)}</text>
-                    <text x="${n.x + 12}" y="${n.y + 34}" font-size="9" fill="${isPlayer ? '#71717a' : (isCustom ? '#668271' : '#a1a1aa')}">${isPlayer ? '玩家主视角' : (n.tag || '原著角色')}</text>
+                    <text x="${n.x + 12}" y="${n.y + 34}" font-size="9" fill="${isPlayer ? '#71717a' : '#a1a1aa'}">${isPlayer ? '玩家主视角' : (n.tag || '原著角色')}</text>
                   </g>
                 `;
               }).join('')}
@@ -2022,7 +2035,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
             <span style="font-size:11px;color:#71717a">核定总集数：共 ${totalEps} 集 ｜ 已完成 ${doneBatchCount}/${saState.s4Batches.length} 批</span>
           </div>
 
-          <!-- 等宽规整胶囊池 (像 S1 一样自动流式排列) -->
           <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center" id="s4BatchButtonGroup"></div>
 
           <!-- 当前批次专属回填卡片 -->
@@ -2075,7 +2087,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       }
 
       setTimeout(() => {
-        // 渲染胶囊
         const groupEl = s4Box.querySelector('#s4BatchButtonGroup');
         if (groupEl) {
           saState.s4Batches.forEach((b, idx) => {
@@ -2095,7 +2106,6 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           });
         }
 
-        // SVG 节点点击交互
         s4Box.querySelectorAll('.s4-dyn-node').forEach(node => {
           node.onclick = () => {
             const nName = node.dataset.name;
@@ -2253,8 +2263,8 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     const draftSection = document.querySelector('.sa-draft-section');
     const bottomActionBar = document.querySelector('.sa-action-bar');
     const isS1_1A = saState.currentStep === 'S1' && saState.s1SubMode === '1A';
-    const isS4 = saState.currentStep === 'S4';
-    const hideBottomDraft = isS1_1A || isS4;
+    // 彻底解除对 S4 的隐藏，保证双轨兜底
+    const hideBottomDraft = isS1_1A;
     if (draftSection) draftSection.style.display = hideBottomDraft ? 'none' : 'block';
     if (bottomActionBar) bottomActionBar.style.display = hideBottomDraft ? 'none' : 'flex';
 
@@ -2349,6 +2359,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
     saState.chunks = [];
     saState.parsedRoster = [];
     saState.customCasting = {};
+    saState.s4Batches = [];
     persistState();
     renderAll();
     window.toast('已清空全部工程记录');
