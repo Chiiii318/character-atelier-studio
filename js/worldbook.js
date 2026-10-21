@@ -1034,22 +1034,5 @@ export function initWorldBook() {
   on('worldbooks-changed', () => { updateWorldBookSelector(); renderWorldBookEntries(); });
 }
 
-/* ---- 补充：批量导出选中条目 ---- */
-export function exportSelectedWorldBookEntries() {
-  const book = getCurrentBook();
-  if (!book) return;
-  const list = getNormalizedEntriesArray(book);
-  const selected = list.filter(e => state.selectedWbEntryIds && state.selectedWbEntryIds.has(e.id));
-  if (!selected.length) {
-    notify('请先勾选要导出的条目');
-    return;
-  }
-  const exportPayload = {
-    name: `${book.name || '世界书'}_选中条目`,
-    description: `从《${book.name}》中导出的 ${selected.length} 个条目`,
-    entries: selected
-  };
-  downloadJSON(exportPayload, `${safeName(book.name)}-选中条目-${Date.now()}.json`);
-  notify(`已导出 ${selected.length} 个条目！`);
-}
+
 
