@@ -21,6 +21,13 @@ function sanitizeKeyword(kw) {
   return str;
 }
 
+// ---- 下面这 4 行是新加的保底代码（直接复制粘贴进去）----
+const openKelivoSandboxModal = () => notify('沙盒触发预览功能开发中');
+const normalizeKelivoPosition = pos => normalizePosition(pos);
+const normalizeKelivoRole = role => normalizeRole(role);
+const openKelivoBottomSheetPicker = (...args) => openBottomSheetPicker(...args);
+// ----------------------------------------------------
+
 export function parseKeywordsList(raw, isRegex = false) {
   if (Array.isArray(raw)) return raw.flatMap(k => parseKeywordsList(k, isRegex));
   if (typeof raw !== 'string') return [];
@@ -978,7 +985,6 @@ export function initWorldBook() {
 
 
   $('wbSmartParseBtn')?.addEventListener('click', openSmartParserModal);
-  $('wbSandboxBtn')?.addEventListener('click', openKelivoSandboxModal);
   $('wbNewEntryBtn')?.addEventListener('click', () => openEditEntryModal(null, null));
   $('wbExportJsonBtn')?.addEventListener('click', exportCurrentWorldBookJSON);
   $('wbJsonPicker')?.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) importWorldBookJSON(f); });
