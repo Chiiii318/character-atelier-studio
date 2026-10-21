@@ -267,11 +267,11 @@ function bindGlobalEvents() {
     }
   });
 
-  // 旧版通用弹窗
-  $('closeModal').onclick = closeGenericModal;
-  $('cancelModal').onclick = closeGenericModal;
+  // 旧版通用弹窗（安全可选链，绝不中断崩溃）
+  const btnClose = $('closeModal'); if (btnClose) btnClose.onclick = closeGenericModal;
+  const btnCancel = $('cancelModal'); if (btnCancel) btnCancel.onclick = closeGenericModal;
+  const btnSave = $('saveModal'); if (btnSave) btnSave.onclick = () => { closeGenericModal(); notify('已保存为草稿（演示）'); };
   $('modalBackdrop')?.addEventListener('click', e => { if (e.target.id === 'modalBackdrop') closeGenericModal(); });
-  $('saveModal').onclick = () => { closeGenericModal(); notify('已保存为草稿（演示）'); };
 
   // AI 创作室
   $('fakeGenerate')?.addEventListener('click', () => { const p = $('aiPrompt')?.value.trim(); notify(p ? '草稿请求已准备（原型不调 API）' : '先写创作要求'); });
