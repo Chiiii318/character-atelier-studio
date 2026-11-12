@@ -2,6 +2,8 @@
    netease.js — 网易云原生播放与交互核心 (支持 RP 角色/自定义名片/全量曲库/流光取色)
    ================================================================ */
 
+import { escHtml, escAttr } from './utils.js';
+
 export function initNetease() {
   const device = document.getElementById('neViewport');
   if (!device) return;
@@ -164,7 +166,7 @@ export function initNetease() {
   async function loadPlaylistById(playlistId) {
     showToast('正在读取云端歌单...');
     try {
-      const res = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`);
+      const res = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${encodeURIComponent(playlistId)}`);
       const list = await res.json();
 
       if (Array.isArray(list) && list.length > 0) {
@@ -251,10 +253,10 @@ export function initNetease() {
     const mainCard = document.createElement('div');
     mainCard.className = 'ne-pl-card';
     mainCard.innerHTML = `
-      <img class="ne-pl-thumb" src="${playlist[0]?.cover || ''}">
+      <img class="ne-pl-thumb" src="${escAttr(playlist[0]?.cover || '')}">
       <div class="ne-pl-info">
         <div class="ne-pl-title">我喜欢的音乐</div>
-        <div class="ne-pl-sub">${playlist.length} 首 · ${userProfile.name}</div>
+        <div class="ne-pl-sub">${playlist.length} 首 · ${escHtml(userProfile.name)}</div>
       </div>
       <button class="ne-btn-heart-mode">♡ 心动模式</button>
     `;
@@ -581,10 +583,10 @@ export function initNetease() {
             const row = document.createElement('div');
             row.className = 'song-row';
             row.innerHTML = `
-              <img class="song-thumb" src="${item.pic}" loading="lazy">
+              <img class="song-thumb" src="${escAttr(item.pic)}" loading="lazy">
               <div class="song-meta">
-                <div class="song-name">${item.name}</div>
-                <div class="song-sub">${item.artist}</div>
+                <div class="song-name">${escHtml(item.name)}</div>
+                <div class="song-sub">${escHtml(item.artist)}</div>
               </div>
             `;
             row.onclick = () => {

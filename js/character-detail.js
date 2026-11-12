@@ -174,10 +174,24 @@ function applyCardRegexScripts(text, d) {
   return output;
 }
 
+/* 沙箱内页面的 CSP：允许内联脚本/样式与外链图片、媒体、字体，但禁止任何网络请求（connect-src 随 default-src 一并禁用）与嵌套框架 */
+const SANDBOX_CSP = "default-src 'none'; img-src https: http: data: blob:; media-src https: http: data: blob:; font-src https: data:; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'";
+const SANDBOX_CSP_META = '<meta http-equiv="Content-Security-Policy" content="' + SANDBOX_CSP + '">';
+
+/* 沙箱 iframe 权限：不含 allow-same-origin，页面内脚本无法触碰本应用的 IndexedDB / localStorage / DOM */
+const SANDBOX_FLAGS = 'allow-scripts allow-forms';
+
+function injectSandboxCsp(html) {
+  // CSP meta 必须位于任何脚本之前：优先放进 <head>，其次 <html>，再次 doctype 之后
+  if (/<head\b[^>]*>/i.test(html)) return html.replace(/<head\b[^>]*>/i, m => m + SANDBOX_CSP_META);
+  if (/<html\b[^>]*>/i.test(html)) return html.replace(/<html\b[^>]*>/i, m => m + '<head>' + SANDBOX_CSP_META + '</head>');
+  return html.replace(/<!doctype\s+html[^>]*>/i, m => m + '<head>' + SANDBOX_CSP_META + '</head>');
+}
+
 function buildRegexSandboxDocument(text) {
   let html = stripHtmlCodeFences(String(text ?? ''));
-  if (/<!doctype\s+html|<html\b/i.test(html)) return html;
-  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,sans-serif;overflow-x:hidden}img,video{max-width:100%;height:auto}</style></head><body>' + html + '</body></html>';
+  if (/<!doctype\s+html|<html\b/i.test(html)) return injectSandboxCsp(html);
+  return '<!doctype html><html><head><meta charset="utf-8">' + SANDBOX_CSP_META + '<meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:12px;font-family:system-ui,sans-serif;overflow-x:hidden}img,video{max-width:100%;height:auto}</style></head><body>' + html + '</body></html>';
 }
 
 function greetingIconButton(label, svgPath, handler) {
@@ -246,7 +260,7 @@ function openGreetingPreview(title, text, d, runRegex) {
       const cleaned = stripHtmlCodeFences(result);
       if (looksLikeExecutableHtml(cleaned)) {
         const frame = makeEl('iframe', 'greeting-regex-frame');
-        frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
+        frame.setAttribute('sandbox', SANDBOX_FLAGS);
         frame.style.cssText = 'display:block;width:100%;height:75dvh;min-height:360px;border:0;border-radius:12px;background:#fff';
         frame.srcdoc = buildRegexSandboxDocument(cleaned);
         wrap.append(frame);
@@ -260,7 +274,7 @@ function openGreetingPreview(title, text, d, runRegex) {
       const cleanText = stripHtmlCodeFences(text);
       if (looksLikeExecutableHtml(cleanText)) {
         const frame = makeEl('iframe', 'greeting-regex-frame');
-        frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
+        frame.setAttribute('sandbox', SANDBOX_FLAGS);
         frame.style.cssText = 'display:block;width:100%;height:100dvh;border:0;background:#fff';
         frame.srcdoc = buildRegexSandboxDocument(cleanText);
         wrap.append(frame);

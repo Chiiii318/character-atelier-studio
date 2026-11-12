@@ -2,6 +2,8 @@
    script-atelier.js — 剧本改编工坊 v7.0 终极合体版（S4渲染已彻底修复）
    ================================================================ */
 
+import { escHtml, escAttr } from './utils.js';
+
 export function initScriptAtelier() {
   'use strict';
 
@@ -1079,8 +1081,8 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       box.innerHTML += `
         <div class="sa-entry-card">
           <div class="sa-entry-left">
-            <span class="sa-mini-tag dark">${ent.type}</span>
-            <span class="sa-entry-id">${ent.id}</span>
+            <span class="sa-mini-tag dark">${escHtml(ent.type)}</span>
+            <span class="sa-entry-id">${escHtml(ent.id)}</span>
           </div>
           <div class="sa-entry-badges">
             <span class="sa-mini-tag">${ent.constant ? '常驻' : '按词触发'}</span>
@@ -1476,14 +1478,14 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           pill.style.cssText = `border:1px solid ${isPlayer ? '#18181b' : (isCustom ? '#ccdcd2' : '#e4e4e7')};background:${isPlayer ? '#f4f4f5' : (isCustom ? '#edf3ef' : '#ffffff')};border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;`;
           pill.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:10px;font-weight:700;color:${isPlayer ? '#18181b' : '#71717a'}">${r.id}</span>
+              <span style="font-size:10px;font-weight:700;color:${isPlayer ? '#18181b' : '#71717a'}">${escHtml(r.id)}</span>
               <span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:${isPlayer ? '#18181b' : (isCustom ? '#e0ece4' : '#f4f4f5')};color:${isPlayer ? '#fff' : (isCustom ? '#668271' : '#71717a')};font-weight:600">
                 ${isPlayer ? '由我饰演' : (isCustom ? '已定演员' : 'AI拟邀')}
               </span>
             </div>
-            <div style="font-size:13px;font-weight:700;color:#18181b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+            <div style="font-size:13px;font-weight:700;color:#18181b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(r.name)}</div>
             <div style="font-size:11px;color:${isCustom ? '#668271' : '#71717a'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-              ${isCustom && cfg.actor ? cfg.actor : (isPlayer ? (saState.playerStageName || '玩家领衔') : 'AI自主拟定画像')}
+              ${escHtml(isCustom && cfg.actor ? cfg.actor : (isPlayer ? (saState.playerStageName || '玩家领衔') : 'AI自主拟定画像'))}
             </div>
           `;
           pill.onclick = () => {
@@ -1717,8 +1719,8 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
                   <span style="font-size:10px;font-weight:700;color:#71717a">${c.source}</span>
                   <span style="font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c.source.includes('玩家') ? '#18181b' : '#668271'};color:#fff">锁定必写</span>
                 </div>
-                <div style="font-size:13.5px;font-weight:750;color:#18181b">${c.name}</div>
-                <div style="font-size:11px;color:${c.source.includes('玩家') ? '#71717a' : '#668271'}">${c.actor ? `${c.actor} 饰` : ''}</div>
+                <div style="font-size:13.5px;font-weight:750;color:#18181b">${escHtml(c.name)}</div>
+                <div style="font-size:11px;color:${c.source.includes('玩家') ? '#71717a' : '#668271'}">${c.actor ? `${escHtml(c.actor)} 饰` : ''}</div>
               </div>
             `).join('') : '<div style="font-size:11.5px;color:#71717a;padding:8px">暂无锁定角色，建议先在 S2 中指定角色或勾选由我饰演。</div>'}
           </div>
@@ -1731,11 +1733,11 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           </div>
           <div style="display:flex;flex-direction:column;gap:6px" id="s3T2List">
             ${rosterData.t2.length ? rosterData.t2.map((c, i) => `
-              <div class="s3-rec-row" data-name="${c.name}" style="background:#fff;border:1px solid #18181b;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:10px;cursor:pointer">
+              <div class="s3-rec-row" data-name="${escAttr(c.name)}" style="background:#fff;border:1px solid #18181b;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:10px;cursor:pointer">
                 <input type="checkbox" class="s3-rec-chk" checked style="width:16px;height:16px;accent-color:#18181b;cursor:pointer"/>
                 <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
                   <div style="display:flex;align-items:center;gap:6px">
-                    <strong style="font-size:13px;color:#18181b">${c.name}</strong>
+                    <strong style="font-size:13px;color:#18181b">${escHtml(c.name)}</strong>
                     <span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:#f4f4f5;color:#71717a;font-weight:600">${c.tag || '高光推荐'}</span>
                     ${c.qualify ? `<span style="font-size:9.5px;color:#668271">命中资格 [${c.qualify}]</span>` : ''}
                   </div>
@@ -1758,14 +1760,14 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
           <div style="font-size:11px;color:#71717a;margin:6px 0">此梯队角色在全剧中主要承担环境与事件功能；如特别想为某人单独写长小传，可点击点亮：</div>
           <div style="display:flex;flex-wrap:wrap;gap:5px" id="s3T3Chips">
             ${rosterData.t3.length ? rosterData.t3.map(c => `
-              <span class="s3-minor-chip" data-name="${c.name}" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid #e4e4e7;background:#fff;color:#52525b;cursor:pointer">
-                + ${c.name} ${c.func ? `(${c.func})` : ''}
+              <span class="s3-minor-chip" data-name="${escAttr(c.name)}" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid #e4e4e7;background:#fff;color:#52525b;cursor:pointer">
+                + ${escHtml(c.name)} ${c.func ? `(${escHtml(c.func)})` : ''}
               </span>
             `).join('') : '<span style="color:#a1a1aa">暂无记录</span>'}
           </div>
           ${rosterData.missed ? `
             <div style="margin-top:8px;padding-top:6px;border-top:1px dashed #e4e4e7;font-size:10.5px;color:#a1a1aa">
-              遗珠复核：${rosterData.missed.name} 未入选原因：${rosterData.missed.reason}
+              遗珠复核：${escHtml(rosterData.missed.name)} 未入选原因：${escHtml(rosterData.missed.reason)}
             </div>
           ` : ''}
         </details>
@@ -2151,7 +2153,7 @@ RT-4 终点喊卡死锁：到达当前场次 END_ANCHOR 时，回复末尾必须
       row.className = 'sa-slot-row';
       row.innerHTML = `
         <div class="sa-slot-label"><span>指定要开拍的集数与场次 [TARGET_EPISODE_SCENE]（对应 S4 分集详纲中的具体场号）</span></div>
-        <input type="text" id="inpS5TargetScene" value="${saState.targetEpisodeScene}" placeholder="例如：第1集第2场（或 SC-1-2）" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
+        <input type="text" id="inpS5TargetScene" value="${escAttr(saState.targetEpisodeScene)}" placeholder="例如：第1集第2场（或 SC-1-2）" style="width:100%;height:36px;border:1px solid #e4e4e7;border-radius:8px;padding:0 10px;font-size:12.5px;outline:none"/>
       `;
       box.appendChild(row);
       setTimeout(() => {

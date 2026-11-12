@@ -53,11 +53,14 @@ export function escHtml(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
+/** 用于 HTML 属性值：与 escHtml 相同，五个字符全部转义 */
 export function escAttr(str) {
-  return String(str ?? '').replace(/"/g, '&quot;');
+  return escHtml(str);
 }
 
 export function markdownEscape(s) {

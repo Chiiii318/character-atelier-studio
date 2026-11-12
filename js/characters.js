@@ -2,13 +2,13 @@
    characters.js — 角色卡列表、导入/导出、批量管理、文件夹、网格渲染
    ================================================================ */
 
-import { saveCard, getCards, deleteCardFromDB, saveWorldBook } from './db.js';
+import { saveCard, saveCardsBatch, getCards, deleteCardFromDB, saveWorldBook, getWorldBooks } from './db.js';
 import { state, emit } from './state.js';
 import {
   $, notify, showNotice, hideNotice, makeEl, uuid, safeName,
   objectURLFor, downloadBlob, downloadJSON, blobToDataURL, base64ToBlob,
   getData, getBook, normalizeTags, estimateTokens, renderTokenBadge,
-  copyText
+  copyText, escHtml
 } from './utils.js';
 import { parsePNGMetadata, parseMufyXMLContent, resolveMufyAvatarBlob } from './png-parser.js';
 
@@ -68,7 +68,7 @@ export function renderFolderPills() {
   const makePill = (id, label, iconHref, count) => {
     const btn = makeEl('button', 'folder-pill' + (state.currentFolderFilter === id ? ' active' : ''));
     btn.type = 'button';
-    btn.innerHTML = `<svg class="ui-icon"><use href="#${iconHref}"></use></svg><span>${label}</span><small style="opacity:0.7">(${count})</small>`;
+    btn.innerHTML = `<svg class="ui-icon"><use href="#${iconHref}"></use></svg><span>${escHtml(label)}</span><small style="opacity:0.7">(${count})</small>`;
     btn.onclick = () => { state.currentFolderFilter = id; renderFolderPills(); renderCharacterGrid(); };
     return btn;
   };
@@ -578,9 +578,11 @@ export async function exportBackup() {
         favorite: !!c.favorite, time: c.time || Date.now()
       });
     }
-    downloadJSON({ format: 'TavernLiteVaultBackup', version: 1, exportedAt: new Date().toISOString(), cards },
+    // 世界书存放在独立仓库，一并写入备份（version 2 起）
+    const worldbooks = await getWorldBooks();
+    downloadJSON({ format: 'TavernLiteVaultBackup', version: 2, exportedAt: new Date().toISOString(), cards, worldbooks },
       'tavern-lite-backup-' + new Date().toISOString().slice(0, 10) + '.json');
-    notify('完整备份已导出');
+    notify(`完整备份已导出（${cards.length} 张角色卡、${worldbooks.length} 本世界书）`);
   } catch (e) { notify('备份失败：' + e.message); }
 }
 
@@ -588,16 +590,23 @@ export async function restoreBackup(file) {
   try {
     const data = JSON.parse(await file.text());
     if (data.format !== 'TavernLiteVaultBackup' || !Array.isArray(data.cards)) throw new Error('备份文件格式不正确。');
-    if (!confirm(`备份中有 ${data.cards.length} 张角色卡。恢复会合并到当前收藏；同 ID 的记录将被覆盖。继续吗？`)) return;
-    let count = 0;
+    const wbList = Array.isArray(data.worldbooks) ? data.worldbooks.filter(b => b && typeof b === 'object' && b.id) : [];
+    if (!confirm(`备份中有 ${data.cards.length} 张角色卡、${wbList.length} 本世界书。恢复会合并到当前收藏；同 ID 的记录将被覆盖。继续吗？`)) return;
+    // 先在内存里整理好全部记录，再用单个事务一次写入，避免中途出错导致只恢复一半
+    const restored = [];
     for (const x of data.cards) {
       if (!x.data || !x.blobBase64) continue;
-      const c = { id: String(x.id || uuid()), data: x.data, blob: base64ToBlob(x.blobBase64, x.blobType), category: x.category || '', customTags: Array.isArray(x.customTags) ? x.customTags : [], favorite: !!x.favorite, time: x.time || Date.now() };
-      await saveCard(c);
-      count++;
+      restored.push({ id: String(x.id || uuid()), data: x.data, blob: base64ToBlob(x.blobBase64, x.blobType), category: x.category || '', customTags: Array.isArray(x.customTags) ? x.customTags : [], favorite: !!x.favorite, time: x.time || Date.now() });
     }
+    await saveCardsBatch(restored);
+    for (const b of wbList) await saveWorldBook(b);
     await loadCards();
-    notify(`已恢复 ${count} 张角色卡`);
+    if (wbList.length) {
+      const { loadWorldBooks } = await import('./worldbook.js');
+      await loadWorldBooks();
+      emit('worldbooks-changed');
+    }
+    notify(`已恢复 ${restored.length} 张角色卡${wbList.length ? '、' + wbList.length + ' 本世界书' : ''}`);
   } catch (e) { notify('恢复失败：' + e.message); }
   finally { $('backupPicker').value = ''; }
 }

@@ -263,7 +263,7 @@ export function renderWorldBookEntries() {
     row.innerHTML = `
       <input type="checkbox" class="wb-item-check" style="width:16px;height:16px;accent-color:var(--ink);cursor:pointer;flex-shrink:0" ${isChecked ? 'checked' : ''}/>
       <div class="wb-item-title-box" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;cursor:pointer">
-        <span style="font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ent.name || ent.comment || `条目 ${idx + 1}`}</span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(ent.name || ent.comment || `条目 ${idx + 1}`)}</span>
         ${isConstant ? `<span style="font-size:9.5px;padding:1px 5px;border-radius:4px;background:var(--sage-soft);color:var(--sage);border:1px solid var(--sage-border);flex-shrink:0;font-weight:700">常驻</span>` : ''}
       </div>
       <label class="klv-switch" title="启用/停用条目" style="margin-left:auto;flex-shrink:0">
@@ -428,7 +428,7 @@ function openEditEntryModal(entryIndex, ent) {
 
           <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:14px;color:#1f2329;font-weight:500">扫描深度</span>
-            <input type="number" id="klvScanDepth" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.scanDepth ?? data.scan_depth ?? 4}"/>
+            <input type="number" id="klvScanDepth" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${escAttr(data.scanDepth ?? data.scan_depth ?? 4)}"/>
           </div>
         </div>
 
@@ -437,21 +437,21 @@ function openEditEntryModal(entryIndex, ent) {
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:14px;color:#1f2329;font-weight:500">粘滞（消息数）</span>
-              <input type="number" id="klvSticky" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.sticky ?? 0}"/>
+              <input type="number" id="klvSticky" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${escAttr(data.sticky ?? 0)}"/>
             </div>
             <div style="font-size:11.5px;color:#8f959e;margin-top:2px">触发后在后续 N 条消息中保持激活，重复命中不延长。0 表示关闭。</div>
           </div>
           <div style="border-top:1px solid #f7f8fa;padding-top:10px">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:14px;color:#1f2329;font-weight:500">冷却（消息数）</span>
-              <input type="number" id="klvCooldown" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.cooldown ?? 0}"/>
+              <input type="number" id="klvCooldown" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${escAttr(data.cooldown ?? 0)}"/>
             </div>
             <div style="font-size:11.5px;color:#8f959e;margin-top:2px">触发后（或粘滞结束后）N 条消息内不再触发。0 表示关闭。</div>
           </div>
           <div style="border-top:1px solid #f7f8fa;padding-top:10px">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:14px;color:#1f2329;font-weight:500">延迟（消息数）</span>
-              <input type="number" id="klvDelay" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.delay ?? 0}"/>
+              <input type="number" id="klvDelay" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${escAttr(data.delay ?? 0)}"/>
             </div>
             <div style="font-size:11.5px;color:#8f959e;margin-top:2px">对话至少有 N 条消息时才允许触发。按单条消息计数，不是对话轮数。0 表示关闭。</div>
           </div>
@@ -475,7 +475,7 @@ function openEditEntryModal(entryIndex, ent) {
           </div>
           <div style="border-top:1px solid #f7f8fa;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:14px;color:#1f2329;font-weight:500">优先级</span>
-            <input type="number" id="klvPriority" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${data.priority ?? data.order ?? 70}"/>
+            <input type="number" id="klvPriority" style="background:#f2f3f5;border:none;border-radius:8px;padding:6px;width:68px;text-align:center;font-size:13px;outline:none" value="${escAttr(data.priority ?? data.order ?? 70)}"/>
           </div>
         </div>
       </div>
@@ -863,8 +863,10 @@ export async function importWorldBookJSON(file) {
       let activeGroup = '通用系统提示';
       rawEntries = json.prompts.map((p, idx) => {
         const rawTitle = p.name || `模块 ${idx + 1}`;
-        if (/^[♫♬•\*\s─]+/.test(rawTitle)) activeGroup = rawTitle.replace(/[♫♬•\*\s─]/g, '').trim() || '通用';
-        const cleanTitle = rawTitle.replace(/[♫♬•\*\s─]/g, '').trim();
+        // 只去掉首尾的装饰符号与空白，保留标题中间的空格（如 "Main Prompt"）
+        const decoEdge = /^[♫♬•*─\s]+|[♫♬•*─\s]+$/g;
+        const cleanTitle = rawTitle.replace(decoEdge, '').trim();
+        if (/^[♫♬•*─\s]/.test(rawTitle)) activeGroup = cleanTitle || '通用';
         return { 
           id: p.identifier || ('preset_' + Date.now() + '_' + idx), 
           group: activeGroup, 
