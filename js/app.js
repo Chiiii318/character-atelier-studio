@@ -21,7 +21,6 @@ import {
   loadWorldBooks, initWorldBook
 } from './worldbook.js';
 import { initScriptAtelier } from './script-atelier.js';
-import { initNetease } from './netease.js';
 
 /* ================================================================
    页面路由
@@ -633,12 +632,6 @@ async function boot() {
     console.warn('剧本工坊初始化异常，已自动跳过保底:', err);
   }
 
-  // 6. 网易云音乐模块
-  try {
-    initNetease();
-  } catch (err) {
-    console.warn('网易云模块初始化异常，已自动跳过保底:', err);
-  }
 }
 
 // 确保 DOM 加载完后安全启动
