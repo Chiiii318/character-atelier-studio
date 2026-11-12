@@ -20,7 +20,6 @@ import {
 import {
   loadWorldBooks, initWorldBook
 } from './worldbook.js';
-import { initScriptAtelier } from './script-atelier.js';
 
 /* ================================================================
    页面路由
@@ -625,12 +624,6 @@ async function boot() {
     console.warn('世界书初始化异常，已自动跳过保底:', err);
   }
 
-  // 5. 剧本改编工坊
-  try {
-    initScriptAtelier();
-  } catch (err) {
-    console.warn('剧本工坊初始化异常，已自动跳过保底:', err);
-  }
 
 }
 

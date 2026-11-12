@@ -23,7 +23,7 @@ export function notify(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-// 挂到 window 上供 script-atelier 等独立模块直接调用
+// 挂到 window 上供独立模块直接调用
 window.toast = notify;
 
 export function showNotice(msg) {

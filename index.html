@@ -15,7 +15,6 @@
   <link rel="stylesheet" href="css/characters.css"/>
   <link rel="stylesheet" href="css/character-detail.css"/>
   <link rel="stylesheet" href="css/worldbook.css"/>
-  <link rel="stylesheet" href="css/script-atelier.css"/>
 </head>
 <body>
 
@@ -38,7 +37,6 @@
       <button class="navitem" data-page="worlds"><svg><use href="#i-book"></use></svg>世界书</button>
       <button class="navitem" data-page="relations"><svg><use href="#i-network"></use></svg>人物关系</button>
       <button class="navitem" data-page="ai"><svg><use href="#i-sparkles"></use></svg>AI 创作室</button>
-      <button class="navitem" data-page="prompts"><svg><use href="#i-clapper"></use></svg>剧本改编工坊</button>
       <button class="navitem" data-page="vignettes"><svg><use href="#i-phone"></use></svg>生活切片</button>
     </div>
     <div class="navgroup">
@@ -75,7 +73,6 @@
       <div class="quickgrid">
         <button class="quickcard" data-page="characters"><div class="quicktop"><span class="icowash"><svg><use href="#i-users"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>角色卡</strong><small style="color:var(--muted);display:block;margin-top:3px">管理人设、编辑与版本</small></div></button>
         <button class="quickcard" data-page="worlds"><div class="quicktop"><span class="icowash"><svg><use href="#i-book"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>世界书</strong><small style="color:var(--muted);display:block;margin-top:3px">整理条目与智能解析提取</small></div></button>
-        <button class="quickcard" data-page="prompts"><div class="quicktop"><span class="icowash"><svg><use href="#i-clapper"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>剧本改编工坊</strong><small style="color:var(--muted);display:block;margin-top:3px">v5.1 演艺圈/戏中戏流水线</small></div></button>
         <button class="quickcard" data-page="vignettes"><div class="quicktop"><span class="icowash"><svg><use href="#i-phone"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>生活切片</strong><small style="color:var(--muted);display:block;margin-top:3px">真实地图、王者战绩与通告</small></div></button>
         <button class="quickcard" data-page="ai"><div class="quicktop"><span class="icowash lav"><svg><use href="#i-sparkles"></use></svg></span><span class="arrow" style="color:var(--muted)"><svg style="width:16px;height:16px"><use href="#i-chevron"></use></svg></span></div><div><strong>AI 创作室</strong><small style="color:var(--muted);display:block;margin-top:3px">辅助生成与完善设定</small></div></button>
       </div>
@@ -303,88 +300,7 @@
         <div class="panel" style="padding:18px">
           <h3>创作前检查</h3>
           <div class="settingsrow"><div><strong>API 配置</strong><p style="font-size:11px;color:var(--muted);margin:3px 0 0">管理服务商与模型</p></div><button class="btn btn-quiet btn-small" data-page="settings">去配置</button></div>
-          <div class="settingsrow"><div><strong>剧本改编工坊</strong><p style="font-size:11px;color:var(--muted);margin:3px 0 0">进入 v5.1 演艺圈剧本流水线</p></div><button class="btn btn-quiet btn-small" data-page="prompts">进入</button></div>
           <div class="settingsrow"><div><strong>保留原始设定</strong><p style="font-size:11px;color:var(--muted);margin:3px 0 0">生成结果先保存为草稿</p></div><input type="checkbox" class="klv-switch" checked/></div>
-        </div>
-      </div>
-    </section>
-
-     <!-- ======== 剧本改编工坊 ======== -->
-    <section class="page" id="page-prompts">
-      <div class="page-heading">
-        <div>
-          <div class="eyebrow">SCRIPT ATELIER · v7.0 RELAY ENGINE</div>
-          <h1>剧本改编工坊</h1>
-          <p class="muted" style="color:var(--muted)">影视工业级改编流水线 · 按章分卷精读与戏中戏双轨编译。</p>
-        </div>
-        <div class="heading-actions">
-          <button class="btn btn-soft" id="saInitCoreBtn" type="button"><svg class="ui-icon"><use href="#i-book"></use></svg><span>写入 CORE_RT 底护锁</span></button>
-          <button class="btn btn-quiet" id="saEditTemplateBtn" type="button"><svg class="ui-icon"><use href="#i-edit-pen"></use></svg><span>v7.0 母本词库</span></button>
-          <label class="btn btn-primary" for="saTxtFilePicker" style="cursor:pointer">
-            <svg class="ui-icon"><use href="#i-upload"></use></svg>
-            <span>导入原著小说 TXT</span>
-          </label>
-          <input type="file" id="saTxtFilePicker" accept=".txt,text/plain" style="display:none" aria-label="上传原著文本文件"/>
-        </div>
-      </div>
-
-      <div class="sa-shell">
-        <div class="sa-project-bar">
-          <div class="sa-proj-field">
-            <label for="saProjectName">剧组项目代号 / 目标世界书名</label>
-            <input type="text" id="saProjectName" class="search" placeholder="例如：《雪粒镇》剧组世界书" value="《雪粒镇》剧组世界书"/>
-          </div>
-          <div class="sa-proj-stats">
-            <span class="token-badge safe" id="saExtractedStats">已识别角色: 0 · 台词锚点: 0</span>
-            <button type="button" class="btn btn-quiet btn-small" id="saResetAllDraftsBtn">清空全流程定稿</button>
-          </div>
-        </div>
-
-        <nav class="sa-stepper-bar" aria-label="剧本改编五步流水线">
-          <div class="sa-stepper-track" id="saStepperTrack"></div>
-        </nav>
-
-        <div class="panel sa-workbench">
-          <div class="sa-step-head">
-            <div>
-              <h2 id="saStepTitle">S1 · 原著证据抽取与分卷精读</h2>
-              <p class="muted" id="saStepDesc" style="margin:4px 0 0;font-size:12.5px">自动切分章节，先按卷精读，再汇总全书底账。</p>
-            </div>
-            <button type="button" class="btn btn-quiet btn-small" id="saRandomSlotBtn"><svg class="ui-icon"><use href="#i-sparkles"></use></svg><span>参数随机盲盒</span></button>
-          </div>
-
-          <div class="sa-relay-banner" id="saRelayBanner"><span id="saRelayBannerText">当前为首步（S1）。</span></div>
-          
-          <div class="sa-slot-console" id="saSlotConsole"></div>
-
-          <!-- 步骤指令区 -->
-          <div class="sa-block sa-prompt-section">
-            <div class="sa-block-head">
-              <div class="sa-block-title"><span class="sa-num-badge">1</span><span>获取本阶段 AI 编译指令</span></div>
-              <button type="button" class="btn btn-primary" id="saCopyPromptBtn"><svg class="ui-icon"><use href="#i-copy"></use></svg><span>一键复制本步指令发给 AI</span></button>
-            </div>
-            <details class="sa-prompt-fold">
-              <summary><span>点击展开查看完整 Prompt</span><span class="muted">展开 ▾</span></summary>
-              <pre class="sa-prompt-pre" id="saPromptPreview"></pre>
-            </details>
-          </div>
-
-          <!-- 定稿区 -->
-          <div class="sa-block sa-draft-section">
-            <div class="sa-block-head">
-              <div class="sa-block-title"><span class="sa-num-badge">2</span><span id="saDraftLabel">本步定稿与人工修订区</span></div>
-              <span class="detail-count" id="saDraftCharCount">0 字</span>
-            </div>
-            <div class="sa-halt-alert hidden" id="saHaltAlert"></div>
-            <textarea class="sa-draft-textarea" id="saDraftEditor" placeholder="将 AI 生成的最终定稿粘贴在此处…"></textarea>
-            <div class="sa-parsed-entries" id="saParsedEntriesBox"></div>
-          </div>
-
-          <!-- 底部操作栏 -->
-          <div class="sa-footer-actions sa-action-bar">
-            <button type="button" class="btn btn-soft" id="saCompileCurrentBtn"><svg class="ui-icon"><use href="#i-book"></use></svg><span>编译本步入库 (<span id="saCurrentEntryCount">0</span>)</span></button>
-            <button type="button" class="btn btn-primary" id="saConfirmNextBtn"><span id="saNextStepBtnText">确认本步定稿 & 进入下一步 →</span></button>
-          </div>
         </div>
       </div>
     </section>
